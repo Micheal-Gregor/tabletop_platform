@@ -41,7 +41,15 @@ export const F2_PACK: ContentPack = {
           options: [
             {
               label: 'recurse',
-              fx: [{ fx: 'open_window', kind: 'inner', decider: 'A', options: [], auto: 0 }],
+              fx: [
+                {
+                  fx: 'open_window',
+                  kind: 'inner',
+                  decider: 'A',
+                  options: [{ label: 'noop', fx: [] }],
+                  auto: 0,
+                },
+              ],
             },
           ],
           auto: 0,

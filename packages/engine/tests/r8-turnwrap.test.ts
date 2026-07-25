@@ -1,6 +1,8 @@
 /** R-8 / GBC-13 — round wraps EXACTLY once; second wrap-tick refused (GX-9, HK-3). */
 import { describe, expect, it } from 'vitest';
-import { forceRoundWrap, HookHk3Violation, turnRow, hookHk3AtRoundWrap } from '../src/index.js';
+import { HookHk3Violation, turnRow, hookHk3AtRoundWrap } from '../src/index.js';
+// test-support surface, deliberately OFF the public index (K7 OBS-C):
+import { forceRoundWrap } from '../src/play/turn.js';
 import { F2_PACK, newF2Core } from './f2-fixture.js';
 
 const PACK_PLAIN = {

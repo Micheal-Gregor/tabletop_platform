@@ -112,9 +112,12 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
         const options = d['options'];
         need(Array.isArray(options), `"options" must be an array`);
         if (Array.isArray(options)) {
+          // K7-F2 NEW-1 closure: a window MUST carry at least one option — a
+          // zero-option gated window has no path to decision (GX-8) and bricks the game.
+          need(options.length >= 1, `"options" must carry at least one option (an undecidable window bricks the game)`);
           const auto = d['auto'] ?? 0;
           need(
-            Number.isInteger(auto) && (auto as number) >= 0 && (options.length === 0 || (auto as number) < options.length),
+            Number.isInteger(auto) && (auto as number) >= 0 && (auto as number) < Math.max(options.length, 1),
             `"auto" index ${JSON.stringify(d['auto'])} out of range (${options.length} options)`
           );
           options.forEach((opt, i) => {
@@ -144,7 +147,9 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
 }
 
 /** I-2/I-8: genesis = deterministic f(pack, seats, seed); decks shuffled on named streams. */
-export function packGenesis(pack: ContentPack): Genesis {
+export function packGenesis(rawPack: ContentPack): Genesis {
+  // K7 OBS-B: seal here too — packGenesis is exported; the last aliasing edge closes.
+  const pack = freezeDeep(structuredClone(rawPack) as unknown as JsonObject) as unknown as ContentPack;
   return (packRef, seats, seed) => {
     const rng = new RNGStreams(seed);
     const decks: Record<string, JsonValue> = {};

@@ -26,7 +26,9 @@ export {
   autoResolveWindow,
 } from './play/windows.js';
 export type { WindowRow } from './play/windows.js';
-export { PHASES, turnRow, hookHk3AtRoundWrap, HookHk3Violation, passSeat, advancePhase, forceRoundWrap } from './play/turn.js';
+// forceRoundWrap deliberately NOT exported (K7 OBS-C): test-support surface only —
+// R-8's forbidden input is proven on the real passSeat path (f2-k7-closures D2).
+export { PHASES, turnRow, hookHk3AtRoundWrap, HookHk3Violation, passSeat, advancePhase } from './play/turn.js';
 export type { TurnRow } from './play/turn.js';
 export { decks, drawTop, shuffledOrder, toReserve } from './play/deck.js';
 export type { DeckRow } from './play/deck.js';

@@ -14,7 +14,7 @@
 
 import type { JsonObject, JsonValue, State } from '../kernel/types.js';
 
-/** EFX v1.1.1 — sealed. Generativity bound (S1 v2.0 AX-5 / seam S-3): content parameterizes EFX members and preset spaces — never defines behavior. */
+/** EFX v1.1.1 — sealed. Generativity bound (seam S-3 · CLAUDE.md §9 "do not let content define behavior"): content parameterizes EFX members and preset spaces — never defines behavior. */
 export const EFX_V1_1_1 = Object.freeze([
   'pay',
   'capitalize',

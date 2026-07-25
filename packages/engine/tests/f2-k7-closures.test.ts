@@ -72,7 +72,15 @@ describe('D3 · depth-1 law on the AUTO path (kills MUT-13)', () => {
             options: [
               {
                 label: 'recurse',
-                fx: [{ fx: 'open_window', kind: 'inner', decider: 'A', options: [], auto: 0 }],
+                fx: [
+                  {
+                    fx: 'open_window',
+                    kind: 'inner',
+                    decider: 'A',
+                    options: [{ label: 'noop', fx: [] }],
+                    auto: 0,
+                  },
+                ],
               },
             ],
             auto: 0,
@@ -145,11 +153,26 @@ describe('D5 · undecidable windows are unconstructible / auto-eligible (kills I
     const bad = {
       ...F2_PACK,
       cards: {
-        ghost: { fx: [{ fx: 'open_window', kind: 'k', decider: 'Z', options: [], auto: 0 }] },
+        ghost: {
+          fx: [
+            { fx: 'open_window', kind: 'k', decider: 'Z', options: [{ label: 'o', fx: [] }], auto: 0 },
+          ],
+        },
       },
       decks: { main: { cards: ['ghost'] } },
     };
     expect(() => hookHk4ValidatePack(bad as never)).toThrow(/decider/);
+  });
+
+  it('NEW-1: a ZERO-OPTION window is unconstructible — load refusal (no path to decision)', () => {
+    const bad = {
+      ...F2_PACK,
+      cards: {
+        brick: { fx: [{ fx: 'open_window', kind: 'k', decider: 'A', options: [], auto: 0 }] },
+      },
+      decks: { main: { cards: ['brick'] } },
+    };
+    expect(() => hookHk4ValidatePack(bad as never)).toThrow(/at least one option|undecidable/);
   });
 
   it('runtime: a window whose decider does not exist is ABSENT → auto-eligible, never deadlocked', () => {

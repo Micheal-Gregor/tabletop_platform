@@ -29,6 +29,8 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | DF2-13 | turn.ts | 'ended' dead vocabulary; unbounded closing rounds unregistered | minor | FIXED: registered I-17 (F5 slot deferral) |
 | DF2-14 | effects.ts | dead EffectContext.drawInt | minor | FIXED: deleted |
 | DF2-15 | instruments | stale "proposed" rows; windowSeq/packId beyond I-8; onTurn mis-cite; deck no-ops unregistered | minor | FIXED: rows updated; I-8′/I-18 registered; cite corrected to M5/turn-order |
+| DF2-16 (NEW-1) | packloader HK-4 | zero-option gated window validates → no path to decision, game bricked (GX-8; falsified the closure's own header claim) | blocking (K7 re-verify) | FIXED: options.length ≥ 1 at load (mutation-verified: disabling it fails only the NEW-1 test); trap fixtures given a real inner option |
+| DF2-17 (OBS-A/B/C) | effects/packloader/index | unverifiable AX-5 citation; packGenesis unsealed when used directly; forceRoundWrap on the public surface | minor | FIXED: cite → seam S-3 + CLAUDE §9 do-not; packGenesis seals at its own door; forceRoundWrap demoted off the public index (tests import the module directly) |
 
 ## Interpretation Register (decisions the handoff did not make)
 
