@@ -14,7 +14,7 @@
 
 import type { JsonObject, JsonValue, State } from '../kernel/types.js';
 
-/** EFX v1.1.1 — sealed. I-05 generativity bound: content parameterizes, never defines. */
+/** EFX v1.1.1 — sealed. Generativity bound (S1 v2.0 AX-5 / seam S-3): content parameterizes EFX members and preset spaces — never defines behavior. */
 export const EFX_V1_1_1 = Object.freeze([
   'pay',
   'capitalize',
@@ -41,8 +41,6 @@ export class EffectRefusal extends Error {
 /** Apply-context: window depth (I-13) travels with every application. */
 export interface EffectContext {
   readonly windowDepth: number;
-  /** Stream draw, supplied by core's ApplyContext when needed (deck shuffle-in). */
-  readonly drawInt?: (streamName: string, n: number) => number;
 }
 
 /**
@@ -113,6 +111,8 @@ function fxLevy(state: State, d: EffectDescriptor): JsonObject {
   const scope = d['scope'] as string;
   const amount = d['amount'] as number;
   if (scope === 'table') {
+    // I-15 (registered): a table levy exempts eliminated seats — the table charges
+    // the living; estates are F5 (Outfit viability) territory.
     const rows = seatRows(state);
     return {
       ...state,

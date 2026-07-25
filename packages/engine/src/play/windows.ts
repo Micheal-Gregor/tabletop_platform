@@ -47,9 +47,14 @@ export function hookHk5BeforeSeatAdvance(state: State): void {
   }
 }
 
-function seatEliminated(state: State, seatId: string): boolean {
+/**
+ * K7-F2 defect 5 closure: a NONEXISTENT decider counts as absent (auto-eligible),
+ * never as "present" — a window must always have a path to decision (GX-8).
+ */
+function deciderAbsentOrEliminated(state: State, seatId: string): boolean {
   const rows = state['seats'] as readonly { id: string; eliminated: boolean }[];
-  return rows.find((s) => s.id === seatId)?.eliminated === true;
+  const row = rows.find((s) => s.id === seatId);
+  return row === undefined || row.eliminated === true;
 }
 
 function closeWindow(state: JsonObject, windowId: string): JsonObject {
@@ -72,6 +77,11 @@ export function resolveWindow(
   if (win.decider !== bySeat) {
     throw new EffectRefusal('window', 'GX-8/R-6', `seat "${bySeat}" is not the decider of "${windowId}"`);
   }
+  if (deciderAbsentOrEliminated(state, bySeat)) {
+    // I-16 (registered): an eliminated seat may not act as decider — auto-policy owns
+    // the decision; one window never has two legal deciders.
+    throw new EffectRefusal('window', 'GX-8/I-16', `eliminated seat "${bySeat}" may not decide — auto-policy owns this window`);
+  }
   const option = win.options[optionIdx];
   if (!option) throw new EffectRefusal('window', 'GX-8', `option ${optionIdx} does not exist on "${windowId}"`);
   const applied = EffectEngine.applyAll(state, option.fx, { windowDepth: 1 });
@@ -86,15 +96,24 @@ export function resolveWindow(
 export function autoResolveWindow(state: State, windowId: string): JsonObject {
   const win = openWindows(state).find((w) => w.id === windowId);
   if (!win) throw new EffectRefusal('window', 'GX-8', `no open window "${windowId}"`);
-  if (!seatEliminated(state, win.decider)) {
+  if (!deciderAbsentOrEliminated(state, win.decider)) {
     throw new EffectRefusal(
       'window',
       'GX-8/R-7',
       `decider "${win.decider}" is present — auto-policy may not usurp a live decider`
     );
   }
-  const option = win.options[win.auto] ?? win.options[0];
-  if (!option) throw new EffectRefusal('window', 'GX-8', `window "${windowId}" has no options`);
+  // K7-F2 defect 6 closure: refusal-not-repair — an out-of-range auto index is REFUSED,
+  // never silently repaired to option 0 (load validation makes this unreachable for
+  // catalog content; runtime refuses regardless).
+  const option = win.options[win.auto];
+  if (!option) {
+    throw new EffectRefusal(
+      'window',
+      'GX-8/GX-2',
+      `auto index ${win.auto} out of range on "${windowId}" (${win.options.length} options) — refused, not repaired`
+    );
+  }
   const applied = EffectEngine.applyAll(state, option.fx, { windowDepth: 1 });
   return closeWindow(applied, windowId);
 }

@@ -42,10 +42,11 @@ describe('HK-5 · before seat advance (real-path injection)', () => {
     expect(() => hookHk5BeforeSeatAdvance(state as never)).toThrow(/w9/);
   });
 
-  it('injection: a pack whose Guard rules LIE about windows is still blocked ON THE APPLIER PATH', () => {
-    // Simulate the divergence: build a core, open a gated window, then bypass the rule
-    // layer by invoking the applier path via a state where the rule was (hypothetically)
-    // suborned — HK-5 sits inside the applier and catches it regardless.
+  it('defense-in-depth (off-path unit; the ON-PATH proof lives in f2-k7-closures D1)', () => {
+    // K7 correctly flagged the earlier version of this test as mislabeled: calling the
+    // hook off-path proves nothing about wiring. The real-path injection (suborned
+    // Guard + live core) is f2-k7-closures.test.ts D1. This test keeps the off-path
+    // unit coverage of both legs against one state.
     const core = newF2Core('hk5-seed', {
       ...F2_PACK,
       cards: { crossroads: F2_PACK.cards['crossroads']! },

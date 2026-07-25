@@ -38,3 +38,9 @@ awaiting K7 re-verify with mutations A–E re-run.
 **Builder note (2026-07-25):** F2 built instruments-first; suite 61/61; tsc clean; HK-6
 green. All statuses CLAIMS per RD-2 — K7 falsifies or confirms. Vector computation (V-2,
 V-3) is LOAD-BEARING and waits for the owner's R gate after K7.
+
+**K7-F2 round 1 (2026-07-25): RETURN** — 5 blocking (two theater hooks MUT-2/MUT-4; auto-path
+depth MUT-13; HK-4 schema leg / NaN commit; nonexistent-decider deadlock) + 10 further.
+All 15 closed (DF2-1..15 in the drift ledger; I-15..I-18, I-8′ registered); suite 75/75;
+builder re-ran MUT-2/MUT-4/MUT-13 — all killed by named tests. Statuses remain CLAIMS —
+awaiting K7 re-verify.

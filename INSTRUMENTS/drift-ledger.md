@@ -14,6 +14,21 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | D-5 | instruments | S3 "self-heal" unmapped | minor | FIXED: object-model note — self-heal = Transport's consumption of rebuild() at F7 |
 | D-6 | statetree.ts | NaN/Infinity → null conflation in hash | minor | FIXED: throw on non-finite (I-5′) |
 | D-7 | rng.ts / repo | dead draws getter; I-4 collision caveat absent; tsbuildinfo committed | minor | FIXED: getter pruned; I-4′ recorded; artifact gitignored |
+| DF2-1 | packloader turn:pass | HK-5 real-path wiring theater (MUT-2 survived) | blocking | FIXED: D1 on-path suborned-Guard test; builder re-ran MUT-2 → killed |
+| DF2-2 | turn.ts passSeat | HK-3 real-path call unfalsifiable (MUT-4 survived) | blocking | FIXED: D2 forged-wrap passSeat test; MUT-4 → killed |
+| DF2-3 | windows.ts auto path | depth-1 law unverified on auto (MUT-13 survived) | blocking | FIXED: D3 auto-trap fixture; MUT-13 → killed |
+| DF2-4 | packloader HK-4 | "schema valid" leg absent — NaN cash committable | blocking | FIXED: per-descriptor arg schema, recursive over window options; D4 tests |
+| DF2-5 | windows/packloader | nonexistent decider bricks the game | blocking | FIXED: decider ∈ seats at load; absent-decider = auto-eligible; D5 tests |
+| DF2-6 | windows.ts | silent auto-index repair (?? option 0) | major | FIXED: refuse at runtime + range-check at load; D6 tests |
+| DF2-7 | packloader/effects | deck_inject card smuggling; uncataloged draw silent no-op | major | FIXED: catalog check at load + draw-applier halt; D7 tests |
+| DF2-8 | packloader | TOCTOU — pack unsealed after validation | major | FIXED: structuredClone+freezeDeep at loadPack AND wirePack doors; D8 test |
+| DF2-9 | effects.ts | unregistered levy exemption | major | FIXED: registered I-15, cited in code |
+| DF2-10 | effects.ts | phantom citation "I-05" | moderate | FIXED: cites S1 v2.0 AX-5/S-3 |
+| DF2-11 | packloader | wirePack's own HK-4 leg untested (MUT-6b) | moderate | FIXED: D11 direct test |
+| DF2-12 | windows.ts | eliminated decider could also resolve (two legal deciders) | moderate | FIXED: I-16 refusal; D12 test |
+| DF2-13 | turn.ts | 'ended' dead vocabulary; unbounded closing rounds unregistered | minor | FIXED: registered I-17 (F5 slot deferral) |
+| DF2-14 | effects.ts | dead EffectContext.drawInt | minor | FIXED: deleted |
+| DF2-15 | instruments | stale "proposed" rows; windowSeq/packId beyond I-8; onTurn mis-cite; deck no-ops unregistered | minor | FIXED: rows updated; I-8′/I-18 registered; cite corrected to M5/turn-order |
 
 ## Interpretation Register (decisions the handoff did not make)
 
@@ -35,6 +50,11 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-12 | Elimination MECHANISM is F5 (Outfit viability policy); F2 recognizes the `eliminated` flag: skipped in rotation, auto-policy-eligible for windows | benign | local (turn.ts/windows.ts) |
 | I-13 | Window depth tracked via apply-context (depth 0 = normal fx; depth 1 = inside window resolution); open_window at depth ≥ 1 → refused (GX-11) | benign | local (effects.ts) |
 | I-14 | V-1 ownership corrected: MINIMAL needs F5 modules; V-1 discharges after F5. V-2/V-3 discharge at F2's R gate | benign | object model + completion ledger |
+| I-15 | Table levy exempts eliminated seats (the table charges the living; estates = F5 Outfit territory) | benign (K7-F2 defect 9 closure) | local (effects.ts) |
+| I-16 | An eliminated seat may not act as decider — auto-policy owns its windows; one window never has two legal deciders | benign (K7-F2 defect 12 closure) | local (windows.ts) |
+| I-17 | Status 'closing' = the M15 Closing-Round SLOT: rounds continue unbounded and 'ended' is reserved vocabulary until M15 opts in at F5 (explicit deferral, AE-linked to the F5 slot) | benign (K7-F2 defect 13) | local (turn.ts) |
+| I-18 | M6-level silent no-ops (drawTop unknown deck → none; toReserve unknown card → unchanged) are LEGAL at the deck layer; catalog integrity halts at the draw APPLIER (GX-10); "absent" (vs eliminated) deciders = F7 presence territory, deferred | benign (K7-F2 defect 15) | local (deck.ts/packloader.ts) |
+| I-8′ | I-8 amended: genesis also carries `windowSeq` (window id counter — replay-deterministic); `packId` REMOVED from state (duplicated the row — GX-6) | benign | local (packloader.ts) |
 
 ## Log
 
