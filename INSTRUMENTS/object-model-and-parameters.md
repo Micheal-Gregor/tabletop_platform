@@ -16,6 +16,11 @@ first. Every entry traces to an admitted S3/S2 node (CC-1).
 
 F2–F7 rows seeded when their build slot opens (build order S3 §2).
 
+**Scaffold ratification (EA-4):** the empty package barrels
+(`packages/patterns/src/index.ts`, `packages/presentation/src/index.ts`, both `export {}`)
+are ratified placeholders from the C4 Stack resolution — they hold the monorepo shape
+until their build slots open, own no behavior, and gain instrument rows when they do.
+
 **S3 "self-heal" (F1·M3 wording) — destination recorded (K7 D-5):** self-heal is
 Transport's CONSUMPTION of `rebuild()` on divergence, at F7·M16. The kernel supplies the
 mechanism (rebuild, DivergenceError); the healing policy is F7's. Explicit deferral, not

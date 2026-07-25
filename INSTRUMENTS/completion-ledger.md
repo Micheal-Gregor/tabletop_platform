@@ -13,7 +13,8 @@ statuses are claims.
 | M4 RNGStreams | claimed | claimed | claimed (I-4 algorithm registered) | — (GBC-6/7 passing, claim) | — | — | BUILT — awaiting K7 |
 | kernel/core | claimed | claimed | claimed | R-1/R-9/R-10 orchestration (claim) | — | HK-1/HK-2 divergence-injection passing (claim) | BUILT — awaiting K7 |
 
-**Builder note (audit, 2026-07-25):** 18/18 tests green, tsc clean, HK-6 CI green. All
+**Builder note (audit, 2026-07-25):** 18/18 tests green *(round-1 count, superseded —
+now 28/28 after K7 round-2 + external-audit closures; EA-3)*, tsc clean, HK-6 CI green. All
 statuses above are CLAIMS per RD-2 — K7 falsifies or confirms. No F2 work begins until K7
 passes F1 (build-order discipline + the drift teeth).
 

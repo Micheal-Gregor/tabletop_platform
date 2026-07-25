@@ -117,6 +117,11 @@ export class EngineCore {
 
     const verdict = this.guard.check(this.state, sealed, this.seats);
     if (verdict != null && verdict.legal === false) {
+      if (verdict.refusal == null) {
+        // obs-1 closure (external audit EA-2): a refusing verdict without a refusal
+        // payload is an engine defect — throw, never return undefined outside SubmitResult.
+        throw new HookViolation('HK-1', 'refusing verdict carried no refusal payload');
+      }
       // GX-2: typed refusal; state untouched; NOTHING logged (R-1).
       return verdict.refusal;
     }
