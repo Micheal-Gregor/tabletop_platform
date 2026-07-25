@@ -16,3 +16,9 @@ statuses are claims.
 **Builder note (audit, 2026-07-25):** 18/18 tests green, tsc clean, HK-6 CI green. All
 statuses above are CLAIMS per RD-2 — K7 falsifies or confirms. No F2 work begins until K7
 passes F1 (build-order discipline + the drift teeth).
+
+**K7 round 1 (2026-07-25): RETURN.** Falsified claims: "HK-1/HK-2 divergence-injection
+passing" (HK-1 leg false — mutation A survived); Guard's CC-3 claim (unregistered seats
+schema). D-1..D-7 closed by builder; suite now 24/24 (aliasing tamper-stability, I-7
+row-seat tests, K7-recipe HK-1 on-path injection added). Statuses remain CLAIMS —
+awaiting K7 re-verify with mutations A–E re-run.

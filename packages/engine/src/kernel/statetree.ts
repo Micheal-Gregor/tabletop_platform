@@ -20,6 +20,11 @@ export function freezeDeep<T extends JsonValue>(value: T): T {
 
 /** Canonical JSON: object keys sorted at every depth — the byte-stable form GX-4 hashes. */
 export function canonicalJson(value: JsonValue): string {
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    // K7 defect 6: JSON.stringify maps NaN/Infinity → "null", which would let a corrupt
+    // numeric state hash equal to a null state. Refuse loudly instead (GX-2 discipline).
+    throw new Error(`canonicalJson: non-finite number ${value} is not a legal state value`);
+  }
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) {
     return `[${(value as readonly JsonValue[]).map(canonicalJson).join(',')}]`;

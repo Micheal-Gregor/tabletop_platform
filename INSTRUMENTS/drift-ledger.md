@@ -7,6 +7,13 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 
 | ID | Location | Drift | Score (K7) | Status |
 |---|---|---|---|---|
+| D-1 | core.ts HK-1 | hook not falsifiable (mutation A survived); injection test masked by no-applier branch | axiom 6 → blocked | FIXED: refusal path narrowed to `legal === false`; hook blocks all else; K7-recipe on-path test added — awaiting K7 re-score |
+| D-2 | core.ts/intentlog.ts | logged intents aliased to caller objects — row tamperable post-success (GX-3/GX-4 breach) | axiom 5 → blocked | FIXED: intent structuredClone+freezeDeep at submit door; tamper-stability regression tests — awaiting K7 re-score |
+| D-3 | guard.ts | unregistered `state.seats` schema contract; appliers could mint seats | fidelity 6 → blocked | FIXED: seats passed from the row (I-7); mint-attack regression test — awaiting K7 re-score |
+| D-4 | tools/check-tiers.mjs | bare-import + relative-path evasions (HK-6) | major | FIXED: all specifier forms + relative-escape resolution |
+| D-5 | instruments | S3 "self-heal" unmapped | minor | FIXED: object-model note — self-heal = Transport's consumption of rebuild() at F7 |
+| D-6 | statetree.ts | NaN/Infinity → null conflation in hash | minor | FIXED: throw on non-finite (I-5′) |
+| D-7 | rng.ts / repo | dead draws getter; I-4 collision caveat absent; tsbuildinfo committed | minor | FIXED: getter pruned; I-4′ recorded; artifact gitignored |
 
 ## Interpretation Register (decisions the handoff did not make)
 
@@ -18,7 +25,11 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-4 | RNG algorithm = mulberry32 over FNV-1a fold of (seed ⊕ stream name) — pure JS, portable, byte-stable | benign | local (rng.ts) |
 | I-5 | State hash = FNV-1a 64-bit over canonical (key-sorted) JSON — pure, no platform imports (ER-7); NOT cryptographic; tamper-evidence stays a production concern (S3 §8) | benign | local (statetree.ts) |
 | I-6 | Applier misbehavior (no state produced) → HookViolation throw, state+log untouched — engine defect surfaces loudly, never repaired into a refusal | benign | local (core.ts, HK-2 injection test) |
+| I-7 | Seat legality checked against the ROW's authoritative seats (passed to Guard.check), never a state schema — kernel pack-agnostic; appliers cannot mint seats; genesis need not carry a seats key | benign (K7 defect 3 closure) | local (guard.ts, gx3-log-integrity tests) |
+| I-4′ | I-4 caveat appended (K7): fnv1a32 stream-name fold is 32-bit — a name collision would silently merge two streams; stream names are engine-chosen (closed set per pack), not user input; revisit if packs ever name streams | benign | local (rng.ts) |
+| I-5′ | I-5 caveat closed (K7 defect 6): canonicalJson now THROWS on non-finite numbers rather than conflating with null | benign | local (statetree.ts) |
 
 ## Log
 
 - **2026-07-25 — ledger opened at C4 anchor. I-1..I-3 registered from the C4 probe run; no builder code exists yet.**
+- **2026-07-25 — F1 built (I-4..I-6). K7 round 1: RETURN — 3 blocking (D-1..D-3), 1 major (D-4), 3 minor (D-5..D-7). Falsified builder claims noted in the completion ledger. All seven closed by the builder; I-7, I-4′, I-5′ registered; suite 24/24; sent back for K7 re-verify (mutations A–E to be re-run by K7, not the builder).**

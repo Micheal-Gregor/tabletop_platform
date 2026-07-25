@@ -109,24 +109,32 @@ export class EngineCore {
 
   /** THE guarded intent path (S-1). Every mutation in the platform flows through here. */
   submit(intent: Intent): SubmitResult {
-    const verdict = this.guard.check(this.state, intent);
-    if (!verdict.legal) {
+    // K7 defect 2 (GX-3/GX-4): sever aliasing at the door — the engine works with, and
+    // logs, its OWN frozen copy; the caller's object can never tamper the row post-hoc.
+    const sealed = freezeDeep(
+      structuredClone(intent) as unknown as JsonObject
+    ) as unknown as Intent;
+
+    const verdict = this.guard.check(this.state, sealed, this.seats);
+    if (verdict != null && verdict.legal === false) {
       // GX-2: typed refusal; state untouched; NOTHING logged (R-1).
       return verdict.refusal;
     }
-    hookHk1BeforeMutation(verdict); // HK-1: the mutation gate, on the real path.
+    // HK-1: the mutation gate, on the real path — blocks ANYTHING that is not exactly
+    // {legal: true}, including a lying/malformed verdict (K7 defect 1: falsifiable here).
+    hookHk1BeforeMutation(verdict);
 
-    const applier = this.appliers.get(intent.type);
+    const applier = this.appliers.get(sealed.type);
     if (!applier) {
       // A LEGAL verdict with no applier is an engine defect, not a player error —
       // refuse loudly rather than repair (GX-2 discipline applied to ourselves).
-      throw new HookViolation('HK-1', `legal verdict for "${intent.type}" but no applier registered`);
+      throw new HookViolation('HK-1', `legal verdict for "${sealed.type}" but no applier registered`);
     }
 
-    const next = freezeDeep(applier(this.state, intent, { rng: this.rng }));
+    const next = freezeDeep(applier(this.state, sealed, { rng: this.rng }));
     hookHk2BeforeLogAppend(next); // HK-2: append only after a succeeded apply.
     this.state = next;
-    this.log.append(intent);
+    this.log.append(sealed);
     return { ok: true, state: this.state };
   }
 }

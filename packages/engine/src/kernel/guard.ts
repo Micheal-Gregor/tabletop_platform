@@ -6,7 +6,7 @@
  * The Guard NEVER mutates and NEVER repairs — it answers, exactly once, legal or not.
  */
 
-import type { Intent, Refusal, State, Verdict } from './types.js';
+import type { Intent, Refusal, Seat, State, Verdict } from './types.js';
 
 export type ArgsCheck = (state: State, intent: Intent) => true | string;
 export type RuleCheck = (state: State, intent: Intent) => true | { rule: string; detail: string };
@@ -34,18 +34,18 @@ export class Guard {
     this.specs.set(type, spec);
   }
 
-  /** The central verdict (S-1). Pure: no mutation on any path. */
-  check(state: State, intent: Intent): Verdict {
+  /**
+   * The central verdict (S-1). Pure: no mutation on any path.
+   * Seat legality is checked against the ROW's authoritative seats (I-7) — never against
+   * a state-schema convention. The kernel stays pack-agnostic; appliers cannot mint seats.
+   */
+  check(state: State, intent: Intent, seats: readonly Seat[]): Verdict {
     const spec = this.specs.get(intent.type);
     if (!spec) {
       return refusal('ILLEGAL_TYPE', 'GX-2/R-1', `unknown intent type "${intent.type}"`);
     }
-    const seats = state['seats'];
-    const seatKnown =
-      Array.isArray(seats) &&
-      (seats as readonly { id?: string }[]).some((s) => s && s.id === intent.seat);
-    if (!seatKnown) {
-      return refusal('UNKNOWN_SEAT', 'GX-2/R-1', `unknown seat "${intent.seat}"`);
+    if (!seats.some((s) => s.id === intent.seat)) {
+      return refusal('UNKNOWN_SEAT', 'GX-2/R-1/I-7', `unknown seat "${intent.seat}"`);
     }
     const argsVerdict = spec.args(state, intent);
     if (argsVerdict !== true) {

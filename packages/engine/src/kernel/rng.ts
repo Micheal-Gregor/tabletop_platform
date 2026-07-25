@@ -28,7 +28,6 @@ function mulberry32(seed: number): () => number {
 
 export class RNGStream {
   private readonly next32: () => number;
-  private drawsTaken = 0;
 
   constructor(readonly name: string, gameSeed: string) {
     this.next32 = mulberry32(fnv1a32(`${gameSeed}::${name}`));
@@ -36,7 +35,6 @@ export class RNGStream {
 
   /** Uniform float in [0, 1). */
   next(): number {
-    this.drawsTaken += 1;
     return this.next32();
   }
 
@@ -46,11 +44,6 @@ export class RNGStream {
       throw new Error(`RNGStream(${this.name}): nextInt requires a positive integer, got ${n}`);
     }
     return Math.floor(this.next() * n);
-  }
-
-  /** Draw count — DERIVED bookkeeping for diagnostics; never persisted (GX-6). */
-  get draws(): number {
-    return this.drawsTaken;
   }
 }
 

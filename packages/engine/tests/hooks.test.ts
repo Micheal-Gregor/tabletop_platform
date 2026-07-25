@@ -11,7 +11,7 @@ import {
   hookHk1BeforeMutation,
   hookHk2BeforeLogAppend,
 } from '../src/index.js';
-import { genesis, packRef, seats } from './fixture.js';
+import { genesis, packRef, seats, wire } from './fixture.js';
 import type { State, Verdict } from '../src/index.js';
 
 describe('HK-1 · before any mutation → Guard verdict LEGAL', () => {
@@ -24,11 +24,32 @@ describe('HK-1 · before any mutation → Guard verdict LEGAL', () => {
   });
 
   it('injection: a lying Guard (LEGAL for an unregistered intent) is caught on the submit path', () => {
-    const lyingGuard = { check: () => ({ legal: true }) } as unknown as Guard;
+    const lyingGuard = {
+      register: () => undefined,
+      check: () => ({ legal: true }),
+    } as unknown as Guard;
     const core = new EngineCore(packRef, seats, 'seed-inject', genesis, lyingGuard);
     // no applier registered for this type — a lying LEGAL verdict must not slip into a silent no-op
     expect(() => core.submit({ type: 'ghost:move', seat: 'A', args: {} })).toThrow(HookViolation);
     expect(core.getLogLength()).toBe(0); // nothing was logged on the violated path
+  });
+
+  it('injection (K7 recipe, on-path): truthy-but-not-LEGAL verdict WITH an applier registered → HK-1 blocks', () => {
+    // The distinguishing test for mutation A: delete the hookHk1BeforeMutation call in
+    // core.submit and this MUST fail — the lying verdict would reach apply + log.
+    const lyingGuard = {
+      register: () => undefined,
+      check: () => ({ legal: 'yes' }), // truthy, but not the LEGAL verdict
+    } as unknown as Guard;
+    const core = new EngineCore(packRef, seats, 'seed-inject3', genesis, lyingGuard);
+    wire(core); // appliers ARE registered — nothing masks the hook
+    const hashBefore = core.getStateHash();
+
+    expect(() => core.submit({ type: 'tally:add', seat: 'A', args: { n: 2 } })).toThrow(
+      HookViolation
+    );
+    expect(core.getStateHash()).toBe(hashBefore); // no mutation happened
+    expect(core.getLogLength()).toBe(0); // nothing was logged
   });
 });
 

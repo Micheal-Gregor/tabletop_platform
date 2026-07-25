@@ -16,6 +16,11 @@ first. Every entry traces to an admitted S3/S2 node (CC-1).
 
 F2–F7 rows seeded when their build slot opens (build order S3 §2).
 
+**S3 "self-heal" (F1·M3 wording) — destination recorded (K7 D-5):** self-heal is
+Transport's CONSUMPTION of `rebuild()` on divergence, at F7·M16. The kernel supplies the
+mechanism (rebuild, DivergenceError); the healing policy is F7's. Explicit deferral, not
+an omission.
+
 ## Parameters / extension points
 
 - **Genesis (I-2):** `genesis(packRef, seats, seed) → State` — injected; PackLoader (F2)
