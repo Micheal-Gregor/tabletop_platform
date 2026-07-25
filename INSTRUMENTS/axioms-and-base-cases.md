@@ -44,8 +44,59 @@ an executable test BEFORE its feature ships. IDs are stable.
   appears as an intent argument in the log and NEVER as a stream draw. *(GX-5; test:
   rng.test.ts)*
 
+## Axioms — F2 set
+
+- **GX-7 — Sole applier, closed vocabulary.** EffectEngine applies every effect; EFX
+  v1.1.1 (pay, capitalize, grant_favor, levy, deck_inject, grant_sue_right, open_window)
+  is sealed; an unknown descriptor is refused LOUDLY at the HK-9 gate — halt-not-skip.
+  Per-descriptor mutators are module-private (R-24's structural half). *Cites S-3, R-3,
+  R-24, HK-9.*
+- **GX-8 — Windows gate; decisions are never skipped.** An open gated window blocks seat
+  advance; the decision is taken by the decider or by auto-policy (eliminated/absent
+  decider), and either way it is a LOGGED intent. *Cites S-8, R-6, R-7, HK-5.*
+- **GX-9 — Wrap once.** Round-wrap fires exactly once per round; a second wrap-tick in
+  one round is refused. *Cites ER-3, R-8, HK-3.*
+- **GX-10 — Validation names defects.** A pack enters play only through validate():
+  EFX closure (every fx list ⊆ EFX), schema, version — refusals NAME the offending
+  member. *Cites S-5, R-2, HK-4.*
+- **GX-11 — Depth-1 window law.** open_window may not fire from within a window
+  application. *Cites R-17 (engine side; MR1 side lands at F4).*
+- **GX-12 — Decks are streams + order.** Shuffle/draw from named RNG streams; injection
+  is order-preserving by policy; drawing from an empty deck is legal (yields none).
+  *Cites S2 M6, Stage-2b S8.*
+
+## Base cases — F2 set
+
+- **GBC-8 —** *Given* a pack containing a card with fx `"summon_dragon"`, *when* loaded,
+  *then* load refuses NAMING `summon_dragon` and the card. *(GX-10 = R-2; r2-pack-load)*
+- **GBC-9 —** *Given* a running game and an injected descriptor `{fx:'hack'}`, *when*
+  applied, *then* EffectRefusal — loud, state unchanged, nothing skipped. *(GX-7 = R-3)*
+- **GBC-10 —** *Given* each of the seven EFX descriptors with minimal args, *when*
+  applied, *then* exactly its typed mutation occurs (pay moves cash; capitalize creates
+  an owned asset; grant_favor mints n; levy charges scope; deck_inject inserts
+  order-preserving; grant_sue_right records the right; open_window opens an IWN). Feeds
+  V-3 — values computed at discharge, never hand-written. *(GX-7)*
+- **GBC-11 —** *Given* an open gated window, *when* the seat tries to pass, *then*
+  refused (R-6); *when* the decider resolves it, *then* the option's fx apply and pass
+  proceeds. *(GX-8, HK-5)*
+- **GBC-12 —** *Given* a window whose decider is eliminated, *when* pass is attempted,
+  *then* refused; *when* `window:auto` is submitted, *then* the auto option applies and
+  the decision IS in the log. *(GX-8 = R-7)*
+- **GBC-13 —** *Given* the last seat passing, *then* the round wraps once (flag set);
+  *given* a forced second wrap in the same round, *then* refused. *(GX-9 = R-8, HK-3)*
+- **GBC-14 —** *Given* one seed, *then* deck order is identical across rebuilds; inject
+  'top'/'bottom' preserves order; empty-deck draw is a legal none. *(GX-12)*
+- **GBC-15 —** *Given* the engine's public surface, *then* no per-descriptor mutator is
+  exported — the ONLY effect path is EffectEngine.apply. *(GX-7 = R-24 structural)*
+- **GBC-16 —** *Given* a window option whose fx contains open_window, *when* resolved,
+  *then* refused (depth-1). *(GX-11 = R-17 engine side)*
+- **GBC-17 —** *Given* a full F2 scenario (load, draws, window, wrap), *then* rebuild
+  from the row is byte-identical. *(GX-3/4 carried into F2 machinery; feeds V-2)*
+
 **N/A-by-absence (F1 slot):** window gating, EFX closure, admission, projection — their
 rules live with F2/F3/F4/F6 and are N/A here by structure (no such surface exists in F1).
+**N/A-by-absence (F2 slot):** balanced-move posting (R-5, Ledger = F5); registry dispatch
+order (V-7, F4); admission (F3); presentation rules (F6). Venture/TFX semantics = F5.
 
 Rule: a base case that cannot be expressed as a test signals the object model is wrong —
 fix the model (backflow), don't skip the test.

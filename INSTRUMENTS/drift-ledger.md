@@ -28,6 +28,13 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-7 | Seat legality checked against the ROW's authoritative seats (passed to Guard.check), never a state schema — kernel pack-agnostic; appliers cannot mint seats; genesis need not carry a seats key | benign (K7 defect 3 closure) | local (guard.ts, gx3-log-integrity tests) |
 | I-4′ | I-4 caveat appended (K7): fnv1a32 stream-name fold is 32-bit — a name collision would silently merge two streams; stream names are engine-chosen (closed set per pack), not user input; revisit if packs ever name streams | benign | local (rng.ts) |
 | I-5′ | I-5 caveat closed (K7 defect 6): canonicalJson now THROWS on non-finite numbers rather than conflating with null | benign | local (statetree.ts) |
+| I-8 | F2 engine state regions: `seats[]{id,cash,favor,assets[],sueRights[],eliminated}` · `turn{round,seatIdx,phase,wrappedRound,maxRounds,status}` · `decks{ref:{draw[],discard[],reserve[]}}` · `windows[]` — card DEFINITIONS stay in the loaded pack (derived-never-stored; packRef pins them) | benign | local (packloader genesis) |
+| I-9 | Five phase names = start · draw · resolution · maintenance · cleanup (owner's stated flow); at F2 phase stepping is tracked state, with binding discipline arriving when rules/library attach to phases (F4/F5) | benign | local (turn.ts) |
+| I-10 | F2 pack schema depth: `{id,version,efxVersion,maxRounds,seats[],cards{id:{fx[],flavor?}},decks{ref:{cards[],owner?}}}` — flavor carried, never read | benign | local (packloader.ts) |
+| I-11 | At F2 the EffectEngine's feeds are card-borne fx only; registry feed = F4, library feed = F5 (explicit deferral, AE-linked to those slots) | benign | local (object model note) |
+| I-12 | Elimination MECHANISM is F5 (Outfit viability policy); F2 recognizes the `eliminated` flag: skipped in rotation, auto-policy-eligible for windows | benign | local (turn.ts/windows.ts) |
+| I-13 | Window depth tracked via apply-context (depth 0 = normal fx; depth 1 = inside window resolution); open_window at depth ≥ 1 → refused (GX-11) | benign | local (effects.ts) |
+| I-14 | V-1 ownership corrected: MINIMAL needs F5 modules; V-1 discharges after F5. V-2/V-3 discharge at F2's R gate | benign | object model + completion ledger |
 
 ## Log
 

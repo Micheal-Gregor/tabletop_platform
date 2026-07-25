@@ -21,6 +21,25 @@ F2–F7 rows seeded when their build slot opens (build order S3 §2).
 are ratified placeholders from the C4 Stack resolution — they hold the monorepo shape
 until their build slots open, own no behavior, and gain instrument rows when they do.
 
+## Modules — F2 Play Engine (build slot 2, ACTIVE)
+
+| Module | File | Traces to | Responsibility | Status |
+|---|---|---|---|---|
+| M9 EffectEngine | packages/engine/src/play/effects.ts | S3 F2·M9 ← S2 M9 · S-3 · R-3/R-24 · HK-9 (M9 side) | SOLE applier of effects; EFX v1.1.1 sealed; unknown → refusal at HK-9, halt-not-skip; per-descriptor typed mutations PRIVATE (structural R-24); open_window delegates with depth-1 law (R-17 engine side) | proposed |
+| M7 WindowManager | packages/engine/src/play/windows.ts | S3 F2·M7 ← S2 M7 · S-8 · R-6/R-7 · HK-5 | IWN region on state; open/resolve/auto lifecycle; gated windows block advance; auto-policy for eliminated deciders decides AND logs (as an intent) | proposed |
+| M5 TurnMachine | packages/engine/src/play/turn.ts | S3 F2·M5 ← S2 M5 · R-8 · HK-3 | Five phases; seat pass; round wrap EXACTLY once (wrap-flag law); end-trigger + Closing slot flag; both-check before advance (Guard rules + HK-5) | proposed |
+| M6 Deck | packages/engine/src/play/deck.ts | S3 F2·M6 ← S2 M6 | Draw/discard/reserve; shuffle + draw from named streams; living inject order-preserving; empty draw legal | proposed |
+| M8 PackLoader | packages/engine/src/play/packloader.ts | S3 F2·M8 ← S2 M8 · S-5 · R-2 · HK-4 · I-2 | validate() names defects (EFX closure, schema, versions); genesis() builds engine state from the pack; wire() registers F2 intents; flavor attaches, never read | proposed |
+
+**S3 F2 note:** EffectEngine "fed by BOTH registry-dispatched contributions and
+module-native library effects" — the registry feed arrives at F4, library feeds at F5;
+at F2 the feeds are card-borne fx (pack content through the closed vocabulary). Explicit
+deferral, not omission (I-11).
+
+**V-1 ownership correction (on the record):** the MINIMAL game exercises Venture/Routing/
+Ledger/TFX/Reckoning — F5 modules. V-1 discharges after F5, not F2. V-2/V-3 discharge at
+F2 (R gate required — vector computation is load-bearing).
+
 **S3 "self-heal" (F1·M3 wording) — destination recorded (K7 D-5):** self-heal is
 Transport's CONSUMPTION of `rebuild()` on divergence, at F7·M16. The kernel supplies the
 mechanism (rebuild, DivergenceError); the healing policy is F7's. Explicit deferral, not
