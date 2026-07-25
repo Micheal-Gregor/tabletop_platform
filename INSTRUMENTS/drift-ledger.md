@@ -19,7 +19,7 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 
 | ID | Decision taken | Class (benign/latent/conflicting) | Route (local / F-supersession / AE-link) |
 |---|---|---|---|
-| I-1 | MoveLogRow carries pack-ref (id, version, integrity hash) — AX-4/V-2 well-definedness | latent | F-supersession (drafted) |
+| I-1 | MoveLogRow carries pack-ref (id, version, integrity hash) — AX-4/V-2 well-definedness | latent → **RESOLVED** | F-supersession EXECUTED as SUP-1 (owner-approved 2026-07-25); interpretation SANCTIONED — no longer ahead of spec |
 | I-2 | Genesis state = PackLoader's validated setup declaration over (pack, seats, seed); empty log = genesis | benign | local; depends on I-1 |
 | I-3 | Non-active-writer submit semantics (refuse vs queue) | benign | local; registered at F7 build, AE-linked to lockstep spec |
 | I-4 | RNG algorithm = mulberry32 over FNV-1a fold of (seed ⊕ stream name) — pure JS, portable, byte-stable | benign | local (rng.ts) |
@@ -36,4 +36,4 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 - **2026-07-25 — K7 round 2: PASS.** Mutations A–H re-run by K7 (incl. three NEW mutations F/G/H proving the fixes themselves falsifiable); both round-1 probes reconstructed live. Scores (worst dim): types 9 · M1 8 · M2 8 · M3 8 · M4 8 · core 8 — all ≥ 7, **teeth released; F2 may open**. M3 stays NOT-COMPLETE by rule (V-1/V-2 deferred to F2). Non-blocking observations registered below.
 - **K7 obs-1 (registered, next-touch obligation on core):** injected guard returning `{legal:false}` without a refusal payload → submit returns `undefined` (outside SubmitResult). Unreachable with the real Guard; close with a defensive throw at next core touch.
 - **K7 obs-2 (registered):** structuredClone imposes a cloneability contract on intent args — loud DataCloneError, consistent with the JSON-typed Intent.
-- **K7 obs-3 (standing):** I-1/SP-1 upstream supersession still DRAFTED — V-2's discharge at F2 depends on the owner running it through the Phase 3 project.
+- **K7 obs-3 (CLOSED 2026-07-25):** SP-1 executed as SUP-1 (governance/S3/, s3-anchor-v1.1); I-1 sanctioned. V-2's discharge now waits only on F2. New F7 obligation on record: packRef-mismatch at rebuild → divergence refusal.

@@ -9,7 +9,9 @@ statement. **Defect:** "(seed, seats, log) rebuilds byte-identical" is well-defi
 against a fixed ContentPack; the row schema `{seed, seats, moves}` names no pack.
 **Superseding text:** the persisted row is `{packRef(id, version, hash), seed, seats,
 moves}`; AX-4 reads "(packRef, seed, seats, log) rebuilds byte-identical." Replay,
-Transport self-heal, and V-2 all depend on it. **Status:** DRAFTED — awaiting owner run.
+Transport self-heal, and V-2 all depend on it. **Status: EXECUTED — owner-approved
+2026-07-25; supersession record SUP-1 committed to governance/S3/ (s3-anchor-v1.1);
+I-1 SANCTIONED → RESOLVED; packRef-mismatch-at-rebuild = F7 obligation.**
 
 ## SP-2 · Placeholder Skin doctrine (from D-1, owner addition — pending the C4 ruling)
 
