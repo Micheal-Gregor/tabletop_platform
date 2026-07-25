@@ -33,3 +33,7 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 
 - **2026-07-25 — ledger opened at C4 anchor. I-1..I-3 registered from the C4 probe run; no builder code exists yet.**
 - **2026-07-25 — F1 built (I-4..I-6). K7 round 1: RETURN — 3 blocking (D-1..D-3), 1 major (D-4), 3 minor (D-5..D-7). Falsified builder claims noted in the completion ledger. All seven closed by the builder; I-7, I-4′, I-5′ registered; suite 24/24; sent back for K7 re-verify (mutations A–E to be re-run by K7, not the builder).**
+- **2026-07-25 — K7 round 2: PASS.** Mutations A–H re-run by K7 (incl. three NEW mutations F/G/H proving the fixes themselves falsifiable); both round-1 probes reconstructed live. Scores (worst dim): types 9 · M1 8 · M2 8 · M3 8 · M4 8 · core 8 — all ≥ 7, **teeth released; F2 may open**. M3 stays NOT-COMPLETE by rule (V-1/V-2 deferred to F2). Non-blocking observations registered below.
+- **K7 obs-1 (registered, next-touch obligation on core):** injected guard returning `{legal:false}` without a refusal payload → submit returns `undefined` (outside SubmitResult). Unreachable with the real Guard; close with a defensive throw at next core touch.
+- **K7 obs-2 (registered):** structuredClone imposes a cloneability contract on intent args — loud DataCloneError, consistent with the JSON-typed Intent.
+- **K7 obs-3 (standing):** I-1/SP-1 upstream supersession still DRAFTED — V-2's discharge at F2 depends on the owner running it through the Phase 3 project.
