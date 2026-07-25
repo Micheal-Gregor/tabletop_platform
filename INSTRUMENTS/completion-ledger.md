@@ -44,3 +44,10 @@ depth MUT-13; HK-4 schema leg / NaN commit; nonexistent-decider deadlock) + 10 f
 All 15 closed (DF2-1..15 in the drift ledger; I-15..I-18, I-8′ registered); suite 75/75;
 builder re-ran MUT-2/MUT-4/MUT-13 — all killed by named tests. Statuses remain CLAIMS —
 awaiting K7 re-verify.
+
+**K7-F2 round 2 (2026-07-25): RETURN (narrow — NEW-1 zero-option window).**
+**K7-F2 round 3 (2026-07-25): PASS.** NEW-1 reconstructed and re-proven closed by the
+reviewer's own mutation (MUT-N6 kills exactly the named test); OBS-A/B/C verified closed;
+all F2 drift ≥ 7, teeth released; F3 slot may open. STANDING: V-2/V-3 discharge at the
+owner's R gate → M9 + M3 re-enter K7 after (RD-1); packRef-mismatch refusal = F7; window
+pruning + 'ended' = F5 (I-17).
