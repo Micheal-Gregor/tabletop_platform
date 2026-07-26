@@ -1,6 +1,6 @@
 /**
  * M10 Venture + M11 Routing — the SOLE contract primitive (RC-A′) and its routing.
- * Traces: S3 F5·M10/M11 · T2/T3 · RC-E. Axioms: GX-26, GX-27 (I-36).
+ * Traces: S3 F5·M10/M11 · RC-A′ · RC-E (Stage-2b). Axioms: GX-26, GX-27 (I-36/I-38).
  * Lifecycle: spawn → assigned → work → all-complete → payoff receivables | lapse.
  * Spawning is a LIBRARY INTENT (I-34); content-triggered spawn awaits the docket.
  */
@@ -44,6 +44,25 @@ export function spawnVenture(state: State, spec: VentureSpec): JsonObject {
   }
   for (const p of spec.portions) {
     if (!Number.isInteger(p.work) || p.work < 1) throw new VentureRefusal(spec.id, 'GX-26', 'portion work must be a positive integer');
+  }
+  // K7-F5 D2 (DF5-2): the spawn door refuses brick values — a payoff to nobody or a
+  // non-finite amount would make the Reckoning unreachable (GX-30) or the state unhashable.
+  if (!Number.isInteger(spec.deadline) || spec.deadline < 1) {
+    throw new VentureRefusal(spec.id, 'GX-26', 'deadline must be a positive integer round');
+  }
+  const seatIds = new Set(((state['seats'] as readonly { id: string }[]) ?? []).map((s) => s.id));
+  for (const pay of spec.payoffs ?? []) {
+    if (typeof pay.amount !== 'number' || !Number.isFinite(pay.amount) || pay.amount <= 0) {
+      throw new VentureRefusal(spec.id, 'GX-26/I-5′', `payoff amount must be finite and positive, got ${String(pay.amount)}`);
+    }
+    if (!seatIds.has(pay.to)) {
+      throw new VentureRefusal(spec.id, 'GX-26', `payoff to unknown seat "${pay.to}"`);
+    }
+  }
+  for (const p of spec.portions) {
+    if (p.party !== undefined && !seatIds.has(p.party)) {
+      throw new VentureRefusal(spec.id, 'GX-26', `portion party unknown seat "${p.party}"`);
+    }
   }
   const row: VentureRow = { ...spec, status: 'open', portions: spec.portions.map((p) => ({ ...p, done: false })) };
   let next: JsonObject = { ...state, ventures: [...ventures(state), row] } as JsonObject;
@@ -95,13 +114,20 @@ export function completeIfDone(state: State, ventureId: string): JsonObject {
   } as JsonObject;
 }
 
-/** Lapse check at the wrap: past-deadline open ventures lapse (penalty paths = pack params). */
+/**
+ * Lapse check at the wrap: past-deadline open ventures lapse — status flip + CREW
+ * RELEASE (K7-F5 D9/DF5-9: a lapsed venture accepts no further work; stranded crew
+ * frees here). Penalty paths (levies, favor hits) = pack policy args, N/A-by-absence.
+ */
 export function lapseExpired(state: State, newRound: number): JsonObject {
   const rows = ventures(state);
-  if (!rows.some((v) => v.status === 'open' && newRound > v.deadline)) return state as JsonObject;
+  const lapsing = new Set(rows.filter((v) => v.status === 'open' && newRound > v.deadline).map((v) => v.id));
+  if (lapsing.size === 0) return state as JsonObject;
+  const crew = (state['crew'] as readonly { id: string; outfit: string; assignedTo?: { venture: string } }[]) ?? [];
   return {
     ...state,
-    ventures: rows.map((v) => (v.status === 'open' && newRound > v.deadline ? { ...v, status: 'lapsed' } : v)),
+    ventures: rows.map((v) => (lapsing.has(v.id) ? { ...v, status: 'lapsed' } : v)),
+    crew: crew.map((c) => (c.assignedTo && lapsing.has(c.assignedTo.venture) ? { id: c.id, outfit: c.outfit } : c)),
   } as JsonObject;
 }
 

@@ -34,6 +34,14 @@ export class Guard {
     this.specs.set(type, spec);
   }
 
+  /** The supersession leg of R-14 discipline: replace an EXISTING spec, never a missing one. */
+  supersede(type: string, spec: IntentSpec): void {
+    if (!this.specs.has(type)) {
+      throw new Error(`Guard: cannot supersede unregistered intent type "${type}"`);
+    }
+    this.specs.set(type, spec);
+  }
+
   /**
    * The central verdict (S-1). Pure: no mutation on any path.
    * Seat legality is checked against the ROW's authoritative seats (I-7) — never against

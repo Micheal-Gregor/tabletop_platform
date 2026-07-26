@@ -91,6 +91,28 @@ export class EngineCore {
     this.appliers.set(type, applier);
   }
 
+  /**
+   * THE supersession door (R-14 discipline on the kernel's own registry): an admitted
+   * intent is respecified only here, on the record — the caller must name the ground.
+   * Requires an EXISTING registration (superseding nothing is a defect). K7-F5 D1:
+   * wireLibrary supersedes 'turn:pass' so no logged intent can bypass the weave.
+   */
+  supersedeIntent(
+    type: string,
+    ground: string,
+    spec: Parameters<Guard['register']>[1],
+    applier: Applier
+  ): void {
+    if (!this.appliers.has(type)) {
+      throw new Error(`core: cannot supersede unregistered intent "${type}" — register instead`);
+    }
+    if (!ground) {
+      throw new Error(`core: supersession of "${type}" requires a named ground (I-33′)`);
+    }
+    this.guard.supersede(type, spec);
+    this.appliers.set(type, applier);
+  }
+
   getState(): State {
     return this.state; // deep-frozen (R-10)
   }

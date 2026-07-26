@@ -185,16 +185,24 @@ weave); UniqueDef art/params consumption (F6/packs); VerbSets consumption (F6).
   balances (RC-D). Application flows through EffectEngine (S5 held). *Cites R-5, RC-3.*
 - **GX-26 — Venture is the sole contract primitive.** General (multi-party, routed,
   debt-carried) AND degenerate (single-portion Job, RC-A′) forms; lifecycle spawn →
-  assigned → work → all-complete → payoff DIST | lapse → penalty. *Cites T2, RC-A′.*
+  assigned → work → all-complete → payoff DIST | lapse (status flip + crew release;
+  penalty paths = pack policy args, N/A-by-absence). *Cites RC-A′, RC-E (Stage-2b).*
+  *(Cite corrected per K7-F5 DF5-7 — the former T2 token resolved nowhere; lapse leg
+  corrected per DF5-9 — "penalty" overclaimed what is built.)*
 - **GX-27 — Decisions gate and log.** A windowed routing decision opens a gated IWN
   (blocks advance, S-8); the choice closes it; effectuation is the SUBSEQUENT logged
   library intent carrying the decision as arguments (I-36 — human inputs as arguments,
-  AX-3; auto/AI parity preserved: both paths are logged intents). *Cites T3, A-2b-02.*
+  AX-3; auto/AI parity preserved: both paths are logged intents). The window is the
+  recorded GATE and ceremony; the route intent's arguments are SOLELY authoritative
+  (I-38 — option-binding = content policy). *Cites A-2b-02 (Stage-2b).* *(T3 excised
+  per DF5-7.)*
 - **GX-28 — One crew, one portion.** Assignment to a busy crew member refuses; work
   burns exactly one unit per work intent. *Cites CRW.*
 - **GX-29 — Timed effects tick at the wrap, once.** TFX charges apply at round wrap
   through the weave (never twice — GX-9 guards the wrap); duration expires to removal;
-  charges post balanced when the Ledger is loaded. *Cites RC-G, T6.*
+  charges post balanced when the Ledger is loaded. With the library wired, the weave
+  OWNS the pass — turn:pass is superseded (I-37) so no logged intent can wrap without
+  the tick. *Cites RC-G.* *(T6 excised per DF5-7.)*
 - **GX-30 — The Closing Round closes the books.** At 'closing': trailing-first order,
   receivables force-collected as balanced posts, rank by cash, champion recorded, status
   'ended' — I-17's reserved vocabulary finally set. *Cites RCK, QG1-Q1.*
@@ -222,7 +230,9 @@ weave); UniqueDef art/params consumption (F6/packs); VerbSets consumption (F6).
 
 **N/A-by-absence (F5 slot):** estates/respawn mechanics (viability PO LICY args recorded,
 full elimination flows = pack/universe content); commission_now routing (parameter point,
-not exercised by MINIMAL — content-reachable per Stage-2b §2).
+not exercised by MINIMAL — content-reachable per Stage-2b §2); venture-lapse PENALTY
+paths (levies/favor hits on lapse = pack policy args — the platform ships the status
+flip + crew release only; DF5-9 registered the boundary).
 
 **N/A-by-absence (F3 slot):** contribution dispatch (F4 — emissions recorded, consumed
 later per I-21); kind SKINS/fidelity (F6); specific piece stats (pattern/content tier).

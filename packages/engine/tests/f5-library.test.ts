@@ -63,9 +63,10 @@ describe('GBC-34 · venture lifecycle: degenerate and general (GX-26/27)', () =>
     expect(() =>
       core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: { id: 'X', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1 }], deadline: 2, payoffs: [] } } })
     ).toThrow(VentureRefusal);
-    expect(() =>
-      core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: { id: 'Y', initiator: 'A', portions: [], deadline: 2, payoffs: [] } } })
-    ).toThrow(/at least one portion/);
+    // zero portions is now refused AT THE DOOR (DF5-2): typed, unlogged — not an applier throw
+    const res = core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: { id: 'Y', initiator: 'A', portions: [], deadline: 2, payoffs: [] } } });
+    expect('refused' in res).toBe(true);
+    expect((res as { detail: string }).detail).toMatch(/at least one portion/);
   });
 });
 

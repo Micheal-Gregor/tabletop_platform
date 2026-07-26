@@ -107,7 +107,7 @@ rule); SP-4 + I-20 await the owner; onTurn dedup at next touch.
 
 | Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
 |---|---|---|---|---|
-| MR1 RuleRegistry | R-16 rt, R-17 MR1, R-24 (claims) | **V-7, V-8 DEFERRED → block; dischargeable at the F4 R gate** | HK-9 full (claim) | BUILT — NOT-COMPLETE by rule |
+| MR1 RuleRegistry | R-16 rt, R-17 MR1, R-24 | V-7, V-8 FROZEN (R-gate discharge 3) | HK-9 full | **COMPLETE** (K7-F5 entry confirmed CC-5 per RD-1) |
 | MR2 HookBus | — | — | S-4 consume (claim) | BUILT — awaiting K7 re-verify |
 | MR3 ContributionLoader | R-15, R-16 static (claims) | — | HK-4 MR3 side (claim) | BUILT — awaiting K7 re-verify |
 | MR4 StateSlotManager | R-18 (claim) | — | — | BUILT — awaiting K7 re-verify |
@@ -164,3 +164,14 @@ ledger entry balanced; cash ≡ derived balances; rebuild ×2 byte-identical; of
 probe refused unlogged. Suite 181/181; HK-6 tier gate OK. V-1 is NOT pinned — it feeds
 from GBC-40 and is discharged only at the owner's R gate. STANDING carried: MR1
 completion confirmation binds to THIS K7 entry (RD-1, from R-gate discharge 3).
+
+**K7-F5 round 1 (2026-07-26): RETURN** — 4 blocking (DF5-1 turn:pass weave-bypass on the
+live path; DF5-2 brick values through the F5 doors; DF5-3 HK-5 theater on turn:end;
+DF5-4 three weave legs unproven) + 2 major (DF5-5 unloaded-Ledger upkeep incoherence;
+DF5-6 survivors P/F/O untested) + 3 moderate + 1 minor. Teeth engaged on M10/M11, M14,
+library/wire (axiom 5s). All 10 closed same-day (DF5-1..10; I-37/I-38/I-39; kernel
+supersession door added; phantom cites T2/T3/T6 excised): suite 198/198, tsc clean,
+HK-6 OK; builder re-ran all 7 survivors (L2, M1, M3, M4, P, F, O) → each killed by a
+named f5-k7-closures test. Auditor also CONFIRMED: MR1 CC-5 completion (RD-1 bound from
+R-gate discharge 3 — the ledger records it here: **MR1 COMPLETE**), S5 boundary (R-24)
+sound in F5, V-1 deferral law held. Awaiting K7 re-verify.

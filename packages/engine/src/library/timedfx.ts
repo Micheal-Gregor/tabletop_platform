@@ -20,11 +20,20 @@ export function timedEffects(state: State): readonly TimedFx[] {
 }
 
 export function attachTimedFx(state: State, tfx: TimedFx): JsonObject {
-  if (!tfx.id || timedEffects(state).some((t) => t.id === tfx.id)) {
+  if (!tfx.id || typeof tfx.id !== 'string' || timedEffects(state).some((t) => t.id === tfx.id)) {
     throw new Error(`TimedFx refused [GX-29]: missing or duplicate id "${tfx.id}"`);
   }
   if (!Number.isInteger(tfx.remaining) || tfx.remaining < 1) {
     throw new Error(`TimedFx refused [GX-29]: duration must be a positive integer`);
+  }
+  // K7-F5 D2 (DF5-2): the attach door refuses brick values — a NaN charge makes the
+  // state unhashable (GX-3/I-5′); an Infinity charge bricks every subsequent wrap.
+  if (typeof tfx.charge !== 'number' || !Number.isFinite(tfx.charge) || tfx.charge < 0) {
+    throw new Error(`TimedFx refused [GX-29/I-5′]: charge must be a finite non-negative number, got ${String(tfx.charge)}`);
+  }
+  const seatIds = ((state['seats'] as readonly { id: string }[]) ?? []).map((s) => s.id);
+  if (tfx.scope !== 'table' && !seatIds.includes(tfx.scope)) {
+    throw new Error(`TimedFx refused [GX-29]: scope must be 'table' or a seat id, got "${tfx.scope}"`);
   }
   return { ...state, timedEffects: [...timedEffects(state), tfx] } as JsonObject;
 }

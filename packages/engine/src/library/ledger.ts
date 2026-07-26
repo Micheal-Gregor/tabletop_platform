@@ -29,6 +29,11 @@ export function post(state: State, legs: readonly LedgerLeg[], memo: string): Js
     throw new LedgerRefusal('GX-25', 'post without the Ledger loaded — load it or move resources directly');
   }
   if (legs.length === 0) throw new LedgerRefusal('GX-25', 'empty post');
+  // K7-F5 D10 (DF5-10): 'bank' is the RESERVED implicit account — a seat wearing the
+  // name would silently escape application while appearing in legs. Refuse the collision.
+  if (((state['seats'] as readonly { id: string }[]) ?? []).some((s) => s.id === 'bank')) {
+    throw new LedgerRefusal('GX-25', `a seat named 'bank' collides with the reserved implicit account`);
+  }
   let sum = 0;
   for (const leg of legs) {
     if (typeof leg.delta !== 'number' || !Number.isFinite(leg.delta)) {
@@ -48,7 +53,8 @@ export function post(state: State, legs: readonly LedgerLeg[], memo: string): Js
         ? EffectEngine.apply(next, { fx: 'pay', to: leg.account, amount: leg.delta }, { windowDepth: 0 })
         : EffectEngine.apply(next, { fx: 'levy', scope: leg.account, amount: -leg.delta }, { windowDepth: 0 });
   }
-  const ledger = state['ledger'] as { loaded: boolean; entries: readonly JsonObject[] };
+  // K7-F5 D10: read the ledger region from NEXT, not the stale pre-application state.
+  const ledger = next['ledger'] as { loaded: boolean; entries: readonly JsonObject[] };
   return {
     ...next,
     ledger: { ...ledger, entries: [...ledger.entries, { legs: legs as unknown as JsonObject[], memo }] },

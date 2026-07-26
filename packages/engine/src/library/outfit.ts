@@ -43,6 +43,10 @@ export function workCrew(state: State, crewId: string): JsonObject {
   const { venture: ventureId, portion: idx } = member.assignedTo;
   const v = ventures(state).find((x) => x.id === ventureId);
   if (!v) throw new VentureRefusal(ventureId, 'GX-28', 'assigned venture vanished');
+  // K7-F5 D9 (DF5-9): work lands only on an OPEN venture — a lapsed/complete one refuses.
+  if (v.status !== 'open') {
+    throw new VentureRefusal(ventureId, 'GX-26/GX-28', `venture is '${v.status}', not open — no further work`);
+  }
   const portion = v.portions[idx]!;
   const remaining = portion.work - 1;
   const donePortion = remaining <= 0;
