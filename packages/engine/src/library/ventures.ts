@@ -64,7 +64,22 @@ export function spawnVenture(state: State, spec: VentureSpec): JsonObject {
       throw new VentureRefusal(spec.id, 'GX-26', `portion party unknown seat "${p.party}"`);
     }
   }
-  const row: VentureRow = { ...spec, status: 'open', portions: spec.portions.map((p) => ({ ...p, done: false })) };
+  // K7-F5 r2 NEW-1: the stored row is CONSTRUCTED from validated named fields only —
+  // never a spread of the caller's object (an unknown field would ride into state and
+  // break hashability). The wire door also refuses unknown keys; this is the structural leg.
+  const row: VentureRow = {
+    id: spec.id,
+    initiator: spec.initiator,
+    deadline: spec.deadline,
+    payoffs: spec.payoffs.map((pay) => ({ to: pay.to, amount: pay.amount })),
+    status: 'open',
+    portions: spec.portions.map((p) => ({
+      ...(p.party !== undefined ? { party: p.party } : {}),
+      task: p.task,
+      work: p.work,
+      done: false,
+    })),
+  };
   let next: JsonObject = { ...state, ventures: [...ventures(state), row] } as JsonObject;
   if (spec.portions.some((p) => p.party === undefined)) {
     // GX-27: windowed routing — the gated IWN blocks advance; effectuation = venture:route (I-36).
@@ -96,7 +111,9 @@ export function routeVenture(
       ? { ...x, portions: x.portions.map((p) => (p.party === undefined ? { ...p, party: to } : p)) }
       : x
   );
-  const debts = ((state['debts'] as readonly JsonObject[]) ?? []).concat(carriedDebts as unknown as JsonObject[]);
+  // NEW-1 structural leg: debts are constructed from named fields, never stored as given.
+  const constructed = carriedDebts.map((d) => ({ debtor: d.debtor, creditor: d.creditor, amount: d.amount, due: d.due }));
+  const debts = ((state['debts'] as readonly JsonObject[]) ?? []).concat(constructed as unknown as JsonObject[]);
   return { ...state, ventures: updated, debts } as JsonObject;
 }
 

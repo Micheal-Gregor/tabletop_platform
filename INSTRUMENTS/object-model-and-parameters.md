@@ -12,7 +12,7 @@ first. Every entry traces to an admitted S3/S2 node (CC-1).
 | M2 Guard | packages/engine/src/kernel/guard.ts | S3 F1·M2 ← S2 M2 | Central legality; two-level check (structural → rule); typed refusal; refusal-not-repair; state byte-unchanged on refuse | built |
 | M3 IntentLog | packages/engine/src/kernel/intentlog.ts | S3 F1·M3 ← S2 M3; I-1 | Record-after-success; rebuild(packRef, seed, seats, log); divergence → full rebuild never patch (R-9) | built |
 | M4 RNGStreams | packages/engine/src/kernel/rng.ts | S3 F1·M4 ← S2 M4 | Named streams, deterministic, fixed per-stream offsets; human inputs as ARGUMENTS never entropy | built |
-| kernel/core | packages/engine/src/kernel/core.ts | S3 S-1 seam (guarded intent path); HK-1/HK-2 | The ONLY mutation path: submit(intent) → Guard → apply → log; hooks wired here | built |
+| kernel/core | packages/engine/src/kernel/core.ts | S3 S-1 seam (guarded intent path); HK-1/HK-2 · I-37 (K7-F5 amendment) | The ONLY mutation path: submit(intent) → Guard → apply → log; hooks wired here. AMENDED at F5 (K7-F5 r2 NEW-4, append-only): supersedeIntent(type, ground, spec, applier) — the R-14 supersession door on the kernel's own registry (existing registration + named ground required); Guard.supersede is its guard-side leg | built |
 
 F2–F7 rows seeded when their build slot opens (build order S3 §2).
 

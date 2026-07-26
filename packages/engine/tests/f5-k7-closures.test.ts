@@ -10,6 +10,7 @@ import {
   LedgerRefusal,
   RuleRegistry,
   VentureRefusal,
+  attachTimedFx,
   post,
   readSlot,
   ventures,
@@ -39,6 +40,9 @@ describe('D1 · turn:pass is superseded by the weave (kills the weave-bypass —
   it('superseding an unregistered intent refuses; supersession without a ground refuses', () => {
     const core = new EngineCore(MIN_REF, MIN_SEATS, 'd1b', minimalGenesis);
     expect(() => core.supersedeIntent('no:such', 'ground', { args: () => true, rules: [] }, (s) => s as JsonObject)).toThrow(/unregistered/);
+    // NEW-3: the empty-ground leg, exercised (a supersession must name its ground)
+    core.registerIntent('x:y', { args: () => true, rules: [] }, (s) => s as JsonObject);
+    expect(() => core.supersedeIntent('x:y', '', { args: () => true, rules: [] }, (s) => s as JsonObject)).toThrow(/named ground/);
   });
 });
 
@@ -191,6 +195,65 @@ describe('D6 · door validation: brick values refused typed and unlogged (Probes
   it('a direct post with a non-finite leg → LedgerRefusal naming it (kills P)', () => {
     const g = minimalGenesis(MIN_REF, [], 'd6h') as State;
     expect(() => post(g, [{ account: 'A', delta: NaN }, { account: 'bank', delta: NaN }], 'x')).toThrow(/non-finite leg/);
+  });
+});
+
+describe('D9 · unknown-field smuggling refused at every persisting door (r2 NEW-1 — NEW-PROBE-5)', () => {
+  it('venture:spawn with an unknown NaN field → refused; state stays hashable', () => {
+    const { core } = newMinimalCore('d9a');
+    const hash = core.getStateHash();
+    const res = core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'V', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1 }], deadline: 2, payoffs: [], sneak: NaN } },
+    });
+    expect('refused' in res).toBe(true);
+    expect((res as { detail: string }).detail).toMatch(/unknown field.*sneak/);
+    expect(core.getStateHash()).toBe(hash); // never committed — GX-3 holds
+  });
+
+  it('portion and payoff sub-objects refuse unknown fields too', () => {
+    const { core } = newMinimalCore('d9b');
+    let res = core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'V', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1, sneak: NaN }], deadline: 2, payoffs: [] } },
+    });
+    expect('refused' in res).toBe(true);
+    res = core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'V', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1 }], deadline: 2, payoffs: [{ to: 'B', amount: 1, sneak: NaN }] } },
+    });
+    expect('refused' in res).toBe(true);
+  });
+
+  it('tfx:attach with an unknown NaN field → refused; state stays hashable', () => {
+    const { core } = newMinimalCore('d9c');
+    const hash = core.getStateHash();
+    const res = core.submit({ type: 'tfx:attach', seat: 'A', args: { tfx: { id: 'T', scope: 'table', charge: 1, remaining: 1, source: 'x', sneak: NaN } } });
+    expect('refused' in res).toBe(true);
+    expect(core.getStateHash()).toBe(hash);
+  });
+
+  it('venture:route with a debt carrying an unknown NaN field → refused; nothing lands', () => {
+    const { core } = newMinimalCore('d9d');
+    core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: { id: 'V', initiator: 'A', portions: [{ task: 'β', work: 1 }], deadline: 2, payoffs: [] } } });
+    const win = (core.getState()['windows'] as readonly WindowRow[]).find((w) => w.status === 'open')!;
+    core.submit({ type: 'window:resolve', seat: 'A', args: { window: win.id, option: 0 } });
+    const res = core.submit({
+      type: 'venture:route', seat: 'A',
+      args: { venture: 'V', to: 'B', debts: [{ debtor: 'A', creditor: 'B', amount: 1, due: 2, sneak: NaN }] },
+    });
+    expect('refused' in res).toBe(true);
+    expect((core.getState()['debts'] as unknown[]).length).toBe(0);
+    expect(() => core.getStateHash()).not.toThrow();
+  });
+
+  it('the structural leg: module row construction drops nothing INTO state that was not validated', () => {
+    // Direct module call bypassing the wire door — the constructed row still carries
+    // only the named fields (belt AND suspenders; the door refuses, the module constructs).
+    const g = minimalGenesis(MIN_REF, [], 'd9e') as State;
+    const out = attachTimedFx(g, { id: 'T', scope: 'table', charge: 1, remaining: 1, source: 'x', sneak: 7 } as never) as State;
+    const row = (out['timedEffects'] as readonly Record<string, unknown>[])[0]!;
+    expect('sneak' in row).toBe(false);
   });
 });
 

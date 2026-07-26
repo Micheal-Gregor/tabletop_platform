@@ -31,6 +31,13 @@ function declMap(registry: RuleRegistry): ReadonlyMap<string, readonly SlotDecl[
 // never committed to state. Mirrors the pack/contribution door discipline. ──
 const seatIds = (state: State): readonly string[] =>
   ((state['seats'] as readonly { id: string }[]) ?? []).map((s) => s.id);
+// K7-F5 r2 NEW-1: a door that PERSISTS a caller object refuses UNKNOWN KEYS — an
+// unvalidated field (e.g. sneak: NaN) would ride the stored row into state and break
+// hashability (GX-3). Refusal-not-repair: refuse, never silently strip.
+const unknownKeys = (raw: object, allowed: readonly string[]): string | null => {
+  const extra = Object.keys(raw).filter((k) => !allowed.includes(k));
+  return extra.length > 0 ? `unknown field(s) ${extra.map((k) => `"${k}"`).join(', ')} — refused, not stripped` : null;
+};
 const finiteNonNeg = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const finitePos = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
 const posInt = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 1;
@@ -38,12 +45,16 @@ const posInt = (v: unknown): v is number => Number.isInteger(v) && (v as number)
 function checkSpecShape(state: State, raw: unknown): true | string {
   if (typeof raw !== 'object' || raw === null) return 'spec required';
   const spec = raw as Partial<VentureSpec>;
+  const extraSpec = unknownKeys(spec, ['id', 'initiator', 'portions', 'deadline', 'payoffs']);
+  if (extraSpec) return `spec: ${extraSpec}`;
   if (typeof spec.id !== 'string' || spec.id.length === 0) return 'spec.id must be a non-empty string';
   const seats = seatIds(state);
   if (typeof spec.initiator !== 'string' || !seats.includes(spec.initiator)) return `spec.initiator unknown seat "${String(spec.initiator)}"`;
   if (!Array.isArray(spec.portions) || spec.portions.length < 1) return 'spec.portions must carry at least one portion';
   for (const p of spec.portions) {
     if (typeof p !== 'object' || p === null) return 'portion must be an object';
+    const extraP = unknownKeys(p, ['party', 'task', 'work']);
+    if (extraP) return `portion: ${extraP}`;
     if (typeof p.task !== 'string' || p.task.length === 0) return 'portion.task must be a non-empty string';
     if (!posInt(p.work)) return `portion.work must be a positive integer, got ${String(p.work)}`;
     if (p.party !== undefined && (typeof p.party !== 'string' || !seats.includes(p.party))) return `portion.party unknown seat "${String(p.party)}"`;
@@ -52,6 +63,8 @@ function checkSpecShape(state: State, raw: unknown): true | string {
   if (!Array.isArray(spec.payoffs)) return 'spec.payoffs must be an array';
   for (const pay of spec.payoffs) {
     if (typeof pay !== 'object' || pay === null) return 'payoff must be an object';
+    const extraPay = unknownKeys(pay, ['to', 'amount']);
+    if (extraPay) return `payoff: ${extraPay}`;
     if (typeof pay.to !== 'string' || !seats.includes(pay.to)) return `payoff.to unknown seat "${String(pay.to)}"`;
     if (!finitePos(pay.amount)) return `payoff.amount must be finite and positive, got ${String(pay.amount)}`;
   }
@@ -63,6 +76,8 @@ function checkDebtsShape(state: State, raw: unknown): true | string {
   const seats = seatIds(state);
   for (const d of raw) {
     if (typeof d !== 'object' || d === null) return 'debt must be an object';
+    const extraD = unknownKeys(d, ['debtor', 'creditor', 'amount', 'due']);
+    if (extraD) return `debt: ${extraD}`;
     const debt = d as { debtor?: unknown; creditor?: unknown; amount?: unknown; due?: unknown };
     if (typeof debt.debtor !== 'string' || !seats.includes(debt.debtor)) return `debt.debtor unknown seat "${String(debt.debtor)}"`;
     if (typeof debt.creditor !== 'string' || !seats.includes(debt.creditor)) return `debt.creditor unknown seat "${String(debt.creditor)}"`;
@@ -75,6 +90,8 @@ function checkDebtsShape(state: State, raw: unknown): true | string {
 function checkTfxShape(state: State, raw: unknown): true | string {
   if (typeof raw !== 'object' || raw === null) return 'tfx required';
   const tfx = raw as Partial<TimedFx>;
+  const extraT = unknownKeys(tfx, ['id', 'scope', 'charge', 'remaining', 'source']);
+  if (extraT) return `tfx: ${extraT}`;
   if (typeof tfx.id !== 'string' || tfx.id.length === 0) return 'tfx.id must be a non-empty string';
   if (typeof tfx.scope !== 'string' || (tfx.scope !== 'table' && !seatIds(state).includes(tfx.scope))) {
     return `tfx.scope must be 'table' or a seat id, got "${String(tfx.scope)}"`;

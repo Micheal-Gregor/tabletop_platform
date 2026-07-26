@@ -35,7 +35,10 @@ export function attachTimedFx(state: State, tfx: TimedFx): JsonObject {
   if (tfx.scope !== 'table' && !seatIds.includes(tfx.scope)) {
     throw new Error(`TimedFx refused [GX-29]: scope must be 'table' or a seat id, got "${tfx.scope}"`);
   }
-  return { ...state, timedEffects: [...timedEffects(state), tfx] } as JsonObject;
+  // K7-F5 r2 NEW-1: store a row CONSTRUCTED from validated named fields — never the
+  // caller's object (an unknown field would ride into state and break hashability).
+  const row: TimedFx = { id: tfx.id, scope: tfx.scope, charge: tfx.charge, remaining: tfx.remaining, source: tfx.source };
+  return { ...state, timedEffects: [...timedEffects(state), row] } as JsonObject;
 }
 
 /** The wrap tick (GX-29): charge, decrement, expire. Called ONLY by the turn:end weave. */

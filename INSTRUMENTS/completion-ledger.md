@@ -175,3 +175,14 @@ HK-6 OK; builder re-ran all 7 survivors (L2, M1, M3, M4, P, F, O) → each kille
 named f5-k7-closures test. Auditor also CONFIRMED: MR1 CC-5 completion (RD-1 bound from
 R-gate discharge 3 — the ledger records it here: **MR1 COMPLETE**), S5 boundary (R-24)
 sound in F5, V-1 deferral law held. Awaiting K7 re-verify.
+
+**K7-F5 round 2 (2026-07-26): RETURN(narrow) → closures landed.** All ten round-1
+closures reconstructed live by the auditor (Probes 1-4 re-run; all 7 survivors killed by
+named tests; new guards themselves mutation-falsifiable). One new blocking residual:
+NEW-1 unknown-field NaN smuggling through the three persisting doors (the signature
+"closure narrower than its claim" pattern — DF5-11). Closed both legs same-day: doors
+refuse unknown keys (refusal-not-repair), modules construct stored rows from validated
+named fields only; D9 falsifying tests per door. Minors NEW-2/3/4 closed (I-40 expected
+survivors registered; empty-ground assertion; core row amended — DF5-12). M13/M12/M15
+cleared teeth at r2. Suite 203/203; tsc clean; HK-6 OK. Awaiting K7 re-verify on NEW-1
+(M10/M11, M14, library/wire teeth held at axiom 6 pending NEW-PROBE-5 reconstruction).
