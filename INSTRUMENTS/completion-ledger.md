@@ -156,7 +156,7 @@ V-1 (post-F5) · V-4 (F7/BOTY pack) · V-9 (F6).
 | M12a Outfit + M12b Crew | GX-28 legs (claims: GBC-35) | — | — | BUILT — awaiting K7 |
 | M14 TimedEffects | GX-29 legs (claims: GBC-36/39) | — | — | BUILT — awaiting K7 |
 | M15 ClosingRound | GX-30 gate (claim: GBC-38) | — | — | BUILT — awaiting K7 |
-| library/wire (the weave, I-29) | R-6 through turn:end (claim: GBC-40 gate probe) | **V-1 DEFERRED → blocks; dischargeable at the F5 R gate** | HK-5 on turn:end path (claim) | BUILT — NOT-COMPLETE by rule |
+| library/wire (the weave, I-29) | R-6 through turn:end (K7 r1-r3 verified) | V-1 FROZEN (R-gate discharge 4) | HK-5 on turn:end proven (D2 divergence-injection) | satisfied-CLAIMED — completion confirmation binds to the next K7 entry (RD-1) |
 
 Statuses are CLAIMS (RD-1) — K7 confirms or returns. GBC-40 (the MINIMAL game,
 Stage-2b S0..S10) passes end-to-end at build: A ends 0, B ends +3, B champion; every
@@ -197,3 +197,12 @@ COMPLETE stands. **All F5 modules ≥ 7 on every dimension — teeth released. F
 (internal K7 r3).** STANDING by rule: library/wire NOT-COMPLETE until V-1 discharges at
 the owner's R gate (feeds from GBC-40); after discharge, library/wire completion
 confirmation binds to the next K7 entry (RD-1). F7 slot may open.
+
+**R-GATE DISCHARGE 4 (2026-07-26, owner-approved):** V-1 computed from the single-source
+fixture (computeV1 = the GBC-40 script through the same wireMinimal), persisted
+(finalHash b773bf95ff085494, champion B at +3, 22 moves, full row), re-derived on the
+full suite — a live anchor (204/204). The vector's rule stands independently of the pin
+(SP-5): the Stage-2b script + the ranking law. SEVEN of nine vectors now frozen
+(V-1/2/3/5/6/7/8). library/wire: CC-5 satisfied-CLAIMED; confirmation binds to the next
+K7 entry (the F7 review) per RD-1 — the MR1 pattern. Remaining: V-4 (F7/BOTY pack) ·
+V-9 (F6). **The F7 slot is open.**

@@ -240,3 +240,86 @@ export function computeV8(): { afterFormHash: string; afterDissolveHash: string;
   s = pumpRelationEvents(s, registry, { windowDepth: 0 }) as State; // inert — derived activation
   return { afterFormHash, afterDissolveHash: hashState(s), monsterFired };
 }
+
+// ── V-1: THE MINIMAL micro-game (σ=7, two seats, three cards, Stage-2b S0..S10) ──
+import { RuleRegistry } from '../packages/engine/src/index.js';
+import { MIN_REF as V1_REF, MIN_SEATS as V1_SEATS, minimalGenesis, wireMinimal } from '../packages/engine/tests/f5-fixture.js';
+
+/**
+ * V-1: the Stage-2b script + the ranking law, end-to-end through every facet F1-F5.
+ * The rule, stated independently of the vector (SP-5): A ends at 0, B at +3, B is
+ * champion; every ledger entry balanced; cash ≡ derived balances; rebuild ×2 byte-identical.
+ * SINGLE SOURCE: the same fixture GBC-40 exercises — never a re-implementation.
+ */
+export function computeV1(): {
+  finalHash: string;
+  rebuiltHash1: string;
+  rebuiltHash2: string;
+  champion: string;
+  ranking: readonly { seat: string; cash: number }[];
+  moveCount: number;
+  row: unknown;
+} {
+  const registry = new RuleRegistry();
+  const core = new EngineCore(V1_REF, V1_SEATS, 'sigma-7', minimalGenesis);
+  wireMinimal(registry)(core);
+
+  // Round 1 · A: wages → draw K2 → spawn V2 → routing window → route to B w/ debt
+  mustOk(core.submit({ type: 'upkeep', seat: 'A', args: { overhead: 1 } }), 'A upkeep r1');
+  mustOk(core.submit({ type: 'deck:draw', seat: 'A', args: { deck: 'A' } }), 'A draw r1');
+  mustOk(
+    core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'V2', initiator: 'A', portions: [{ task: 'β', work: 1 }], deadline: 2, payoffs: [{ to: 'B', amount: 3 }] } },
+    }),
+    'A spawn V2'
+  );
+  const win = (core.getState()['windows'] as readonly WindowRow[]).find((w) => w.kind === 'routing' && w.status === 'open');
+  if (!win) throw new Error('vector scenario defect: routing window did not open');
+  mustOk(core.submit({ type: 'window:resolve', seat: 'A', args: { window: win.id, option: 0 } }), 'A resolve routing');
+  mustOk(
+    core.submit({ type: 'venture:route', seat: 'A', args: { venture: 'V2', to: 'B', debts: [{ debtor: 'A', creditor: 'B', amount: 2, due: 2 }] } }),
+    'A route V2'
+  );
+  mustOk(core.submit({ type: 'turn:end', seat: 'A', args: {} }), 'A end r1');
+  // Round 1 · B: wages → draw K3 → attach TFX → crew works V2 → wrap (TFX ticks, expires)
+  mustOk(core.submit({ type: 'upkeep', seat: 'B', args: { overhead: 1 } }), 'B upkeep r1');
+  mustOk(core.submit({ type: 'deck:draw', seat: 'B', args: { deck: 'B' } }), 'B draw r1');
+  mustOk(core.submit({ type: 'tfx:attach', seat: 'B', args: { tfx: { id: 'T', scope: 'table', charge: 1, remaining: 1, source: 'K3' } } }), 'B tfx');
+  mustOk(core.submit({ type: 'crew:assign', seat: 'B', args: { crew: 'crew-B', venture: 'V2', portion: 0 } }), 'B assign');
+  mustOk(core.submit({ type: 'crew:work', seat: 'B', args: { crew: 'crew-B' } }), 'B work');
+  mustOk(core.submit({ type: 'turn:end', seat: 'B', args: {} }), 'B end r1 (wrap)');
+  // Round 2 · A: upkeep settles the debt → draw K1 → degenerate J1 → work → complete
+  mustOk(core.submit({ type: 'upkeep', seat: 'A', args: {} }), 'A upkeep r2');
+  mustOk(core.submit({ type: 'deck:draw', seat: 'A', args: { deck: 'A' } }), 'A draw r2');
+  mustOk(
+    core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'J1', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1 }], deadline: 2, payoffs: [{ to: 'A', amount: 4 }] } },
+    }),
+    'A spawn J1'
+  );
+  mustOk(core.submit({ type: 'crew:assign', seat: 'A', args: { crew: 'crew-A', venture: 'J1', portion: 0 } }), 'A assign');
+  mustOk(core.submit({ type: 'crew:work', seat: 'A', args: { crew: 'crew-A' } }), 'A work');
+  mustOk(core.submit({ type: 'turn:end', seat: 'A', args: {} }), 'A end r2');
+  // Round 2 · B: upkeep → empty draw (legal, S8) → wrap → 'closing' → the Reckoning
+  mustOk(core.submit({ type: 'upkeep', seat: 'B', args: {} }), 'B upkeep r2');
+  mustOk(core.submit({ type: 'deck:draw', seat: 'B', args: { deck: 'B' } }), 'B empty draw r2');
+  mustOk(core.submit({ type: 'turn:end', seat: 'B', args: {} }), 'B end r2 (closing)');
+  mustOk(core.submit({ type: 'closing:reckon', seat: 'A', args: {} }), 'reckon');
+
+  const results = core.getState()['results'] as { champion: string; ranking: readonly { seat: string; cash: number }[] };
+  const row = core.toRow();
+  const wireForRebuild = (c: EngineCore) => wireMinimal(new RuleRegistry())(c);
+  const r1 = rebuild(row, minimalGenesis, wireForRebuild);
+  const r2 = rebuild(row, minimalGenesis, wireForRebuild);
+  return {
+    finalHash: core.getStateHash(),
+    rebuiltHash1: r1.getStateHash(),
+    rebuiltHash2: r2.getStateHash(),
+    champion: results.champion,
+    ranking: results.ranking,
+    moveCount: row.moves.length,
+    row,
+  };
+}

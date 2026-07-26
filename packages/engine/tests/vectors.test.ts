@@ -104,3 +104,27 @@ describe('V-8 · the monster room (golden, computed 2026-07-25)', () => {
     expect(v8.afterDissolveHash).toBe(pinned.afterDissolveHash);
   });
 });
+
+import { computeV1 } from '../../../vectors/scenarios.js';
+const V1_PATH = resolve(__dirname, '../../../vectors/V-1.json');
+
+describe('V-1 · the MINIMAL micro-game (golden, computed 2026-07-26)', () => {
+  it('Stage-2b S0..S10 (σ=7): B wins at +3, replay ×2 byte-identical — matches the discharged vector', () => {
+    const v1 = computeV1();
+    // The law, stated independently of the pin (SP-5):
+    expect(v1.champion).toBe('B');
+    expect(v1.ranking).toEqual([{ seat: 'B', cash: 3 }, { seat: 'A', cash: 0 }]);
+    expect(v1.rebuiltHash1).toBe(v1.finalHash); // AX-4
+    expect(v1.rebuiltHash2).toBe(v1.finalHash);
+
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V1_PATH, JSON.stringify({ computed: '2026-07-26', gate: 'R-gate discharge 4, owner-approved', finalHash: v1.finalHash, champion: v1.champion, ranking: v1.ranking, moveCount: v1.moveCount, row: v1.row }, null, 2));
+      return;
+    }
+    expect(existsSync(V1_PATH)).toBe(true);
+    const pinned = JSON.parse(readFileSync(V1_PATH, 'utf8')) as { finalHash: string; champion: string; moveCount: number };
+    expect(v1.finalHash).toBe(pinned.finalHash);
+    expect(v1.champion).toBe(pinned.champion);
+    expect(v1.moveCount).toBe(pinned.moveCount);
+  });
+});

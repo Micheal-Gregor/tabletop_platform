@@ -1,0 +1,228 @@
+{
+  "computed": "2026-07-26",
+  "gate": "R-gate discharge 4, owner-approved",
+  "finalHash": "b773bf95ff085494",
+  "champion": "B",
+  "ranking": [
+    {
+      "seat": "B",
+      "cash": 3
+    },
+    {
+      "seat": "A",
+      "cash": 0
+    }
+  ],
+  "moveCount": 22,
+  "row": {
+    "packRef": {
+      "id": "MINIMAL",
+      "version": "1.0.0",
+      "hash": "sigma7"
+    },
+    "seed": "sigma-7",
+    "seats": [
+      {
+        "id": "A"
+      },
+      {
+        "id": "B"
+      }
+    ],
+    "moves": [
+      {
+        "type": "upkeep",
+        "seat": "A",
+        "args": {
+          "overhead": 1
+        }
+      },
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "A"
+        }
+      },
+      {
+        "type": "venture:spawn",
+        "seat": "A",
+        "args": {
+          "spec": {
+            "id": "V2",
+            "initiator": "A",
+            "portions": [
+              {
+                "task": "β",
+                "work": 1
+              }
+            ],
+            "deadline": 2,
+            "payoffs": [
+              {
+                "to": "B",
+                "amount": 3
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "window:resolve",
+        "seat": "A",
+        "args": {
+          "window": "w1",
+          "option": 0
+        }
+      },
+      {
+        "type": "venture:route",
+        "seat": "A",
+        "args": {
+          "venture": "V2",
+          "to": "B",
+          "debts": [
+            {
+              "debtor": "A",
+              "creditor": "B",
+              "amount": 2,
+              "due": 2
+            }
+          ]
+        }
+      },
+      {
+        "type": "turn:end",
+        "seat": "A",
+        "args": {}
+      },
+      {
+        "type": "upkeep",
+        "seat": "B",
+        "args": {
+          "overhead": 1
+        }
+      },
+      {
+        "type": "deck:draw",
+        "seat": "B",
+        "args": {
+          "deck": "B"
+        }
+      },
+      {
+        "type": "tfx:attach",
+        "seat": "B",
+        "args": {
+          "tfx": {
+            "id": "T",
+            "scope": "table",
+            "charge": 1,
+            "remaining": 1,
+            "source": "K3"
+          }
+        }
+      },
+      {
+        "type": "crew:assign",
+        "seat": "B",
+        "args": {
+          "crew": "crew-B",
+          "venture": "V2",
+          "portion": 0
+        }
+      },
+      {
+        "type": "crew:work",
+        "seat": "B",
+        "args": {
+          "crew": "crew-B"
+        }
+      },
+      {
+        "type": "turn:end",
+        "seat": "B",
+        "args": {}
+      },
+      {
+        "type": "upkeep",
+        "seat": "A",
+        "args": {}
+      },
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "A"
+        }
+      },
+      {
+        "type": "venture:spawn",
+        "seat": "A",
+        "args": {
+          "spec": {
+            "id": "J1",
+            "initiator": "A",
+            "portions": [
+              {
+                "party": "A",
+                "task": "α",
+                "work": 1
+              }
+            ],
+            "deadline": 2,
+            "payoffs": [
+              {
+                "to": "A",
+                "amount": 4
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "crew:assign",
+        "seat": "A",
+        "args": {
+          "crew": "crew-A",
+          "venture": "J1",
+          "portion": 0
+        }
+      },
+      {
+        "type": "crew:work",
+        "seat": "A",
+        "args": {
+          "crew": "crew-A"
+        }
+      },
+      {
+        "type": "turn:end",
+        "seat": "A",
+        "args": {}
+      },
+      {
+        "type": "upkeep",
+        "seat": "B",
+        "args": {}
+      },
+      {
+        "type": "deck:draw",
+        "seat": "B",
+        "args": {
+          "deck": "B"
+        }
+      },
+      {
+        "type": "turn:end",
+        "seat": "B",
+        "args": {}
+      },
+      {
+        "type": "closing:reckon",
+        "seat": "A",
+        "args": {}
+      }
+    ]
+  }
+}
