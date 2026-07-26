@@ -13,6 +13,8 @@ import {
   attachTimedFx,
   post,
   readSlot,
+  routeVenture,
+  spawnVenture,
   ventures,
   workCrew,
 } from '../src/index.js';
@@ -254,6 +256,15 @@ describe('D9 · unknown-field smuggling refused at every persisting door (r2 NEW
     const out = attachTimedFx(g, { id: 'T', scope: 'table', charge: 1, remaining: 1, source: 'x', sneak: 7 } as never) as State;
     const row = (out['timedEffects'] as readonly Record<string, unknown>[])[0]!;
     expect('sneak' in row).toBe(false);
+    // K7-F5 r3 OBS-r3: the spawn-row and route-debts construction legs, asserted directly
+    // (kills MF/MG — the doors no longer mask the modules).
+    const spawned = spawnVenture(g, { id: 'V', initiator: 'A', portions: [{ task: 'β', work: 1, sneak: 7 }], deadline: 2, payoffs: [{ to: 'B', amount: 1, sneak: 7 }], sneak: 7 } as never) as State;
+    const vRow = (spawned['ventures'] as readonly Record<string, unknown>[])[0]!;
+    expect('sneak' in vRow).toBe(false);
+    expect('sneak' in (vRow['portions'] as readonly Record<string, unknown>[])[0]!).toBe(false);
+    expect('sneak' in (vRow['payoffs'] as readonly Record<string, unknown>[])[0]!).toBe(false);
+    const routed = routeVenture(spawned, 'V', 'B', [{ debtor: 'A', creditor: 'B', amount: 1, due: 2, sneak: 7 }] as never) as State;
+    expect('sneak' in (routed['debts'] as readonly Record<string, unknown>[])[0]!).toBe(false);
   });
 });
 

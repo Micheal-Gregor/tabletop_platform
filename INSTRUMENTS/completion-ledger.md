@@ -186,3 +186,14 @@ named fields only; D9 falsifying tests per door. Minors NEW-2/3/4 closed (I-40 e
 survivors registered; empty-ground assertion; core row amended — DF5-12). M13/M12/M15
 cleared teeth at r2. Suite 203/203; tsc clean; HK-6 OK. Awaiting K7 re-verify on NEW-1
 (M10/M11, M14, library/wire teeth held at axiom 6 pending NEW-PROBE-5 reconstruction).
+
+**K7-F5 round 3 (2026-07-26): PASS.** NEW-PROBE-5 reconstructed live at all doors (five
+probes + direct-module depth beyond the builder's own test); 9 closure-mutants: 7 killed
+by named tests, MF/MG survived as I-40(b)-class depth behind proven doors — closed
+same-commit anyway per OBS-r3 (direct-call assertions in D9e; the doors no longer mask
+the modules). Cumulative: 35 distinct mutants across three rounds, zero unregistered
+survivors; Probes 1-5 closed; all four I-29 weave legs falsifiable; S5/R-24 sound; MR1
+COMPLETE stands. **All F5 modules ≥ 7 on every dimension — teeth released. F5 CERTIFIED
+(internal K7 r3).** STANDING by rule: library/wire NOT-COMPLETE until V-1 discharges at
+the owner's R gate (feeds from GBC-40); after discharge, library/wire completion
+confirmation binds to the next K7 entry (RD-1). F7 slot may open.
