@@ -82,6 +82,10 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-24 | Ontology intents are PLAYER intents under turn discipline (same onTurn law as F2); WHO may reshape ontology beyond turn-order (and whether content-triggered formation needs the docketed form_relation EFX member) is a MODEL question routed to the F-channel as SP-4 | benign (K7-F3 defect 4) | local (wire.ts) + SP-4 |
 | I-25 | Two refusal channels, registered: player-path domain refusals surface as typed throws (EffectRefusal/RelationRefusal/SurfaceRefusal — loud, state intact, unlogged); Guard refusals return typed Refusal objects; at REBUILD both always surface as DivergenceError | benign (K7-F3 defect 5) | local (core.ts rebuild) |
 | I-26 | relationsGrantable is admission METADATA at F3; enforcement at formation lands with F4 rule dispatch (contributions consult the registry) — explicit deferral, AE-linked to the F4 slot | benign (K7-F3 defect 9) | local (kinds.ts) |
+| I-28 | HookPoints v1.0 member NAMES are interpretation (the record gives counts: 7 turn + 6 lifecycle + on-form/on-dissolve × 5 relations = 23); names enumerated in vocabularies.ts | benign | local |
+| I-29 | Turn/lifecycle hook EMISSION from engine paths (TurnMachine/Deck/windows calling the bus) lands at F5 when library modules bind to phases; at F4 the bus consumes F3 relation events + direct dispatch | benign (explicit deferral, AE-linked to F5) | local (hookbus.ts) |
+| I-30 | Contribution effect args validated at F4 to membership + finite-number depth; full pack-context binding (seat/deck refs) at pack-integration (F5) | benign | local (contributions.ts) |
+| I-31 | Relation-borne activation DERIVED (formed relation of bearer type exists at dispatch) — stateless, replay-deterministic; kind-borne contributions always active | benign | local (registry.ts) |
 | I-19 | Gating is ENGINE-RESERVED: every content window gates (S-8); the `gated` field exists for future engine-opened advisory windows (F5); content declaring it → load refusal | benign (ext-audit-2 F2-R2-5) | local (effects.ts/packloader.ts) |
 
 ## Log

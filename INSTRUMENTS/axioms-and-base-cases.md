@@ -138,6 +138,46 @@ an executable test BEFORE its feature ships. IDs are stable.
   substrate is the composed set, and placement onto it succeeds (V-6's law); dissolving
   the composition retires it. *(GX-17 recursion)*
 
+## Axioms — F4 set
+
+- **GX-19 — Registry law.** RuleRegistry is the SOLE dispatcher of contributions; no
+  if-ladder; dispatch = per-firing snapshot in total order (hook, bearer-entry-seq).
+  Effects apply ONLY via EffectEngine (the S5 boundary, R-24/HK-9 full). *Cites S-3.*
+- **GX-20 — Contributions validated at load.** trigger ∈ HookPoints v1.0 ∧ effects ⊆ EFX
+  v1.1.1 ∧ versions known ∧ slots declared — refusal NAMES the member. *Cites R-15, HK-4.*
+- **GX-21 — Bounded meta.** A condition reads ONLY event fields and its own declared
+  slots — statically (validation) and at runtime (hasOwn-bounded resolution). *Cites R-16.*
+- **GX-22 — Declared state only.** Rule state lives in declared slots with a reset class
+  (never/per-turn/per-round/per-game); an undeclared write refuses. *Cites R-18.*
+- **GX-23 — Governed growth.** The three vocabularies grow ONLY through ExtensionContract
+  cycles with per-member obligations; runtime NEVER mutates a sealed vocabulary. *Cites S-7.*
+- **GX-24 — Relation-borne activation.** A relation-borne contribution is active iff a
+  formed relation of its bearer type exists — DERIVED from state, never bookkept (V-8's
+  law: registers on form). *Cites ER1-4 × EX-5.*
+
+## Base cases — F4 set
+
+- **GBC-25 —** contribution w/ unknown hook / unknown effect / unknown version / undeclared
+  slot-write target → load refusal NAMING it. *(GX-20 = R-15)*
+- **GBC-26 —** condition referencing beyond event.*/own slots → refused at validation; a
+  forged runtime path resolves bounded-only. *(GX-21 = R-16)*
+- **GBC-27 —** slotWrite to a declared slot lands on state.ruleSlots; undeclared →
+  refused; per-turn/per-round resets clear exactly their class. *(GX-22 = R-18)*
+- **GBC-28 —** two contributions on one hook fire in bearer-entry-seq; a contribution
+  registered MID-firing does not join that firing (snapshot). Feeds V-7. *(GX-19)*
+- **GBC-29 —** the monster room: a relation-borne contribution fires only while its
+  relation is formed (pump on-form → active; dissolve → inert); its effects flow through
+  EffectEngine only. Feeds V-8. *(GX-24, GX-19)*
+- **GBC-30 —** an open_window effect fired from dispatch at windowDepth ≥ 1 → refused
+  (R-17 MR1 side). A dispatch on an unknown hook → HK-9 halt.
+- **GBC-31 —** propose() without full obligations → refused; an approved cycle NEVER
+  mutates the sealed vocabulary at runtime; docket members remain non-members. *(GX-23)*
+- **GBC-32 —** RulesetView exposes every vocabulary member and registered contribution
+  (total exposure); it is derived, never stored. *(MR6)*
+
+**N/A-by-absence (F4 slot):** turn/lifecycle hook EMISSION from engine paths = I-29 (F5
+weave); UniqueDef art/params consumption (F6/packs); VerbSets consumption (F6).
+
 **N/A-by-absence (F3 slot):** contribution dispatch (F4 — emissions recorded, consumed
 later per I-21); kind SKINS/fidelity (F6); specific piece stats (pattern/content tier).
 

@@ -42,6 +42,19 @@ until their build slots open, own no behavior, and gain instrument rows when the
 | ME4 SurfaceManager | packages/engine/src/ontology/surfaces.ts | S3 F3·ME4 ← S2 ME4 · EX-4 | Surfaces w/ five topologies (grid·hex·track·slots·freeform); topology-aware placement; **composition-forms-a-Surface recursion** (V-6's law) | built |
 | ontology/wire | packages/engine/src/ontology/wire.ts | S-1 (guarded intents for ontology ops) · I-24 | relation:form / relation:dissolve / surface:add / component:place / surface:compose intents, turn-disciplined — HK-8 on the REAL path; HK-7's doors are the registry itself (every door gated, DF3-1/2) *(row corrected append-only per DF3-10; original claim superseded)* | built |
 
+## Modules — F4 Rule System (build slot 4, ACTIVE)
+
+| Module | File | Traces to | Responsibility | Status |
+|---|---|---|---|---|
+| rules/vocabularies | packages/engine/src/rules/vocabularies.ts | S3 F4 · S-7 · GovernedVocabulary «interface» | Sealed governed vocabularies: EFX v1.1.1 (wrapped) · HookPoints v1.0 (7 turn + 6 lifecycle + 10 relation, names = I-28) · VerbSets v1.0 | built |
+| MR1 RuleRegistry | packages/engine/src/rules/registry.ts | S3 F4·MR1 ← S2 MR1 · S-3 · R-16/R-17/R-24 · HK-9 FULL | Sole dispatcher of CONTRIBUTIONS; per-firing snapshot; total order (hook, bearer-entry-seq); bounded condition eval; effects ONLY via EffectEngine; relation-borne activation derived from formed relations (V-8) | built |
+| MR2 HookBus | packages/engine/src/rules/hookbus.ts | S3 F4·MR2 · S-4 (consume) · I-21 | Consumes F3's recorded relationEvents (processed cursor on state) → dispatch on-form:/on-dissolve:<type>; turn/lifecycle weave = I-29 (F5) | built |
+| MR3 ContributionLoader | packages/engine/src/rules/contributions.ts | S3 F4·MR3 · R-15 · HK-4 (MR3 side) · R-16 static | validateContribution: trigger ∈ HookPoints ∧ effects ⊆ EFX ∧ versions known ∧ condition paths bounded ∧ slots declared — refusals NAME defects; UniqueDef (RE-7 catalog artifact) validated here | built |
+| MR4 StateSlotManager | packages/engine/src/rules/slots.ts | S3 F4·MR4 · R-18 | Declared slots on state.ruleSlots; four reset classes (never/per-turn/per-round/per-game); undeclared write → refused | built |
+| MR5 ExtensionContract | packages/engine/src/rules/extension.ts | S3 F4·MR5 · S-7 · ODG docket | Governance cycles: propose(member, obligations{refusal test + vector plan + hook spec}) → owner review record; NEVER mutates sealed vocabularies at runtime (growth = repo-time version bump); docket seeded (spawn_venture, draw_card, form_relation) | built |
+| MR6 RulesetView | packages/engine/src/rules/rulesetview.ts | S3 F4·MR6 · RE-12 seam (→ MP7) | Total exposure: vocabularies + registered contributions as a derivable view | built |
+| rules/wire | packages/engine/src/rules/wire.ts | S-1 · I-29 | rules:pump intent (turn-disciplined) driving the HookBus cursor | built |
+
 **S3 F2 note:** EffectEngine "fed by BOTH registry-dispatched contributions and
 module-native library effects" — the registry feed arrives at F4, library feeds at F5;
 at F2 the feeds are card-borne fx (pack content through the closed vocabulary). Explicit

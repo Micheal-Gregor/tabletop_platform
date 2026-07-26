@@ -61,3 +61,18 @@ export { TOPOLOGIES, SurfaceRefusal, positionValid, addSurface, placeComponent, 
 export type { Topology } from './ontology/surfaces.js';
 export { AdmissibilityGate, hookHk7BeforeKindAdmission, seededRegistry } from './ontology/admission.js';
 export { wireOntology } from './ontology/wire.js';
+
+// ── F4 Rule System (public surface) ──
+export { HOOK_POINTS_V1, VERB_SETS_V1, EFX_GOVERNED, VOCABULARIES } from './rules/vocabularies.js';
+export type { GovernedVocabulary } from './rules/vocabularies.js';
+export { validateContribution, validateUniqueDef, ContributionRefusal } from './rules/contributions.js';
+export type { RuleContribution, Condition, SlotDecl, SlotWrite, UniqueDef } from './rules/contributions.js';
+export { readSlot, writeSlot, resetSlots } from './rules/slots.js';
+export { RuleRegistry, hookHk9BeforeRuleDispatch } from './rules/registry.js';
+export type { HookEvent } from './rules/registry.js';
+export { pumpRelationEvents, dispatchHook } from './rules/hookbus.js';
+export { ExtensionContract, DOCKET } from './rules/extension.js';
+export type { ContractCycle, CycleObligations } from './rules/extension.js';
+export { renderRuleset } from './rules/rulesetview.js';
+export type { RulesetViewModel } from './rules/rulesetview.js';
+export { wireRules } from './rules/wire.js';
