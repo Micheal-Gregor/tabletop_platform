@@ -28,3 +28,14 @@ platform doctrine; doubles as the MP9 accessibility floor. **Status:** queued at
 kind/join contracts; opt-in per game; pack-local flourishes promotable to the library by
 the same proven-pattern path as Ventures. Animations remain theater (HK-11 governs).
 **Status:** queued at C4 gate.
+
+## SP-4 · Ontology-mutation authority (from I-24 / K7-F3 probe 8 — model question)
+
+**Target:** Phase 3 spec F3/F4 seam wording; the EFX docket's `form_relation` entry.
+**Question (not a defect):** the build makes relation formation a first-class PLAYER
+intent (turn-disciplined, I-24), while the S2 payload's V-8 and the docket's
+`form_relation` treat formation as something content triggers through the vocabulary.
+Both can be true (player intents AND a docketed effect), but the record should SAY who
+may reshape ontology and when. **Proposed wording:** "Ontology mutation flows through
+S-1 intents under turn discipline; content-TRIGGERED formation awaits the docketed
+form_relation member via its ExtensionContract cycle." **Status:** DRAFTED — owner run.

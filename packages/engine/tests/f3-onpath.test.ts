@@ -39,7 +39,7 @@ describe('HK-8 on-path · relation:form through core.submit', () => {
 });
 
 describe('surface intents on-path · compose recursion + placement through core.submit', () => {
-  it('compose → place-onto-built-map → dissolve, all logged; replay-relevant regions updated', () => {
+  it('compose → place-onto-built-map, all logged', () => {
     const core = newOntoCore();
     const c = core.submit({
       type: 'surface:compose',

@@ -5,7 +5,8 @@
  */
 
 import type { JsonObject, JsonValue, State } from '../kernel/types.js';
-import { formRelation } from './relations.js';
+import { dissolveRelation, formRelation } from './relations.js';
+import type { RelationRow } from './relations.js';
 
 export const TOPOLOGIES = Object.freeze(['grid', 'hex', 'track', 'slots', 'freeform'] as const);
 export type Topology = (typeof TOPOLOGIES)[number];
@@ -86,6 +87,10 @@ export function composeSurface(state: State, newSurfaceId: string, componentIds:
   if (componentIds.length < 2) {
     throw new SurfaceRefusal(newSurfaceId, 'GX-17', 'composition needs at least two components side-by-side');
   }
+  if (new Set(componentIds).size !== componentIds.length) {
+    // K7-F3 defect 8: duplicate ids in a composition are refused.
+    throw new SurfaceRefusal(newSurfaceId, 'GX-17', 'duplicate component ids in composition — refused');
+  }
   if (!TOPOLOGIES.includes(topology as Topology)) {
     throw new SurfaceRefusal(newSurfaceId, 'GX-17', `unknown topology "${topology}"`);
   }
@@ -101,14 +106,26 @@ export function composeSurface(state: State, newSurfaceId: string, componentIds:
   } as JsonObject;
 }
 
-/** Dissolving the composition retires the composed Surface (GBC-24's mirror). */
+/**
+ * Dissolving the composition retires the composed Surface (GBC-24's mirror) —
+ * K7-F3 defect 8 closure: retirement DISSOLVES the pairwise Composition relations
+ * (emitting on-dissolve for each) before removing the Surface. One coupled act.
+ */
 export function retireComposedSurface(state: State, surfaceId: string): JsonObject {
   const all = surfaces(state);
   const surf = all[surfaceId];
   if (!surf || !surf.composedOf) {
     throw new SurfaceRefusal(surfaceId, 'GX-17', 'not a composed surface');
   }
+  const composed = new Set(surf.composedOf);
+  let next: JsonObject = state as JsonObject;
+  for (const r of (state['relations'] as readonly RelationRow[]) ?? []) {
+    if (r.status === 'formed' && r.type === 'Composition' && composed.has(r.from) && composed.has(r.to)) {
+      next = dissolveRelation(next, r.id);
+    }
+  }
+  const allNow = surfaces(next);
   const rest: Record<string, SurfaceRow> = {};
-  for (const [id, s] of Object.entries(all)) if (id !== surfaceId) rest[id] = s;
-  return { ...state, surfaces: rest } as JsonObject;
+  for (const [id, s] of Object.entries(allNow)) if (id !== surfaceId) rest[id] = s;
+  return { ...next, surfaces: rest } as JsonObject;
 }

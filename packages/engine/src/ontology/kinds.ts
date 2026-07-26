@@ -7,6 +7,7 @@
 
 import type { JsonObject } from '../kernel/types.js';
 import { RELATION_TYPES } from './relations.js';
+import { bindingFor, RoleRefusal } from './roles.js';
 
 export interface KindDef extends JsonObject {
   readonly name: string;
@@ -23,6 +24,49 @@ export class KindRefusal extends Error {
   }
 }
 
+/**
+ * K7-F3 defect 1+2 closure: THE EX-2 predicate lives HERE and gates EVERY door into the
+ * registry — enroll AND supersede both run it, so no public surface bypasses admission-
+ * by-rule. (Moved from admission.ts to avoid a module cycle; admission.ts re-exports.)
+ */
+export function hookHk7BeforeKindAdmission(def: KindDef): void {
+  const defects: string[] = [];
+  if (!def.name || typeof def.name !== 'string') defects.push('(a) identity: missing kind name');
+  if (def.stateShape === undefined || typeof def.stateShape !== 'object' || def.stateShape === null) {
+    defects.push('(a) state shape: must be declared (an empty {} is a declaration; absence is not)');
+  } else {
+    for (const [field, ty] of Object.entries(def.stateShape)) {
+      if (!['number', 'string', 'boolean', 'json'].includes(ty)) {
+        defects.push(`(a) state shape: field "${field}" has unknown type "${ty}"`);
+      }
+    }
+  }
+  if (!Array.isArray(def.roles)) {
+    defects.push('(b) roles: must be an array (empty is a declaration)');
+  } else {
+    for (const role of def.roles) {
+      try {
+        bindingFor(role); // deferred is ADMISSIBLE (RD-e5) — unbindable is not
+      } catch (e) {
+        if (e instanceof RoleRefusal) defects.push(`(b) roles: "${role}" is unbindable (${e.message})`);
+        else throw e;
+      }
+    }
+  }
+  if (!Array.isArray(def.relationsGrantable)) {
+    defects.push('(c) relations: must be an array');
+  } else {
+    for (const rel of def.relationsGrantable) {
+      if (!RELATION_TYPES.includes(rel as (typeof RELATION_TYPES)[number])) {
+        defects.push(`(c) relations: "${rel}" is not one of the five`);
+      }
+    }
+  }
+  if (defects.length > 0) {
+    throw new KindRefusal(String(def.name ?? '<unnamed>'), 'GX-13/EX-2/HK-7', defects.join(' · '));
+  }
+}
+
 export class KindRegistry {
   private readonly defs = new Map<string, KindDef>();
   private readonly supersessions: Array<{ name: string; reason: string }> = [];
@@ -35,8 +79,9 @@ export class KindRegistry {
     return this.defs.get(name);
   }
 
-  /** Internal enrollment — ONLY the AdmissibilityGate calls this (admission-by-rule). */
+  /** Enrollment — GATED here (HK-7 fires on EVERY door, K7-F3 defect 2). */
   enroll(def: KindDef): void {
+    hookHk7BeforeKindAdmission(def);
     if (this.defs.has(def.name)) {
       // GX-18 / R-14: an admitted node is never respecified in place.
       throw new KindRefusal(def.name, 'GX-18/R-14', 'already admitted — supersede on the record, never respec');
@@ -44,8 +89,9 @@ export class KindRegistry {
     this.defs.set(def.name, def);
   }
 
-  /** The lawful redefinition path: records the chain, then replaces. */
+  /** The lawful redefinition path: EX-2 gates it too — supersession never launders. */
   supersede(def: KindDef, reason: string): void {
+    hookHk7BeforeKindAdmission(def);
     if (!this.defs.has(def.name)) {
       throw new KindRefusal(def.name, 'GX-18', 'nothing to supersede — admit it first');
     }

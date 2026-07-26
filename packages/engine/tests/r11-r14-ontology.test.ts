@@ -28,11 +28,26 @@ describe('GBC-18 · admission by RULE, never enumeration (GX-13/EX-2/HK-7 — fe
     expect(registry.has('Standee')).toBe(true);
   });
 
-  it('each missing leg is refused NAMING the leg', () => {
+  it('each missing leg is refused NAMING the leg — THROUGH the admission door (kills MUT-F3-1)', () => {
+    const gate = new AdmissibilityGate(seededRegistry());
+    expect(() => gate.admit({ ...STANDEE, stateShape: undefined as never })).toThrow(/state shape/);
+    expect(() => gate.admit({ ...STANDEE, roles: ['Chronomancer'] })).toThrow(/unbindable/);
+    expect(() => gate.admit({ ...STANDEE, relationsGrantable: ['Teleport'] })).toThrow(/not one of the five/);
+    expect(() => gate.admit({ ...STANDEE, name: '' as never })).toThrow(/identity/);
+  });
+
+  it('unit: the predicate function itself refuses the same legs', () => {
     expect(() => hookHk7BeforeKindAdmission({ ...STANDEE, stateShape: undefined as never })).toThrow(/state shape/);
     expect(() => hookHk7BeforeKindAdmission({ ...STANDEE, roles: ['Chronomancer'] })).toThrow(/unbindable/);
-    expect(() => hookHk7BeforeKindAdmission({ ...STANDEE, relationsGrantable: ['Teleport'] })).toThrow(/not one of the five/);
-    expect(() => hookHk7BeforeKindAdmission({ ...STANDEE, name: '' as never })).toThrow(/identity/);
+  });
+
+  it('EVERY registry door is gated (K7-F3 defect 2): enroll and supersede refuse inadmissible defs', () => {
+    const registry = seededRegistry();
+    const bad: KindDef = { name: 'Ghost', stateShape: {}, roles: ['Chronomancer'], relationsGrantable: ['Teleport'] };
+    expect(() => registry.enroll(bad)).toThrow(/unbindable/); // the P1 bypass, closed
+    const badBoard: KindDef = { ...bad, name: 'Board' };
+    expect(() => registry.supersede(badBoard, 'laundering attempt')).toThrow(/unbindable/); // P2, closed
+    expect(registry.get('Board')?.roles).toEqual([]); // Board untouched
   });
 
   it('the platform roster itself passed through the gate (dogfood) — all named kinds admitted', () => {

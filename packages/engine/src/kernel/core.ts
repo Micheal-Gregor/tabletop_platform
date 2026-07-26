@@ -159,7 +159,15 @@ export function rebuild(
   for (let i = 0; i < row.moves.length; i++) {
     const move = row.moves[i];
     if (!move) throw new DivergenceError(i, 'missing move in row');
-    const result = core.submit(move);
+    let result: SubmitResult;
+    try {
+      result = core.submit(move);
+    } catch (e) {
+      // K7-F3 defect 5 (I-25): a tampered/illegal replayed move ALWAYS surfaces as
+      // DivergenceError at rebuild — domain refusals thrown by appliers included.
+      if (e instanceof DivergenceError) throw e;
+      throw new DivergenceError(i, `applier refusal during replay: ${(e as Error).message}`);
+    }
     if ('refused' in result) {
       throw new DivergenceError(i, `${result.code} — ${result.detail}`);
     }

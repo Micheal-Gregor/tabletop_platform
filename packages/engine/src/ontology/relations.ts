@@ -72,17 +72,37 @@ const FORMATION: Readonly<Record<RelationType, (state: State, spec: RelationSpec
     if (!c[spec.from]) return `unknown component "${spec.from}"`;
     return c[spec.to] ? true : `unknown component "${spec.to}"`;
   },
-  Representation: (_state, spec) => {
+  Representation: (state, spec) => {
     // EX-6/GX-16: a view reads a derived-state path, read-only, always.
+    // K7-F3 defect 3: the VIEW must exist as a component; the path must resolve INSIDE
+    // the state tree (own properties only — no prototype-chain escape).
+    if (!components(state)[spec.from]) return `unknown component "${spec.from}" (the view must exist)`;
     if (typeof spec.sourcePath !== 'string' || spec.sourcePath.length === 0) {
       return 'Representation requires a sourcePath (the derived state it displays)';
     }
     if (spec.mode !== 'read-only') {
       return `Representation mode must be "read-only" (view-never-owns), got ${JSON.stringify(spec.mode)}`;
     }
+    if (resolveOwnPath(state, spec.sourcePath) === UNRESOLVED) {
+      return `sourcePath "${spec.sourcePath}" does not resolve inside the state tree (own properties only)`;
+    }
     return true;
   },
 };
+
+const UNRESOLVED = Symbol('unresolved');
+
+/** Own-property path walk — a Representation can NEVER read outside the state tree. */
+function resolveOwnPath(state: State, path: string): unknown {
+  let value: unknown = state;
+  for (const key of path.split('.')) {
+    if (value === null || typeof value !== 'object' || !Object.hasOwn(value as object, key)) {
+      return UNRESOLVED;
+    }
+    value = (value as Record<string, unknown>)[key];
+  }
+  return value;
+}
 
 /** HK-8 — before relation form: the type is one of the five AND its predicate holds. */
 export function hookHk8BeforeRelationForm(state: State, spec: RelationSpec): void {
@@ -94,6 +114,11 @@ export function hookHk8BeforeRelationForm(state: State, spec: RelationSpec): voi
   const verdict = predicate(state, spec);
   if (verdict !== true) {
     throw new RelationRefusal(`${spec.type}(${spec.from}→${spec.to})`, 'GX-15/HK-8', verdict);
+  }
+  // K7-F3 defect 8: an identical FORMED relation is not formed twice (no duplicate rows).
+  const relations = (state['relations'] as readonly RelationRow[]) ?? [];
+  if (relations.some((r) => r.status === 'formed' && r.type === spec.type && r.from === spec.from && r.to === spec.to)) {
+    throw new RelationRefusal(`${spec.type}(${spec.from}→${spec.to})`, 'GX-15/HK-8', 'identical relation already formed — duplicates refused');
   }
 }
 
@@ -127,10 +152,22 @@ export function dissolveRelation(state: State, relationId: string): JsonObject {
   if (!row || row.status !== 'formed') {
     throw new RelationRefusal(relationId, 'GX-15', 'no such formed relation to dissolve');
   }
-  const next = {
+  let next = {
     ...state,
     relations: relations.map((r) => (r.id === relationId ? { ...r, status: 'dissolved' } : r)),
   } as JsonObject;
+  if (row.type === 'Placement') {
+    // K7-F3 defect 8: dissolving a Placement clears the denormalized location — no
+    // dangling surface/position on the component.
+    const comps = (next['components'] as Record<string, JsonObject>) ?? {};
+    const comp = comps[row.from];
+    if (comp) {
+      const cleared: Record<string, unknown> = { ...comp };
+      delete cleared['surface'];
+      delete cleared['position'];
+      next = { ...next, components: { ...comps, [row.from]: cleared as JsonObject } } as JsonObject;
+    }
+  }
   return emit(next, { hook: 'on-dissolve', relation: row.id, type: row.type, from: row.from, to: row.to });
 }
 
@@ -139,9 +176,9 @@ export function readThroughRepresentation(state: State, relationId: string): unk
   const relations = (state['relations'] as readonly RelationRow[]) ?? [];
   const row = relations.find((r) => r.id === relationId && r.type === 'Representation' && r.status === 'formed');
   if (!row) throw new RelationRefusal(relationId, 'GX-16', 'no formed Representation with that id');
-  let value: unknown = state;
-  for (const key of (row.sourcePath as string).split('.')) {
-    value = (value as Record<string, unknown> | undefined)?.[key];
+  const value = resolveOwnPath(state, row.sourcePath as string); // own-properties only (K7-F3 defect 3)
+  if (value === UNRESOLVED) {
+    throw new RelationRefusal(relationId, 'GX-16', `sourcePath "${row.sourcePath}" no longer resolves inside the state tree`);
   }
   return value;
 }

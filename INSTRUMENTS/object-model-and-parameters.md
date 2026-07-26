@@ -40,7 +40,7 @@ until their build slots open, own no behavior, and gain instrument rows when the
 | ME2 RoleBinder | packages/engine/src/ontology/roles.ts | S3 F3·ME2 ← S2 ME2 · R-11 · EX-3 · ODG-e1 | Role→primitive bindings (Randomizer→RNGStreams · Tracker→derived state · Reference→ruleset presentation · TimeSource→DEFERRED behind ODG-e1); unbindable → refuse | built |
 | ME3 RelationEngine | packages/engine/src/ontology/relations.ts | S3 F3·ME3 ← S2 Relation family · S-4 · HK-8 · R-12/R-13 · EX-5/EX-6 | Five typed relations w/ formation/dissolution predicates + state effects; on-form/on-dissolve EMISSION recorded for the F4 HookBus (S-4 supply); Representation = read-only view (view-never-owns) | built |
 | ME4 SurfaceManager | packages/engine/src/ontology/surfaces.ts | S3 F3·ME4 ← S2 ME4 · EX-4 | Surfaces w/ five topologies (grid·hex·track·slots·freeform); topology-aware placement; **composition-forms-a-Surface recursion** (V-6's law) | built |
-| ontology/wire | packages/engine/src/ontology/wire.ts | S-1 (guarded intents for ontology ops) | relation:form / relation:dissolve / component:place intents — HK-7/HK-8 on the REAL path | built |
+| ontology/wire | packages/engine/src/ontology/wire.ts | S-1 (guarded intents for ontology ops) · I-24 | relation:form / relation:dissolve / surface:add / component:place / surface:compose intents, turn-disciplined — HK-8 on the REAL path; HK-7's doors are the registry itself (every door gated, DF3-1/2) *(row corrected append-only per DF3-10; original claim superseded)* | built |
 
 **S3 F2 note:** EffectEngine "fed by BOTH registry-dispatched contributions and
 module-native library effects" — the registry feed arrives at F4, library feeds at F5;

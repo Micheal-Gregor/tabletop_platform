@@ -8,6 +8,16 @@ import type { EngineCore } from '../kernel/core.js';
 import { formRelation, dissolveRelation } from './relations.js';
 import { placeComponent, addSurface, composeSurface } from './surfaces.js';
 
+/** I-24: ontology intents are PLAYER intents under turn discipline — same law as F2. */
+function onTurn(state: State, intent: Intent): true | { rule: string; detail: string } {
+  const turn = state['turn'] as { seatIdx: number } | undefined;
+  const rows = state['seats'] as readonly { id: string }[] | undefined;
+  const active = rows?.[turn?.seatIdx ?? -1]?.id;
+  return active === intent.seat
+    ? true
+    : { rule: 'M5/turn-order (I-24)', detail: `not seat "${intent.seat}"'s turn` };
+}
+
 export function wireOntology(core: EngineCore): void {
   core.registerIntent(
     'relation:form',
@@ -16,7 +26,7 @@ export function wireOntology(core: EngineCore): void {
         typeof i.args['type'] === 'string' && typeof i.args['from'] === 'string' && typeof i.args['to'] === 'string'
           ? true
           : 'type/from/to (strings) required',
-      rules: [],
+      rules: [onTurn],
     },
     (state, intent) =>
       formRelation(state, {
@@ -30,7 +40,7 @@ export function wireOntology(core: EngineCore): void {
 
   core.registerIntent(
     'relation:dissolve',
-    { args: (_s, i) => (typeof i.args['relation'] === 'string' ? true : 'relation id required'), rules: [] },
+    { args: (_s, i) => (typeof i.args['relation'] === 'string' ? true : 'relation id required'), rules: [onTurn] },
     (state, intent) => dissolveRelation(state, intent.args['relation'] as string)
   );
 
@@ -41,7 +51,7 @@ export function wireOntology(core: EngineCore): void {
         typeof i.args['surface'] === 'string' && typeof i.args['topology'] === 'string'
           ? true
           : 'surface/topology required',
-      rules: [],
+      rules: [onTurn],
     },
     (state, intent) => addSurface(state, intent.args['surface'] as string, intent.args['topology'] as string)
   );
@@ -54,7 +64,7 @@ export function wireOntology(core: EngineCore): void {
         typeof i.args['position'] === 'object' && i.args['position'] !== null
           ? true
           : 'component/surface/position required',
-      rules: [],
+      rules: [onTurn],
     },
     (state, intent) =>
       placeComponent(state, intent.args['component'] as string, intent.args['surface'] as string, intent.args['position'] as JsonObject)
@@ -67,7 +77,7 @@ export function wireOntology(core: EngineCore): void {
         typeof i.args['surface'] === 'string' && Array.isArray(i.args['components']) && typeof i.args['topology'] === 'string'
           ? true
           : 'surface/components[]/topology required',
-      rules: [],
+      rules: [onTurn],
     },
     (state: State, intent: Intent) =>
       composeSurface(
