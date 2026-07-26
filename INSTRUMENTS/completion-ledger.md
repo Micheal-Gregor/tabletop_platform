@@ -51,3 +51,10 @@ reviewer's own mutation (MUT-N6 kills exactly the named test); OBS-A/B/C verifie
 all F2 drift ≥ 7, teeth released; F3 slot may open. STANDING: V-2/V-3 discharge at the
 owner's R gate → M9 + M3 re-enter K7 after (RD-1); packRef-mismatch refusal = F7; window
 pruning + 'ended' = F5 (I-17).
+
+**Compaction-control verification pass (2026-07-25, RD-15):** working tree clean · HEAD ≡
+origin · CLAUDE.md ≡ frozen S3 copy · vectors/ empty of values · 76/76 · HK-6 green.
+Row-status corrections (append-only; rows above stand as the historical claims): all five
+F2 module rows — K7 **PASS round 3** (drift ≥ 7); F1 rows — K7 PASS round 2 + external
+audit 1 PASS. F1·M3's original "after F2" V-1 wording is SUPERSEDED by I-14 (post-F5).
+Still open by rule: M3 + M9 NOT-COMPLETE until V-2/V-3 discharge at the owner's R gate.
