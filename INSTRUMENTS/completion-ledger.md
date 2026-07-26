@@ -96,3 +96,9 @@ re-check CC-5 alongside its own scope). V-1 remains post-F5.
 I-20..I-23); suite 115/115; tsc clean; HK-6 green. Statuses are CLAIMS per RD-2. The F3
 K7 entry ALSO carries the bound CC-5 re-check for M3/M9 (V-2/V-3 discharge, RD-1).
 I-20 flags an upstream record question for the owner: "12 kinds" vs 11 named.
+
+**K7-F3 rounds 1-3 (2026-07-25): RETURN → RETURN(narrow) → PASS.** 30 mutations across
+three rounds, zero final survivors; all F3 drift ≥ 7, teeth released; F4 slot may open.
+P13 characterized (raw Placement rows never denormalize — coherent; next-touch: refuse or
+register, folded into SP-4). STANDING: V-5/V-6 at the owner's R gate (ME5/ME4 blocked by
+rule); SP-4 + I-20 await the owner; onTurn dedup at next touch.
