@@ -1,0 +1,38 @@
+{
+  "computed": "2026-07-25",
+  "gate": "R-gate owner-approved",
+  "table": [
+    {
+      "kind": "Standee",
+      "admissible": true
+    },
+    {
+      "kind": "Hourglass",
+      "admissible": true
+    },
+    {
+      "kind": "NoShape",
+      "admissible": false,
+      "defects": "Kind refused [GX-13/EX-2/HK-7] \"NoShape\": (a) state shape: must be declared (an empty {} is a declaration; absence is not)"
+    },
+    {
+      "kind": "BadRole",
+      "admissible": false,
+      "defects": "Kind refused [GX-13/EX-2/HK-7] \"BadRole\": (b) roles: \"Chronomancer\" is unbindable (Role refused [GX-14/R-11] \"Chronomancer\": unknown role — no platform primitive to bind)"
+    },
+    {
+      "kind": "BadRel",
+      "admissible": false,
+      "defects": "Kind refused [GX-13/EX-2/HK-7] \"BadRel\": (c) relations: \"Teleport\" is not one of the five"
+    },
+    {
+      "kind": "<unnamed>",
+      "admissible": false,
+      "defects": "Kind refused [GX-13/EX-2/HK-7] \"\": (a) identity: missing kind name"
+    },
+    {
+      "kind": "DualRole",
+      "admissible": true
+    }
+  ]
+}

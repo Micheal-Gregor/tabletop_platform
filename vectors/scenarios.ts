@@ -134,3 +134,47 @@ export function computeV3(): Array<{ descriptor: EffectDescriptor; stateHashAfte
     stateHashAfter: hashState(EffectEngine.apply(genesisState, descriptor, { windowDepth: 0 })),
   }));
 }
+
+// ── V-5 / V-6 (discharged at the owner's R gate, 2026-07-25) ──
+import { AdmissibilityGate, seededRegistry, composeSurface, placeComponent, retireComposedSurface } from '../packages/engine/src/index.js';
+import type { KindDef, State } from '../packages/engine/src/index.js';
+
+/** V-5: the EX-2 admission predicate decides, per kind — the decision table. */
+export function computeV5(): Array<{ kind: string; admissible: boolean; defects?: string }> {
+  const gate = new AdmissibilityGate(seededRegistry());
+  const table: KindDef[] = [
+    { name: 'Standee', stateShape: { art: 'string' }, roles: ['Tracker'], relationsGrantable: ['Placement', 'Attachment'] },
+    { name: 'Hourglass', stateShape: { sand: 'number' }, roles: ['TimeSource'], relationsGrantable: ['Placement'] },
+    { name: 'NoShape', stateShape: undefined as never, roles: [], relationsGrantable: [] },
+    { name: 'BadRole', stateShape: {}, roles: ['Chronomancer'], relationsGrantable: [] },
+    { name: 'BadRel', stateShape: {}, roles: [], relationsGrantable: ['Teleport'] },
+    { name: '', stateShape: {}, roles: [], relationsGrantable: [] },
+    { name: 'DualRole', stateShape: { v: 'number' }, roles: ['Randomizer', 'Tracker'], relationsGrantable: ['Placement', 'Representation'] },
+  ];
+  return table.map((def) => {
+    const verdict = gate.decide(def);
+    return verdict.admissible
+      ? { kind: def.name, admissible: true }
+      : { kind: def.name || '<unnamed>', admissible: false, defects: verdict.defects };
+  });
+}
+
+/** V-6: composed-Surface integrity — the built map IS a Surface (ER-e3), hashed. */
+export function computeV6(): { composedHash: string; placedOntoMapHash: string; retiredHash: string } {
+  const g = (): State =>
+    ({
+      seats: [{ id: 'A', cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false }],
+      turn: { round: 1, seatIdx: 0, phase: 'start', wrappedRound: 0, maxRounds: 2, status: 'playing' },
+      decks: {}, windows: [], windowSeq: 0,
+      components: { t1: { kind: 'Tile' }, t2: { kind: 'Tile' }, t3: { kind: 'Tile' }, fig: { kind: 'Figure' } },
+      surfaces: { table: { topology: 'grid' } },
+      relations: [], relationEvents: [], relationSeq: 0,
+    }) as State;
+  const composed = composeSurface(g(), 'map1', ['t1', 't2', 't3'], 'grid');
+  const placed = placeComponent(composed, 'fig', 'map1', { x: 0, y: 0 });
+  return {
+    composedHash: hashState(composed),
+    placedOntoMapHash: hashState(placed),
+    retiredHash: hashState(retireComposedSurface(placed, 'map1')),
+  };
+}

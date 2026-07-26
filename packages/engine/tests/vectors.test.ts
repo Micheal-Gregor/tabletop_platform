@@ -41,3 +41,33 @@ describe('V-3 · EFX dispatch table (golden, computed 2026-07-25)', () => {
     expect(v3).toEqual(pinned.table);
   });
 });
+
+import { computeV5, computeV6 } from '../../../vectors/scenarios.js';
+const V5_PATH = resolve(__dirname, '../../../vectors/V-5.json');
+const V6_PATH = resolve(__dirname, '../../../vectors/V-6.json');
+
+describe('V-5 · admissibility decision table (golden, computed 2026-07-25)', () => {
+  it('the EX-2 predicate decides per kind — matches the discharged table', () => {
+    const v5 = computeV5();
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V5_PATH, JSON.stringify({ computed: '2026-07-25', gate: 'R-gate owner-approved', table: v5 }, null, 2));
+      return;
+    }
+    const pinned = JSON.parse(readFileSync(V5_PATH, 'utf8')) as { table: typeof v5 };
+    expect(v5).toEqual(pinned.table);
+  });
+});
+
+describe('V-6 · composed-Surface integrity (golden, computed 2026-07-25)', () => {
+  it('compose → place-onto-map → retire hashes match the discharged vector', () => {
+    const v6 = computeV6();
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V6_PATH, JSON.stringify({ computed: '2026-07-25', gate: 'R-gate owner-approved', ...v6 }, null, 2));
+      return;
+    }
+    const pinned = JSON.parse(readFileSync(V6_PATH, 'utf8')) as typeof v6;
+    expect(v6.composedHash).toBe(pinned.composedHash);
+    expect(v6.placedOntoMapHash).toBe(pinned.placedOntoMapHash);
+    expect(v6.retiredHash).toBe(pinned.retiredHash);
+  });
+});

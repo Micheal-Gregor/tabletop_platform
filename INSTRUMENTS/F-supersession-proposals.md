@@ -38,4 +38,4 @@ intent (turn-disciplined, I-24), while the S2 payload's V-8 and the docket's
 Both can be true (player intents AND a docketed effect), but the record should SAY who
 may reshape ontology and when. **Proposed wording:** "Ontology mutation flows through
 S-1 intents under turn discipline; content-TRIGGERED formation awaits the docketed
-form_relation member via its ExtensionContract cycle." **Status:** DRAFTED — owner run.
+form_relation member via its ExtensionContract cycle." **Status: EXECUTED as SUP-2 (owner-approved 2026-07-25); P13 folded in; I-20 resolved by SUP-3 (11 kinds, pre-merge artifact).**
