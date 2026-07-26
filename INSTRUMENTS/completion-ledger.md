@@ -132,3 +132,10 @@ predicted survivors matched I-32/I-32′ exactly), S5 boundary verified sound, d
 verified. Findings EXT3-A..D (all validation-door fidelity, none dispatch-law) closed at
 both doors incl. the pre-existing F2 packloader sibling; suite 165/165. Awaiting the
 external auditor's targeted re-verify (P1/P8 reconstruction) to clear MR3's teeth.
+
+**EXTERNAL AUDIT round 3B (2026-07-25): RETURN(narrow) → closures landed → SIGNED OFF per
+the auditor's own condition** ("add the pack-door falsifying test + close the two minor
+residuals, then this can be signed off without another external round"). Report archived
+(K7_AUDIT_REPORT-3B.md). All three 3B residuals closed with falsifying tests; suite
+168/168. **F4 CERTIFIED (internal K7 r2 + external 3/3B).** MR3 7, MR4 8 per auditor
+re-score. STANDING: V-7/V-8 at the owner's R gate.

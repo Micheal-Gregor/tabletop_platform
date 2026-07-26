@@ -103,6 +103,10 @@ export class RuleRegistry {
         const bankNow = (next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {};
         const own = Object.hasOwn(bankNow, c.id) ? bankNow[c.id]! : {};
         const current = Object.hasOwn(own, w.slot) ? own[w.slot] : undefined;
+        if (w.increment !== undefined && typeof w.increment !== 'number') {
+          // EXT3-B residual (3B): the increment VALUE itself must be a number.
+          throw new EffectRefusal(c.id, 'GX-22', `increment value ${JSON.stringify(w.increment)} is not a number — refused, not coerced`);
+        }
         if (w.increment !== undefined && current !== undefined && typeof current !== 'number') {
           // EXT3-B: refusal-not-repair — increment never coerces a non-numeric slot.
           throw new EffectRefusal(c.id, 'GX-22', `increment on non-numeric slot "${w.slot}" (holds ${JSON.stringify(current)}) — refused, not coerced`);

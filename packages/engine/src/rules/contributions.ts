@@ -186,6 +186,12 @@ export function validateUniqueDef(u: UniqueDef, kindExists: (name: string) => bo
   const defects: string[] = [];
   if (!u.id) defects.push('missing UniqueDef id');
   if (!kindExists(u.kindRef)) defects.push(`kindRef "${u.kindRef}" is not an admitted kind`);
+  for (const c of u.contributions ?? []) {
+    if (c === null || typeof c !== 'object') {
+      defects.push(`contribution element must be an object, got ${JSON.stringify(c)} (3B residual)`);
+    }
+  }
+  if (defects.length > 0) throw new ContributionRefusal(u.id || '<unnamed>', 'RE-7', defects.join(' · '));
   const ids = (u.contributions ?? []).map((c) => c.id);
   if (new Set(ids).size !== ids.length) defects.push('duplicate contribution ids in UniqueDef (EXT3-C — register-parity)');
   if (defects.length > 0) throw new ContributionRefusal(u.id || '<unnamed>', 'RE-7', defects.join(' · '));

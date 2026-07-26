@@ -174,3 +174,35 @@ describe('EXT3-C · UniqueDef register-parity', () => {
     expect(() => validateUniqueDef(u as never, () => true)).toThrow(/duplicate contribution ids/);
   });
 });
+
+describe('EXT3-3B · targeted re-verify residuals', () => {
+  it('3B-1: pack-door null-element guard is FALSIFIABLE (named PackLoadRefusal, both shapes)', async () => {
+    const { hookHk4ValidatePack, PackLoadRefusal } = await import('../src/index.js');
+    const { F2_PACK } = await import('./f2-fixture.js');
+    const badCard = { ...F2_PACK, cards: { junk: { fx: [null] } }, decks: { main: { cards: ['junk'] } } };
+    expect(() => hookHk4ValidatePack(badCard as never)).toThrow(PackLoadRefusal);
+    expect(() => hookHk4ValidatePack(badCard as never)).toThrow(/must be an object/);
+    const badOpt = {
+      ...F2_PACK,
+      cards: { w: { fx: [{ fx: 'open_window', kind: 'k', decider: 'A', options: [{ label: 'o', fx: [null] }], auto: 0 }] } },
+      decks: { main: { cards: ['w'] } },
+    };
+    expect(() => hookHk4ValidatePack(badOpt as never)).toThrow(/must be an object/);
+  });
+
+  it('3B-2: a non-numeric increment VALUE refuses (no "05", no true→1)', () => {
+    const registry = new RuleRegistry();
+    registry.register(
+      BASE({ id: 'v', declaredSlots: [{ name: 'x', reset: 'never' }], slotWrites: [{ slot: 'x', increment: '5' as never }] })
+    );
+    expect(() =>
+      registry.dispatch(genesis(), 'on-card-drawn', { hook: 'on-card-drawn' }, { windowDepth: 0 })
+    ).toThrow(/is not a number/);
+  });
+
+  it('3B-3: a null contribution element in a UniqueDef → NAMED refusal, no raw crash', () => {
+    const u = { id: 'u2', kindRef: 'Card', params: {}, contributions: [null] };
+    expect(() => validateUniqueDef(u as never, () => true)).toThrow(ContributionRefusal);
+    expect(() => validateUniqueDef(u as never, () => true)).toThrow(/must be an object/);
+  });
+});
