@@ -14,4 +14,5 @@ Live human gate, per-abstraction. RC-3 order: resolution RECORDED first, body fi
 
 | Vector | Status | Note |
 |---|---|---|
-| V-1..V-9 | DEFERRED | discharge as owning modules complete; each blocks completion per the ledger |
+| V-2, V-3 | **DISCHARGED 2026-07-25** — owner-approved R gate ("yes") | computed from the certified F2 implementation (DISCHARGE run), persisted vectors/V-2.json + V-3.json, re-derived same-run and on every suite run (vectors.test.ts); refusal-not-repair applies — a mismatch is a divergence to explain |
+| V-1, V-4..V-9 | DEFERRED | discharge as owning modules complete; each blocks completion per the ledger (V-1 post-F5 per I-14) |

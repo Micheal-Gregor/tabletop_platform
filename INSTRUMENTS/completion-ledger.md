@@ -75,3 +75,9 @@ correct; forged-genesis refactor confirmed to preserve on-path R-17 falsifiabili
 Re-scores: M8 5→8, M9 7→8; all F2 ≥ 7 — **teeth released, F2 CERTIFIED (internal K7 r3
 + external 2/2B)**. Carry-forwards unchanged: V-2/V-3 at the owner's R gate; F7 packRef
 obligation.
+
+**R-GATE DISCHARGE (2026-07-25, owner-approved):** V-2 + V-3 computed from the certified
+implementation, persisted (vectors/V-2.json, V-3.json), re-derived — now live regression
+anchors in the suite (87/87). M3 IntentLog and M9 EffectEngine: CC-5 satisfied-CLAIMED;
+per RD-1 their completion confirmation is BOUND to the next K7 entry (the F3 review will
+re-check CC-5 alongside its own scope). V-1 remains post-F5.

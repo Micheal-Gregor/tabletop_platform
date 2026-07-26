@@ -1,0 +1,98 @@
+{
+  "computed": "2026-07-25",
+  "gate": "R-gate owner-approved",
+  "table": [
+    {
+      "descriptor": {
+        "fx": "pay",
+        "to": "A",
+        "amount": 3
+      },
+      "stateHashAfter": "462977f6437ccb23"
+    },
+    {
+      "descriptor": {
+        "fx": "pay",
+        "to": "B",
+        "from": "A",
+        "amount": 1
+      },
+      "stateHashAfter": "ce0357ee0c577415"
+    },
+    {
+      "descriptor": {
+        "fx": "capitalize",
+        "owner": "B",
+        "asset": "ship",
+        "amount": 4
+      },
+      "stateHashAfter": "4b61ab99adb16ec2"
+    },
+    {
+      "descriptor": {
+        "fx": "grant_favor",
+        "to": "B",
+        "n": 2
+      },
+      "stateHashAfter": "a1b32acece4b4480"
+    },
+    {
+      "descriptor": {
+        "fx": "levy",
+        "scope": "table",
+        "amount": 1
+      },
+      "stateHashAfter": "da6c7d4ca3c74ee0"
+    },
+    {
+      "descriptor": {
+        "fx": "levy",
+        "scope": "A",
+        "amount": 2
+      },
+      "stateHashAfter": "bd4dc98942785f47"
+    },
+    {
+      "descriptor": {
+        "fx": "deck_inject",
+        "deck": "main",
+        "card": "payday",
+        "policy": "top"
+      },
+      "stateHashAfter": "3a72ee1f5ada1682"
+    },
+    {
+      "descriptor": {
+        "fx": "deck_inject",
+        "deck": "main",
+        "card": "tax",
+        "policy": "bottom"
+      },
+      "stateHashAfter": "dce68f3f53b3c8ef"
+    },
+    {
+      "descriptor": {
+        "fx": "grant_sue_right",
+        "holder": "A",
+        "against": "B",
+        "window": "court"
+      },
+      "stateHashAfter": "63009689abaa657a"
+    },
+    {
+      "descriptor": {
+        "fx": "open_window",
+        "kind": "choice",
+        "decider": "A",
+        "options": [
+          {
+            "label": "o",
+            "fx": []
+          }
+        ],
+        "auto": 0
+      },
+      "stateHashAfter": "7312e74b8abd2b49"
+    }
+  ]
+}

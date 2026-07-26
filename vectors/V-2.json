@@ -1,0 +1,106 @@
+{
+  "computed": "2026-07-25",
+  "gate": "R-gate owner-approved",
+  "finalHash": "ec7a1f4a3a2eeadf",
+  "moveCount": 13,
+  "row": {
+    "packRef": {
+      "id": "vector-pack",
+      "version": "1.0.0",
+      "hash": "v3c70r"
+    },
+    "seed": "sigma-7",
+    "seats": [
+      {
+        "id": "A"
+      },
+      {
+        "id": "B"
+      }
+    ],
+    "moves": [
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "turn:advance",
+        "seat": "A",
+        "args": {}
+      },
+      {
+        "type": "turn:pass",
+        "seat": "A",
+        "args": {}
+      },
+      {
+        "type": "deck:draw",
+        "seat": "B",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "deck:draw",
+        "seat": "B",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "turn:pass",
+        "seat": "B",
+        "args": {}
+      },
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "window:resolve",
+        "seat": "A",
+        "args": {
+          "window": "w1",
+          "option": 0
+        }
+      },
+      {
+        "type": "deck:draw",
+        "seat": "A",
+        "args": {
+          "deck": "main"
+        }
+      },
+      {
+        "type": "turn:pass",
+        "seat": "A",
+        "args": {}
+      },
+      {
+        "type": "turn:pass",
+        "seat": "B",
+        "args": {}
+      }
+    ]
+  }
+}
