@@ -8,8 +8,9 @@
 import type { JsonObject, JsonValue, State } from '../kernel/types.js';
 import { EffectEngine, EffectRefusal } from '../play/effects.js';
 import type { EffectContext } from '../play/effects.js';
-import type { Condition, RuleContribution, SlotDecl } from './contributions.js';
+import type { Condition, RuleContribution } from './contributions.js';
 import { validateContribution } from './contributions.js';
+import { freezeDeep } from '../kernel/statetree.js';
 import { writeSlot } from './slots.js';
 import { HOOK_POINTS_V1 } from './vocabularies.js';
 import type { RelationRow } from '../ontology/relations.js';
@@ -63,13 +64,11 @@ export class RuleRegistry {
   register(c: RuleContribution): void {
     validateContribution(c);
     if (this.entries.some((e) => e.id === c.id)) {
-      throw new EffectRefusal(c.id, 'GX-19/R-14', 'contribution id already registered — supersede, never respec');
+      throw new EffectRefusal(c.id, 'GX-19/supersede-never-respec', 'contribution id already registered');
     }
-    this.entries.push(c);
-  }
-
-  declarations(): ReadonlyMap<string, readonly SlotDecl[]> {
-    return new Map(this.entries.map((e) => [e.id, e.declaredSlots]));
+    // K7-F4 D4: SEAL at the register door (the DF2-8/EXT2-4 law applied to contributions)
+    // — post-registration mutation of the caller's object is inert.
+    this.entries.push(freezeDeep(structuredClone(c) as unknown as JsonObject) as unknown as RuleContribution);
   }
 
   list(): readonly RuleContribution[] {
@@ -94,11 +93,15 @@ export class RuleRegistry {
     let next: JsonObject = state as JsonObject;
     for (const c of firing) {
       if (!this.isActive(c, next)) continue;
-      const ownSlots = ((next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {})[c.id] ?? {};
+      // K7-F4 D5: hasOwn-guarded bank lookup — a reserved-ish id can never key the prototype chain
+      const bank = (next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {};
+      const ownSlots = Object.hasOwn(bank, c.id) ? bank[c.id]! : {};
       if (!evalCondition(c.condition, event, ownSlots)) continue;
       next = EffectEngine.applyAll(next, c.effects, ctx); // R-24: the ONLY effect path
       for (const w of c.slotWrites ?? []) {
-        const current = ((next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {})[c.id]?.[w.slot];
+        const bankNow = (next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {};
+        const own = Object.hasOwn(bankNow, c.id) ? bankNow[c.id]! : {};
+        const current = Object.hasOwn(own, w.slot) ? own[w.slot] : undefined;
         const value: JsonValue =
           w.increment !== undefined ? ((current as number) ?? 0) + w.increment : (w.set as JsonValue);
         next = writeSlot(next, c.id, w.slot, value, c.declaredSlots); // R-18 enforced

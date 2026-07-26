@@ -10,7 +10,9 @@ type SlotBank = Readonly<Record<string, Readonly<Record<string, JsonValue>>>>;
 
 export function readSlot(state: State, contribId: string, slot: string): JsonValue | undefined {
   const bank = (state['ruleSlots'] as SlotBank) ?? {};
-  return bank[contribId]?.[slot];
+  if (!Object.hasOwn(bank, contribId)) return undefined; // K7-F4 D5: no prototype keys
+  const own = bank[contribId]!;
+  return Object.hasOwn(own, slot) ? own[slot] : undefined;
 }
 
 /** R-18 — a write to an undeclared slot refuses; declared writes land on state.ruleSlots. */

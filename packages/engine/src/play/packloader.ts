@@ -9,6 +9,7 @@ import type { Genesis, Intent, JsonObject, JsonValue, State } from '../kernel/ty
 import type { EngineCore } from '../kernel/core.js';
 import { RNGStreams } from '../kernel/rng.js';
 import { freezeDeep } from '../kernel/statetree.js';
+import { onTurnRule } from '../kernel/discipline.js';
 import { EFX_V1_1_1, EffectEngine, EffectRefusal } from './effects.js';
 import type { EffectDescriptor } from './effects.js';
 import { shuffledOrder, drawTop } from './deck.js';
@@ -225,10 +226,7 @@ export function wirePack(core: EngineCore, rawPack: ContentPack): void {
   hookHk4ValidatePack(rawPack);
   const pack = freezeDeep(structuredClone(rawPack) as unknown as JsonObject) as unknown as ContentPack;
 
-  const onTurn = (state: State, intent: Intent) =>
-    activeSeatId(state) === intent.seat
-      ? true
-      : ({ rule: 'M5/turn-order (S2)', detail: `not seat "${intent.seat}"'s turn` } as const);
+  const onTurn = onTurnRule; // shared discipline (K7-F4 D10)
 
   // deck:draw — draw own top card; its fx apply through EffectEngine (S-3; I-11).
   core.registerIntent(

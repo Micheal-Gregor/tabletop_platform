@@ -60,16 +60,10 @@ describe('GBC-26 · R-16: bounded meta — static and runtime', () => {
     ).not.toThrow();
   });
 
-  it('runtime resolution is hasOwn-bounded: a prototype path never resolves', () => {
+  it('runtime resolution is hasOwn-bounded: a prototype path never resolves (defensive depth, I-32)', () => {
     const registry = new RuleRegistry();
-    registry.register(
-      CONTRIB({ condition: { op: 'ne', path: 'event.constructor', value: null } }) // ne undefined→ still fires only if resolves ≠ null
-    );
-    // event.constructor must NOT resolve (hasOwn) → v = undefined; ne null → true is WRONG?
-    // undefined !== null → fires. Assert instead with eq: undefined never equals a value.
-    const r2 = new RuleRegistry();
-    r2.register(CONTRIB({ id: 'c2', condition: { op: 'eq', path: 'event.constructor', value: 'anything' } }));
-    const out = r2.dispatch(genesis(), 'on-card-drawn', { hook: 'on-card-drawn' }, { windowDepth: 0 });
+    registry.register(CONTRIB({ id: 'c2', condition: { op: 'eq', path: 'event.constructor', value: 'anything' } }));
+    const out = registry.dispatch(genesis(), 'on-card-drawn', { hook: 'on-card-drawn' }, { windowDepth: 0 });
     const A = (out['seats'] as readonly { id: string; favor: number }[]).find((s) => s.id === 'A')!;
     expect(A.favor).toBe(0); // did not fire — the prototype path resolved to nothing
   });
@@ -96,14 +90,18 @@ describe('GBC-27 · R-18: declared slots only; reset classes', () => {
   });
 });
 
-describe('GBC-28 · dispatch order + per-firing snapshot (feeds V-7)', () => {
-  it('same hook fires in bearer-entry-seq; slot counters prove the order', () => {
+describe('GBC-28 · dispatch order (feeds V-7; snapshot = structurally guaranteed at F4, I-32)', () => {
+  it('bearer-entry-seq is a TOTAL order — non-commutative deck_injects prove it (kills MUT-2)', () => {
     const registry = new RuleRegistry();
-    registry.register(CONTRIB({ id: 'first', effects: [{ fx: 'pay', to: 'A', amount: 1 }], slotWrites: [] , declaredSlots: []}));
-    registry.register(CONTRIB({ id: 'second', effects: [{ fx: 'pay', to: 'A', amount: 10 }], slotWrites: [], declaredSlots: [] }));
+    registry.register(
+      CONTRIB({ id: 'first', effects: [{ fx: 'deck_inject', deck: 'main', card: 'X', policy: 'top' }], slotWrites: [], declaredSlots: [] })
+    );
+    registry.register(
+      CONTRIB({ id: 'second', effects: [{ fx: 'deck_inject', deck: 'main', card: 'Y', policy: 'top' }], slotWrites: [], declaredSlots: [] })
+    );
     const out = registry.dispatch(genesis(), 'on-card-drawn', { hook: 'on-card-drawn' }, { windowDepth: 0 });
-    const A = (out['seats'] as readonly { id: string; cash: number }[]).find((s) => s.id === 'A')!;
-    expect(A.cash).toBe(11); // both fired, deterministic order
+    const draw = (out['decks'] as Record<string, { draw: readonly string[] }>)['main']!.draw;
+    expect(draw.slice(0, 2)).toEqual(['Y', 'X']); // first injected X, second put Y above it
   });
 
   it('duplicate contribution id refuses (supersede, never respec)', () => {
@@ -139,6 +137,26 @@ describe('GBC-29 · the monster room (feeds V-8): relation-borne activation is d
     s = pumpRelationEvents(s, registry, { windowDepth: 0 }) as State;
     const A2 = (s['seats'] as readonly { id: string; cash: number }[])[0]!;
     expect(A2.cash).toBe(-2); // unchanged — inert after dissolution
+  });
+
+  it('activation is DERIVED, not event-order luck: form→dissolve→THEN pump fires nothing (kills MUT-3)', () => {
+    const registry = new RuleRegistry();
+    registry.register(
+      CONTRIB({
+        id: 'monster2',
+        bearer: { relationType: 'Attachment' },
+        trigger: 'on-form:Attachment',
+        effects: [{ fx: 'levy', scope: 'table', amount: 2 }],
+        declaredSlots: [],
+        slotWrites: [],
+      })
+    );
+    let s = formRelation(genesis(), { type: 'Attachment', from: 'tok', to: 'card1' });
+    const relId = (s['relations'] as readonly RelationRow[])[0]!.id;
+    s = dissolveRelation(s, relId) as State; // dissolved BEFORE any pump
+    s = pumpRelationEvents(s, registry, { windowDepth: 0 }) as State; // both events drain now
+    const A = (s['seats'] as readonly { id: string; cash: number }[])[0]!;
+    expect(A.cash).toBe(0); // no formed Attachment at dispatch time → inert, even for the on-form event
   });
 });
 

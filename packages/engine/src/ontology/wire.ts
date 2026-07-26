@@ -8,15 +8,8 @@ import type { EngineCore } from '../kernel/core.js';
 import { formRelation, dissolveRelation } from './relations.js';
 import { placeComponent, addSurface, composeSurface } from './surfaces.js';
 
-/** I-24: ontology intents are PLAYER intents under turn discipline — same law as F2. */
-function onTurn(state: State, intent: Intent): true | { rule: string; detail: string } {
-  const turn = state['turn'] as { seatIdx: number } | undefined;
-  const rows = state['seats'] as readonly { id: string }[] | undefined;
-  const active = rows?.[turn?.seatIdx ?? -1]?.id;
-  return active === intent.seat
-    ? true
-    : { rule: 'M5/turn-order (I-24)', detail: `not seat "${intent.seat}"'s turn` };
-}
+/** I-24: ontology intents are PLAYER intents under turn discipline (shared rule — D10). */
+import { onTurnRule as onTurn } from '../kernel/discipline.js';
 
 export function wireOntology(core: EngineCore): void {
   core.registerIntent(

@@ -43,6 +43,16 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | DF3-9 | kinds.ts | relationsGrantable dead data | minor | REGISTERED as I-26 (F4 deferral) |
 | DF3-10 | instruments | wire row falsely claimed HK-7 on the real path | minor | CORRECTED append-only below |
 | DF2-17 (OBS-A/B/C) | effects/packloader/index | unverifiable AX-5 citation; packGenesis unsealed when used directly; forceRoundWrap on the public surface | minor | FIXED: cite → seam S-3 + CLAUDE §9 do-not; packGenesis seals at its own door; forceRoundWrap demoted off the public index (tests import the module directly) |
+| DF4-1 | contributions.ts | K7-F4 BLOCKING: shallow effect validation re-opened brick classes (P1 zero-option, P2 nested window, P3 nested unknown fx) through the contribution door | blocking | FIXED: recursive checkEffectShape (mirrors the F2 door: options≥1, no nested open_window, nested EFX closure, auto range, gated reserved); P1/P2/P3 tests |
+| DF4-2 | registry dispatch | GX-19 total order unproven (MUT-2 survived — commutative test) | blocking | FIXED: non-commutative deck_inject order test; builder re-ran MUT-2 → killed (1 named test) |
+| DF4-3 | registry activation | GX-24 derived activation unfalsifiable (MUT-3 survived) | blocking | FIXED: form→dissolve→pump test (fires nothing); builder re-ran MUT-3 → killed |
+| DF4-4 | registry.register | unsealed door (P6 TOCTOU: post-register mutation smuggled Infinity via capitalize) | major | FIXED: structuredClone+freezeDeep at register; assertFiniteResult added to fxCapitalize; D4 seal test; list() hands sealed rows |
+| DF4-5 | slots/registry banks | prototype-keyed lookups (P5: id '__proto__' / slot 'constructor') | major | FIXED: hasOwn-guarded lookups everywhere; reserved ids/slot names refused at validation; tests |
+| DF4-6 | completion ledger | no F4 rows | moderate | FIXED: rows appended (MR1 NOT-COMPLETE by rule on V-7/V-8) |
+| DF4-7 | contributions.ts | malformed shapes crashed raw (P11-class) | moderate | FIXED: validConditionShape + array-shape checks, all NAMED; tests |
+| DF4-8/9 | register | snapshot + hasOwn claims put on the record | moderate/minor | REGISTERED I-32; GBC-28 title corrected |
+| DF4-10 | wires | third onTurn copy | minor | FIXED: shared kernel/discipline.ts, three consumers |
+| DF4-11 | misc | dead declarations(); confused GBC-26 test; loose R-14 cite; RulesetView partial exposure | minor | FIXED: method removed; test cleaned; cite corrected; view exposes condition/effects/slotWrites in full |
 | EXT2-1 | packloader HK-4 | **external audit 2, BLOCKING:** window whose sole/any option opens a window validates → statically dead under depth-1 → brick/landmine (the NEW-1 SIBLING — DF2-16's closure was narrower than its claim) | blocking | FIXED: nested open_window refused at load ("statically dead"); trap fixtures moved to FORGED GENESIS (engine-side) so runtime R-17 tests stay on-path; mutation-verified (disabling the check fails both R2-1 tests) |
 | EXT2-2 | effects.ts | finite-in ≠ finite-out: two max-double pays committed AND logged cash:Infinity; illegality surfaced lazily at hash time | major | FIXED: assertFiniteResult at every numeric mutation (pay/levy/grant_favor) — refused at application; regression proves log holds only the legal move and the row replays clean |
 | EXT2-3 | packloader HK-4 | non-array fx (card or option) → raw TypeError, breaking the "names defects" contract | moderate | FIXED: array-shape checks named in the refusal |
@@ -86,6 +96,7 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-29 | Turn/lifecycle hook EMISSION from engine paths (TurnMachine/Deck/windows calling the bus) lands at F5 when library modules bind to phases; at F4 the bus consumes F3 relation events + direct dispatch | benign (explicit deferral, AE-linked to F5) | local (hookbus.ts) |
 | I-30 | Contribution effect args validated at F4 to membership + finite-number depth; full pack-context binding (seat/deck refs) at pack-integration (F5) | benign | local (contributions.ts) |
 | I-31 | Relation-borne activation DERIVED (formed relation of bearer type exists at dispatch) — stateless, replay-deterministic; kind-borne contributions always active | benign | local (registry.ts) |
+| I-32 | F4 registered semantics: Condition DSL (always | eq/ne/gte/lte(path,value) | and/or(terms); `ne` fires on unresolved); SlotWrite set/increment; `relationEventsProcessed` cursor region; per-firing snapshot = STRUCTURALLY guaranteed at F4 (no reentrant path; becomes falsifiable at the F5 weave, AE-linked); runtime hasOwn walk = defensive depth (OBS-2 class) | benign (K7-F4 D8/D9) | local (rules/*) |
 | I-19 | Gating is ENGINE-RESERVED: every content window gates (S-8); the `gated` field exists for future engine-opened advisory windows (F5); content declaring it → load refusal | benign (ext-audit-2 F2-R2-5) | local (effects.ts/packloader.ts) |
 
 ## Log

@@ -102,3 +102,19 @@ three rounds, zero final survivors; all F3 drift ≥ 7, teeth released; F4 slot 
 P13 characterized (raw Placement rows never denormalize — coherent; next-touch: refuse or
 register, folded into SP-4). STANDING: V-5/V-6 at the owner's R gate (ME5/ME4 blocked by
 rule); SP-4 + I-20 await the owner; onTurn dedup at next touch.
+
+## F4 rows (opened at build slot 4)
+
+| Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
+|---|---|---|---|---|
+| MR1 RuleRegistry | R-16 rt, R-17 MR1, R-24 (claims) | **V-7, V-8 DEFERRED → block; dischargeable at the F4 R gate** | HK-9 full (claim) | BUILT — NOT-COMPLETE by rule |
+| MR2 HookBus | — | — | S-4 consume (claim) | BUILT — awaiting K7 re-verify |
+| MR3 ContributionLoader | R-15, R-16 static (claims) | — | HK-4 MR3 side (claim) | BUILT — awaiting K7 re-verify |
+| MR4 StateSlotManager | R-18 (claim) | — | — | BUILT — awaiting K7 re-verify |
+| MR5 ExtensionContract | GBC-31 (claim) | — | — | BUILT — awaiting K7 re-verify |
+| MR6 RulesetView + vocabularies + wire | GBC-32 (claims) | — | — | BUILT — awaiting K7 re-verify |
+
+**K7-F4 round 1 (2026-07-25): RETURN** — 3 blocking (D1 brick classes at the contribution
+door; D2 order unproven; D3 activation unfalsifiable) + 2 major (unsealed register door;
+prototype-keyed banks) + 6 further. All 11 closed (DF4-1..11; I-32); suite 160/160;
+builder re-ran MUT-2/MUT-3 — killed. Awaiting K7 re-verify.

@@ -12,6 +12,9 @@ export interface RulesetViewModel {
     id: string;
     bearer: string;
     trigger: string;
+    condition: unknown;
+    effects: readonly unknown[];
+    slotWrites: readonly unknown[];
     effectSummary: readonly string[];
     slots: readonly string[];
   }[];
@@ -24,6 +27,10 @@ export function renderRuleset(registry: RuleRegistry): RulesetViewModel {
       id: c.id,
       bearer: c.bearer.kind !== undefined ? `kind:${c.bearer.kind}` : `relation:${c.bearer.relationType}`,
       trigger: c.trigger,
+      // K7-F4 D11: TOTAL exposure — full descriptors, condition, and slot writes, not summaries
+      condition: c.condition,
+      effects: c.effects,
+      slotWrites: c.slotWrites ?? [],
       effectSummary: c.effects.map((e) => e.fx),
       slots: c.declaredSlots.map((s) => `${s.name} (${s.reset})`),
     })),

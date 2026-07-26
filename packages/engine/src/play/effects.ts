@@ -111,6 +111,7 @@ function fxCapitalize(state: State, d: EffectDescriptor): JsonObject {
   const owner = d['owner'] as string;
   const asset = d['asset'] as string;
   const amount = d['amount'] as number;
+  assertFiniteResult('capitalize', `asset "${asset}" value`, amount); // K7-F4 D4 follow-up
   return mapSeat(state, owner, (s) => ({
     ...s,
     assets: [...s.assets, { ref: asset, value: amount }],
