@@ -38,6 +38,8 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | DF3-6 | tests | no F3 replay test; title overreach | moderate | FIXED: D6 compose/place/form/dissolve rebuild ×2; title corrected |
 | DF3-7 | surfaces.ts | two untested guards (MUT-F3-11/12) | moderate | FIXED: both refusal tests added |
 | DF3-8 | relations/surfaces | duplicate compositions/relations; dangling placement location; retire didn't dissolve (P5/P8) | moderate | FIXED: duplicate-id + duplicate-relation refusals; Placement dissolve clears location; retire dissolves compositions emitting on-dissolve |
+| DF3-11 (P11) | surfaces/relations | K7-F3 r2: double-placement possible; stale Placement dissolve wiped LIVE location | moderate (blocking-narrow) | FIXED: already-placed refusal at placeComponent; location cleared only when the dissolved relation IS the current placement; both regressions |
+| DF3-12 (P12) | surfaces.ts | K7-F3 r2: retire stranded components placed ON the retired surface | moderate (blocking-narrow) | FIXED: retire dissolves Placements onto the surface (locations cleared by the Placement rule); regression |
 | DF3-9 | kinds.ts | relationsGrantable dead data | minor | REGISTERED as I-26 (F4 deferral) |
 | DF3-10 | instruments | wire row falsely claimed HK-7 on the real path | minor | CORRECTED append-only below |
 | DF2-17 (OBS-A/B/C) | effects/packloader/index | unverifiable AX-5 citation; packGenesis unsealed when used directly; forceRoundWrap on the public surface | minor | FIXED: cite → seam S-3 + CLAUDE §9 do-not; packGenesis seals at its own door; forceRoundWrap demoted off the public index (tests import the module directly) |

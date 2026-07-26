@@ -157,11 +157,11 @@ export function dissolveRelation(state: State, relationId: string): JsonObject {
     relations: relations.map((r) => (r.id === relationId ? { ...r, status: 'dissolved' } : r)),
   } as JsonObject;
   if (row.type === 'Placement') {
-    // K7-F3 defect 8: dissolving a Placement clears the denormalized location — no
-    // dangling surface/position on the component.
+    // K7-F3 defect 8 + P11: clear the denormalized location ONLY when this relation IS
+    // the component's current placement — a stale dissolve never wipes a live location.
     const comps = (next['components'] as Record<string, JsonObject>) ?? {};
     const comp = comps[row.from];
-    if (comp) {
+    if (comp && comp['surface'] === row.to) {
       const cleared: Record<string, unknown> = { ...comp };
       delete cleared['surface'];
       delete cleared['position'];

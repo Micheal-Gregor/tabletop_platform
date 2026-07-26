@@ -66,6 +66,16 @@ export function placeComponent(state: State, componentId: string, surfaceId: str
   if (!surf) throw new SurfaceRefusal(surfaceId, 'GX-17', 'unknown surface');
   const v = positionValid(surf.topology, position);
   if (v !== true) throw new SurfaceRefusal(surfaceId, 'GX-17', v);
+  // K7-F3 P11 closure: a component sits in ONE place — placing an already-placed
+  // component refuses (dissolve its Placement first, on the record).
+  const existing = ((state['components'] as Record<string, { surface?: string }>) ?? {})[componentId];
+  if (existing?.surface !== undefined) {
+    throw new SurfaceRefusal(
+      surfaceId,
+      'GX-17/P11',
+      `component "${componentId}" is already placed on "${existing.surface}" — dissolve its Placement first`
+    );
+  }
 
   // the Placement relation carries the formation predicate (HK-8 fires inside)
   const related = formRelation(state, { type: 'Placement', from: componentId, to: surfaceId });
@@ -121,6 +131,12 @@ export function retireComposedSurface(state: State, surfaceId: string): JsonObje
   let next: JsonObject = state as JsonObject;
   for (const r of (state['relations'] as readonly RelationRow[]) ?? []) {
     if (r.status === 'formed' && r.type === 'Composition' && composed.has(r.from) && composed.has(r.to)) {
+      next = dissolveRelation(next, r.id);
+    }
+    // K7-F3 P12 closure: retirement also dissolves Placements ONTO the retired surface —
+    // no component strands on a surface that no longer exists (locations cleared by the
+    // Placement-dissolve rule).
+    if (r.status === 'formed' && r.type === 'Placement' && r.to === surfaceId) {
       next = dissolveRelation(next, r.id);
     }
   }

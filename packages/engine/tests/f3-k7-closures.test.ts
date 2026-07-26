@@ -134,3 +134,41 @@ describe('D8 · composition/dissolution soundness', () => {
     expect(() => dissolveRelation(genesis(), 'r99')).toThrow(RelationRefusal);
   });
 });
+
+describe('P11/P12 · placement coherence (K7-F3 round-2 residues)', () => {
+  it('P11: placing an already-placed component refuses — one component, one place', () => {
+    let s = placeComponent(genesis(), 'fig', 'table', { x: 1, y: 1 }) as State;
+    const s2 = composeSurface(s, 'map1', ['t1', 't2'], 'grid') as State;
+    expect(() => placeComponent(s2, 'fig', 'map1', { x: 0, y: 0 })).toThrow(/already placed/);
+  });
+
+  it('P11: a STALE Placement dissolve never wipes a live location', () => {
+    // forge the divergent shape K7 demonstrated: a formed row to 'table' while the
+    // component's live surface is elsewhere
+    let s = placeComponent(genesis(), 'fig', 'table', { x: 1, y: 1 }) as State;
+    const forged = {
+      ...s,
+      components: {
+        ...(s['components'] as Record<string, JsonObject>),
+        fig: { ...(s['components'] as Record<string, JsonObject>)['fig']!, surface: 'map1' },
+      },
+    } as State;
+    const placeId = (forged['relations'] as readonly RelationRow[]).find((r) => r.type === 'Placement')!.id;
+    const after = dissolveRelation(forged, placeId) as State;
+    const fig = (after['components'] as Record<string, JsonObject>)['fig']!;
+    expect(fig['surface']).toBe('map1'); // the live location survived the stale dissolve
+  });
+
+  it('P12: retiring a surface dissolves Placements ONTO it — nothing strands', () => {
+    let s = composeSurface(genesis(), 'map1', ['t1', 't2'], 'grid') as State;
+    s = placeComponent(s, 'fig', 'map1', { x: 0, y: 0 }) as State;
+    const after = retireComposedSurface(s, 'map1') as State;
+    const fig = (after['components'] as Record<string, JsonObject>)['fig']!;
+    expect(fig['surface']).toBeUndefined();
+    expect(fig['position']).toBeUndefined();
+    const formedPlacements = (after['relations'] as readonly RelationRow[]).filter(
+      (r) => r.type === 'Placement' && r.status === 'formed'
+    );
+    expect(formedPlacements.length).toBe(0);
+  });
+});
