@@ -118,3 +118,10 @@ rule); SP-4 + I-20 await the owner; onTurn dedup at next touch.
 door; D2 order unproven; D3 activation unfalsifiable) + 2 major (unsealed register door;
 prototype-keyed banks) + 6 further. All 11 closed (DF4-1..11; I-32); suite 160/160;
 builder re-ran MUT-2/MUT-3 — killed. Awaiting K7 re-verify.
+
+**K7-F4 round 2 (2026-07-25): PASS.** All 11 closures reconstructed live; MUT-2/MUT-3 +
+6 new-guard mutants each die on exactly one named test; two survivors registered (I-32).
+Conditions of record executed same-commit: DF4-12/NEW-2 (clone-first at all three doors +
+getter regression) and I-32′. All F4 drift ≥ 7 — teeth released; **F5 slot may open**.
+STANDING: V-7/V-8 at the owner's R gate (MR1 blocked by rule); MR1 completion binds to
+the next K7 entry (RD-1).

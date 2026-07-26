@@ -223,8 +223,9 @@ function activeSeatId(state: State): string {
  * aliasing law, applied to content).
  */
 export function wirePack(core: EngineCore, rawPack: ContentPack): void {
-  hookHk4ValidatePack(rawPack);
+  // K7-F4 NEW-2 note applied here too: clone FIRST, validate the CLONE (getter-proof).
   const pack = freezeDeep(structuredClone(rawPack) as unknown as JsonObject) as unknown as ContentPack;
+  hookHk4ValidatePack(pack);
 
   const onTurn = onTurnRule; // shared discipline (K7-F4 D10)
 
@@ -308,7 +309,7 @@ export function wirePack(core: EngineCore, rawPack: ContentPack): void {
 
 /** Convenience: validate + SEAL + genesis in one load call (the S-5 door). */
 export function loadPack(rawPack: ContentPack): { genesis: Genesis; wire: (core: EngineCore) => void } {
-  hookHk4ValidatePack(rawPack);
   const pack = freezeDeep(structuredClone(rawPack) as unknown as JsonObject) as unknown as ContentPack;
+  hookHk4ValidatePack(pack);
   return { genesis: packGenesis(pack), wire: (core) => wirePack(core, pack) };
 }

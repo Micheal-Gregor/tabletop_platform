@@ -62,13 +62,14 @@ export class RuleRegistry {
   private readonly entries: RuleContribution[] = [];
 
   register(c: RuleContribution): void {
-    validateContribution(c);
-    if (this.entries.some((e) => e.id === c.id)) {
-      throw new EffectRefusal(c.id, 'GX-19/supersede-never-respec', 'contribution id already registered');
+    // K7-F4 NEW-2: CLONE FIRST, validate the CLONE, store the clone — a getter can never
+    // show validation one list and the seal another (D4 + NEW-2 together).
+    const sealed = freezeDeep(structuredClone(c) as unknown as JsonObject) as unknown as RuleContribution;
+    validateContribution(sealed);
+    if (this.entries.some((e) => e.id === sealed.id)) {
+      throw new EffectRefusal(sealed.id, 'GX-19/supersede-never-respec', 'contribution id already registered');
     }
-    // K7-F4 D4: SEAL at the register door (the DF2-8/EXT2-4 law applied to contributions)
-    // — post-registration mutation of the caller's object is inert.
-    this.entries.push(freezeDeep(structuredClone(c) as unknown as JsonObject) as unknown as RuleContribution);
+    this.entries.push(sealed);
   }
 
   list(): readonly RuleContribution[] {

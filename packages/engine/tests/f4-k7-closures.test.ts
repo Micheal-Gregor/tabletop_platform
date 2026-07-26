@@ -112,3 +112,23 @@ describe('D7 · malformed shapes are NAMED, never raw TypeErrors', () => {
     expect(() => validateContribution(BASE({ declaredSlots: 3 as never }))).toThrow(/"declaredSlots" must be an array/);
   });
 });
+
+describe('NEW-2 · clone-first: a lying getter cannot split validation from the seal', () => {
+  it('an effects getter that alternates lists cannot smuggle an unvalidated descriptor', () => {
+    let reads = 0;
+    const evil = {
+      id: 'getter', bearer: { kind: 'Card' }, trigger: 'on-card-drawn',
+      condition: { op: 'always' }, declaredSlots: [], vocabVersions: { efx: '1.1.1', hooks: '1.0' },
+      get effects() {
+        reads += 1;
+        return reads <= 1
+          ? [{ fx: 'open_window', kind: 'k', decider: 'A', options: [], auto: 0 }] // the brick — seen FIRST by the clone
+          : [{ fx: 'pay', to: 'A', amount: 1 }];
+      },
+    } as unknown as RuleContribution;
+    const registry = new RuleRegistry();
+    // whichever list the clone captures IS the list validated — the brick is refused
+    expect(() => registry.register(evil)).toThrow(/zero options|no path to decision/);
+    expect(registry.list().length).toBe(0);
+  });
+});

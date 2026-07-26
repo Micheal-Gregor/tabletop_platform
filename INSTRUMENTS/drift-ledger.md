@@ -97,6 +97,8 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-30 | Contribution effect args validated at F4 to membership + finite-number depth; full pack-context binding (seat/deck refs) at pack-integration (F5) | benign | local (contributions.ts) |
 | I-31 | Relation-borne activation DERIVED (formed relation of bearer type exists at dispatch) — stateless, replay-deterministic; kind-borne contributions always active | benign | local (registry.ts) |
 | I-32 | F4 registered semantics: Condition DSL (always | eq/ne/gte/lte(path,value) | and/or(terms); `ne` fires on unresolved); SlotWrite set/increment; `relationEventsProcessed` cursor region; per-firing snapshot = STRUCTURALLY guaranteed at F4 (no reentrant path; becomes falsifiable at the F5 weave, AE-linked); runtime hasOwn walk = defensive depth (OBS-2 class) | benign (K7-F4 D8/D9) | local (rules/*) |
+| DF4-12 (NEW-2) | registry.register + pack doors | validate-then-clone let a lying getter seal an unvalidated list | moderate | FIXED: clone-FIRST-validate-the-clone at registry.register, wirePack, loadPack; getter regression test |
+| I-32′ | I-32 extended per K7: the dispatch-bank hasOwn guards and fxCapitalize finite check are registered EXPECTED-SURVIVOR defensive depth (NMUT-F/NMUT-H — unreachable behind validated doors) | benign | local |
 | I-19 | Gating is ENGINE-RESERVED: every content window gates (S-8); the `gated` field exists for future engine-opened advisory windows (F5); content declaring it → load refusal | benign (ext-audit-2 F2-R2-5) | local (effects.ts/packloader.ts) |
 
 ## Log
