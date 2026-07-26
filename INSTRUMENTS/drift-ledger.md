@@ -53,6 +53,10 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | DF4-8/9 | register | snapshot + hasOwn claims put on the record | moderate/minor | REGISTERED I-32; GBC-28 title corrected |
 | DF4-10 | wires | third onTurn copy | minor | FIXED: shared kernel/discipline.ts, three consumers |
 | DF4-11 | misc | dead declarations(); confused GBC-26 test; loose R-14 cite; RulesetView partial exposure | minor | FIXED: method removed; test cleaned; cite corrected; view exposes condition/effects/slotWrites in full |
+| EXT3-A | contributions + packloader checkFx | external audit 3, MODERATE: null/undefined elements in fx arrays raw-crashed (DF4-7/EXT2-3 closures narrower than their claims — the pattern again) | moderate | FIXED: object-with-string-fx guard at BOTH doors; named refusals; tests |
+| EXT3-B | registry slotWrites | increment silently coerced non-numeric slots | minor | FIXED: refused-not-coerced; test |
+| EXT3-C | validateUniqueDef | duplicate contribution ids validated (register-parity gap) | minor | FIXED: dedup check; test |
+| EXT3-D | contributions bearer | relationType unvalidated → silently-inert dead rules | minor | FIXED: relationType ∈ the five; test |
 | EXT2-1 | packloader HK-4 | **external audit 2, BLOCKING:** window whose sole/any option opens a window validates → statically dead under depth-1 → brick/landmine (the NEW-1 SIBLING — DF2-16's closure was narrower than its claim) | blocking | FIXED: nested open_window refused at load ("statically dead"); trap fixtures moved to FORGED GENESIS (engine-side) so runtime R-17 tests stay on-path; mutation-verified (disabling the check fails both R2-1 tests) |
 | EXT2-2 | effects.ts | finite-in ≠ finite-out: two max-double pays committed AND logged cash:Infinity; illegality surfaced lazily at hash time | major | FIXED: assertFiniteResult at every numeric mutation (pay/levy/grant_favor) — refused at application; regression proves log holds only the legal move and the row replays clean |
 | EXT2-3 | packloader HK-4 | non-array fx (card or option) → raw TypeError, breaking the "names defects" contract | moderate | FIXED: array-shape checks named in the refusal |

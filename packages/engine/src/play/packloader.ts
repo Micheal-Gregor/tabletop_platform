@@ -75,6 +75,10 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
 
   // Per-descriptor arg schema — the "schema valid" leg of HK-4 (recursive over window options).
   const checkFx = (d: EffectDescriptor, where: string, defectsOut: string[]): void => {
+    if (d === null || typeof d !== 'object' || typeof (d as { fx?: unknown }).fx !== 'string') {
+      defectsOut.push(`${where}: effect must be an object with a string "fx", got ${JSON.stringify(d)}`); // EXT3-A sibling
+      return;
+    }
     if (!EFX_V1_1_1.includes(d.fx as (typeof EFX_V1_1_1)[number])) {
       defectsOut.push(`${where} carries fx ∉ EFX: "${d.fx}"`);
       return;

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ContributionRefusal,
   RuleRegistry,
+  validateUniqueDef,
   formRelation,
   pumpRelationEvents,
   readSlot,
@@ -130,5 +131,46 @@ describe('NEW-2 · clone-first: a lying getter cannot split validation from the 
     // whichever list the clone captures IS the list validated — the brick is refused
     expect(() => registry.register(evil)).toThrow(/zero options|no path to decision/);
     expect(registry.list().length).toBe(0);
+  });
+});
+
+describe('EXT3 · external audit round 3 closures', () => {
+  it('A: null/undefined elements in effects or option fx → NAMED refusal, never a raw TypeError', () => {
+    expect(() => validateContribution(BASE({ effects: [null] as never }))).toThrow(ContributionRefusal);
+    expect(() => validateContribution(BASE({ effects: [null] as never }))).toThrow(/must be an object/);
+    expect(() =>
+      validateContribution(BASE({ effects: [{ fx: 'open_window', kind: 'k', decider: 'A', options: [{ label: 'o', fx: [null] }], auto: 0 }] as never }))
+    ).toThrow(/must be an object/);
+  });
+
+  it('B: increment on a non-numeric slot → refused, not coerced', () => {
+    const registry = new RuleRegistry();
+    registry.register(
+      BASE({
+        id: 'coercer',
+        declaredSlots: [{ name: 'x', reset: 'never' }],
+        slotWrites: [{ slot: 'x', increment: 5 }],
+      })
+    );
+    const forged = { ...genesis(), ruleSlots: { coercer: { x: 'hi' } } } as State;
+    expect(() =>
+      registry.dispatch(forged, 'on-card-drawn', { hook: 'on-card-drawn' }, { windowDepth: 0 })
+    ).toThrow(/refused, not coerced/);
+  });
+
+  it('D: relation-borne contribution on a nonexistent relation type → refused (no dead rules)', () => {
+    expect(() =>
+      validateContribution(BASE({ bearer: { relationType: 'Bogus' }, trigger: 'on-turn-start' }))
+    ).toThrow(/not one of the five/);
+  });
+});
+
+describe('EXT3-C · UniqueDef register-parity', () => {
+  it('duplicate contribution ids inside a UniqueDef → refused', () => {
+    const u = {
+      id: 'u1', kindRef: 'Card', params: {},
+      contributions: [BASE({ id: 'dup' }), BASE({ id: 'dup' })],
+    };
+    expect(() => validateUniqueDef(u as never, () => true)).toThrow(/duplicate contribution ids/);
   });
 });

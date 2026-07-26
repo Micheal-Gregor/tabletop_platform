@@ -125,3 +125,10 @@ Conditions of record executed same-commit: DF4-12/NEW-2 (clone-first at all thre
 getter regression) and I-32′. All F4 drift ≥ 7 — teeth released; **F5 slot may open**.
 STANDING: V-7/V-8 at the owner's R gate (MR1 blocked by rule); MR1 completion binds to
 the next K7 entry (RD-1).
+
+**EXTERNAL AUDIT round 3 (F4, 2026-07-25): RETURN → closures landed.** Report archived at
+governance/audits/K7_AUDIT_REPORT-3.md. Zero theater (14/14 guard mutations killed; the 4
+predicted survivors matched I-32/I-32′ exactly), S5 boundary verified sound, docket seal
+verified. Findings EXT3-A..D (all validation-door fidelity, none dispatch-law) closed at
+both doors incl. the pre-existing F2 packloader sibling; suite 165/165. Awaiting the
+external auditor's targeted re-verify (P1/P8 reconstruction) to clear MR3's teeth.

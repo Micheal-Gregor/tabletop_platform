@@ -6,6 +6,7 @@
 import type { JsonObject, JsonValue } from '../kernel/types.js';
 import type { EffectDescriptor } from '../play/effects.js';
 import { EFX_GOVERNED, HOOK_POINTS_V1 } from './vocabularies.js';
+import { RELATION_TYPES } from '../ontology/relations.js';
 
 export type Condition =
   | { readonly op: 'always' }
@@ -53,6 +54,10 @@ const RESERVED = ['__proto__', 'constructor', 'prototype'];
  * pack-context (I-30); STRUCTURE is validated here.
  */
 function checkEffectShape(d: EffectDescriptor, where: string, defects: string[]): void {
+  if (d === null || typeof d !== 'object' || typeof (d as { fx?: unknown }).fx !== 'string') {
+    defects.push(`${where}: effect must be an object with a string "fx", got ${JSON.stringify(d)}`); // EXT3-A
+    return;
+  }
   if (!EFX_GOVERNED.members.includes(d.fx)) {
     defects.push(`${where}: fx ∉ EFX: "${d.fx}"`);
     return;
@@ -129,6 +134,9 @@ export function validateContribution(c: RuleContribution): void {
   const hasKind = typeof c.bearer?.kind === 'string';
   const hasRel = typeof c.bearer?.relationType === 'string';
   if (hasKind === hasRel) defects.push('bearer must be EXACTLY one of kind | relationType');
+  if (hasRel && !RELATION_TYPES.includes(c.bearer.relationType as (typeof RELATION_TYPES)[number])) {
+    defects.push(`bearer.relationType "${c.bearer.relationType}" is not one of the five relations (EXT3-D — a dead rule is a defect)`);
+  }
   if (c.vocabVersions?.efx !== EFX_GOVERNED.version) {
     defects.push(`unknown EFX version "${c.vocabVersions?.efx}" (supported: ${EFX_GOVERNED.version})`);
   }
@@ -178,6 +186,8 @@ export function validateUniqueDef(u: UniqueDef, kindExists: (name: string) => bo
   const defects: string[] = [];
   if (!u.id) defects.push('missing UniqueDef id');
   if (!kindExists(u.kindRef)) defects.push(`kindRef "${u.kindRef}" is not an admitted kind`);
+  const ids = (u.contributions ?? []).map((c) => c.id);
+  if (new Set(ids).size !== ids.length) defects.push('duplicate contribution ids in UniqueDef (EXT3-C — register-parity)');
   if (defects.length > 0) throw new ContributionRefusal(u.id || '<unnamed>', 'RE-7', defects.join(' · '));
   for (const c of u.contributions ?? []) validateContribution(c);
 }
