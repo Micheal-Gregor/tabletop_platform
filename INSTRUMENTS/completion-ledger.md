@@ -66,3 +66,12 @@ recursing-option brick) and the wirePack seal proven on one door of two: two clo
 were narrower than their own claims. All closed; suite 85/85; builder re-ran the survivor
 mutations (MP6, R2-1 guard) — killed. M8/M9 re-enter K7 with these closures; V-2/V-3
 discharge remains queued at the owner's R gate behind the re-verify.
+
+**EXTERNAL AUDIT round 2B re-verify (2026-07-25): PASS** — archived at
+governance/audits/K7_AUDIT_REPORT-2B.md. All EXT2 closures reconstructed and
+mutation-verified by the finding auditor; ZERO survivors; three probes beyond the
+builder's tests (auto-target-recursing window, string-typed fx, gated:true presence) all
+correct; forged-genesis refactor confirmed to preserve on-path R-17 falsifiability.
+Re-scores: M8 5→8, M9 7→8; all F2 ≥ 7 — **teeth released, F2 CERTIFIED (internal K7 r3
++ external 2/2B)**. Carry-forwards unchanged: V-2/V-3 at the owner's R gate; F7 packRef
+obligation.
