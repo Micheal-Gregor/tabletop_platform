@@ -31,6 +31,12 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | DF2-15 | instruments | stale "proposed" rows; windowSeq/packId beyond I-8; onTurn mis-cite; deck no-ops unregistered | minor | FIXED: rows updated; I-8′/I-18 registered; cite corrected to M5/turn-order |
 | DF2-16 (NEW-1) | packloader HK-4 | zero-option gated window validates → no path to decision, game bricked (GX-8; falsified the closure's own header claim) | blocking (K7 re-verify) | FIXED: options.length ≥ 1 at load (mutation-verified: disabling it fails only the NEW-1 test); trap fixtures given a real inner option |
 | DF2-17 (OBS-A/B/C) | effects/packloader/index | unverifiable AX-5 citation; packGenesis unsealed when used directly; forceRoundWrap on the public surface | minor | FIXED: cite → seam S-3 + CLAUDE §9 do-not; packGenesis seals at its own door; forceRoundWrap demoted off the public index (tests import the module directly) |
+| EXT2-1 | packloader HK-4 | **external audit 2, BLOCKING:** window whose sole/any option opens a window validates → statically dead under depth-1 → brick/landmine (the NEW-1 SIBLING — DF2-16's closure was narrower than its claim) | blocking | FIXED: nested open_window refused at load ("statically dead"); trap fixtures moved to FORGED GENESIS (engine-side) so runtime R-17 tests stay on-path; mutation-verified (disabling the check fails both R2-1 tests) |
+| EXT2-2 | effects.ts | finite-in ≠ finite-out: two max-double pays committed AND logged cash:Infinity; illegality surfaced lazily at hash time | major | FIXED: assertFiniteResult at every numeric mutation (pay/levy/grant_favor) — refused at application; regression proves log holds only the legal move and the row replays clean |
+| EXT2-3 | packloader HK-4 | non-array fx (card or option) → raw TypeError, breaking the "names defects" contract | moderate | FIXED: array-shape checks named in the refusal |
+| EXT2-4 | packloader wirePack | wirePack's OWN seal unfalsifiable (MP6 survived; D8 only proved loadPack's door) — DF2-8's closure narrower than its claim | moderate | FIXED: direct-wirePack TOCTOU regression (genesis from separate copy); builder re-ran MP6 → killed |
+| EXT2-5 (I-19) | effects/packloader | content controlled the unvalidated `gated` flag (unregistered invention; gated:false windows silently skippable) | minor | FIXED: gating ENGINE-RESERVED — every content window gates (S-8); content declaring `gated` → load refusal; registered I-19 |
+| EXT2-6 (OBS-1/3) | effects/packloader | dead isFrozen leg in HK-9 (unobservable — frozen objects cannot unfreeze); all-eliminated packs loadable | minor | FIXED: dead leg removed; "no LIVING seat" load refusal added. OBS-2 (mapSeat defensive throw) RETAINED and registered as expected-survivor defensive depth |
 
 ## Interpretation Register (decisions the handoff did not make)
 
@@ -57,6 +63,7 @@ Scores are set by the DISTINCT K7 reviewer — never by the builder.
 | I-17 | Status 'closing' = the M15 Closing-Round SLOT: rounds continue unbounded and 'ended' is reserved vocabulary until M15 opts in at F5 (explicit deferral, AE-linked to the F5 slot) | benign (K7-F2 defect 13) | local (turn.ts) |
 | I-18 | M6-level silent no-ops (drawTop unknown deck → none; toReserve unknown card → unchanged) are LEGAL at the deck layer; catalog integrity halts at the draw APPLIER (GX-10); "absent" (vs eliminated) deciders = F7 presence territory, deferred | benign (K7-F2 defect 15) | local (deck.ts/packloader.ts) |
 | I-8′ | I-8 amended: genesis also carries `windowSeq` (window id counter — replay-deterministic); `packId` REMOVED from state (duplicated the row — GX-6) | benign | local (packloader.ts) |
+| I-19 | Gating is ENGINE-RESERVED: every content window gates (S-8); the `gated` field exists for future engine-opened advisory windows (F5); content declaring it → load refusal | benign (ext-audit-2 F2-R2-5) | local (effects.ts/packloader.ts) |
 
 ## Log
 

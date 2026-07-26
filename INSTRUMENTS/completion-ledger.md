@@ -58,3 +58,11 @@ Row-status corrections (append-only; rows above stand as the historical claims):
 F2 module rows — K7 **PASS round 3** (drift ≥ 7); F1 rows — K7 PASS round 2 + external
 audit 1 PASS. F1·M3's original "after F2" V-1 wording is SUPERSEDED by I-14 (post-F5).
 Still open by rule: M3 + M9 NOT-COMPLETE until V-2/V-3 discharge at the owner's R gate.
+
+**EXTERNAL AUDIT round 2 (F2, 2026-07-25): RETURN** — report archived at
+governance/audits/K7_AUDIT_REPORT-2.md. Five defects BOTH builder and internal K7 missed
+(EXT2-1..5 + OBS closures in the drift ledger) — notably the NEW-1 SIBLING (single-
+recursing-option brick) and the wirePack seal proven on one door of two: two closures
+were narrower than their own claims. All closed; suite 85/85; builder re-ran the survivor
+mutations (MP6, R2-1 guard) — killed. M8/M9 re-enter K7 with these closures; V-2/V-3
+discharge remains queued at the owner's R gate behind the re-verify.

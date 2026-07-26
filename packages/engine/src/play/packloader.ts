@@ -60,6 +60,10 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
     defects.push(`maxRounds must be a positive integer, got ${pack.maxRounds}`);
   }
   if (!pack.seats || pack.seats.length < 1) defects.push('pack declares no seats');
+  if (pack.seats && pack.seats.length >= 1 && pack.seats.every((s) => s.eliminated === true)) {
+    // ext-audit-2 OBS-3: a game with no living seat is degenerate at the door.
+    defects.push('pack declares no LIVING seat (all eliminated at genesis)');
+  }
 
   const seatIds = new Set((pack.seats ?? []).map((s) => s.id));
   const cardIds = new Set(Object.keys(pack.cards ?? {}));
@@ -109,6 +113,8 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
       case 'open_window': {
         need(typeof d['kind'] === 'string', `"kind" must be a string`);
         need(isSeat(d['decider']), `"decider" must be a declared seat (an undecidable window bricks the game)`);
+        // ext-audit-2 F2-R2-5 (I-19): gating is engine-reserved — content may not set it.
+        need(d['gated'] === undefined, `"gated" is engine-reserved — every content window gates (S-8)`);
         const options = d['options'];
         need(Array.isArray(options), `"options" must be an array`);
         if (Array.isArray(options)) {
@@ -123,7 +129,21 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
           options.forEach((opt, i) => {
             const o = opt as { label?: unknown; fx?: unknown };
             if (typeof o?.label !== 'string') defectsOut.push(`${where} · open_window option ${i}: "label" must be a string`);
+            // ext-audit-2 F2-R2-3: malformed fx shapes are NAMED, never thrown raw.
+            if (o?.fx !== undefined && !Array.isArray(o.fx)) {
+              defectsOut.push(`${where} · open_window option ${i}: "fx" must be an array, got ${JSON.stringify(o.fx)}`);
+              return;
+            }
             for (const inner of (o?.fx as EffectDescriptor[] | undefined) ?? []) {
+              // ext-audit-2 F2-R2-1 (the NEW-1 sibling): open_window inside a window
+              // option is STATICALLY DEAD under the depth-1 law — resolving it can only
+              // refuse, and if it is the sole/auto path the game bricks. Refused at load.
+              if (inner?.fx === 'open_window') {
+                defectsOut.push(
+                  `${where} · open_window option ${i}: contains open_window — statically dead under the depth-1 law (no path to decision)`
+                );
+                continue;
+              }
               checkFx(inner, `${where} · open_window option ${i}`, defectsOut);
             }
           });
@@ -134,6 +154,11 @@ export function hookHk4ValidatePack(pack: ContentPack): void {
   };
 
   for (const [cardId, card] of Object.entries(pack.cards ?? {})) {
+    // ext-audit-2 F2-R2-3: a non-array card.fx is NAMED, never a raw TypeError.
+    if (card?.fx !== undefined && !Array.isArray(card.fx)) {
+      defects.push(`card "${cardId}": "fx" must be an array, got ${JSON.stringify(card.fx)}`);
+      continue;
+    }
     for (const d of card.fx ?? []) checkFx(d, `card "${cardId}"`, defects);
   }
   for (const [deckRef, deck] of Object.entries(pack.decks ?? {})) {

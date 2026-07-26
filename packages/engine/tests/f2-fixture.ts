@@ -32,35 +32,41 @@ export const F2_PACK: ContentPack = {
         },
       ],
     },
-    trap: {
-      fx: [
-        {
-          fx: 'open_window',
-          kind: 'nested',
-          decider: 'A',
-          options: [
-            {
-              label: 'recurse',
-              fx: [
-                {
-                  fx: 'open_window',
-                  kind: 'inner',
-                  decider: 'A',
-                  options: [{ label: 'noop', fx: [] }],
-                  auto: 0,
-                },
-              ],
-            },
-          ],
-          auto: 0,
-        },
-      ],
-    },
   },
   decks: {
-    main: { cards: ['payday', 'tax', 'charter', 'favor', 'seed_card', 'writ', 'crossroads', 'trap'] },
+    main: { cards: ['payday', 'tax', 'charter', 'favor', 'seed_card', 'writ', 'crossroads'] },
   },
 };
+
+/**
+ * ext-audit-2 F2-R2-1: nested-window content is now UNCONSTRUCTIBLE (load-refused), so
+ * runtime depth-1 tests forge the window via GENESIS (engine-side, not content). This
+ * genesis carries a pre-opened window whose option would open another window.
+ */
+export function forgedTrapGenesis(deciderId: string, seatRows: readonly { id: string; eliminated: boolean }[]) {
+  return () => ({
+    seats: seatRows.map((s) => ({ id: s.id, cash: 0, favor: 0, assets: [], sueRights: [], eliminated: s.eliminated })),
+    turn: { round: 1, seatIdx: 0, phase: 'start', wrappedRound: 0, maxRounds: 2, status: 'playing' },
+    decks: { main: { draw: [], discard: [], reserve: [] } },
+    windows: [
+      {
+        id: 'w1',
+        kind: 'nested',
+        decider: deciderId,
+        options: [
+          {
+            label: 'recurse',
+            fx: [{ fx: 'open_window', kind: 'inner', decider: deciderId, options: [{ label: 'noop', fx: [] }], auto: 0 }],
+          },
+        ],
+        auto: 0,
+        gated: true,
+        status: 'open',
+      },
+    ],
+    windowSeq: 1,
+  });
+}
 
 export function newF2Core(seed = 'f2-seed', pack: ContentPack = F2_PACK): EngineCore {
   const { genesis, wire } = loadPack(pack);

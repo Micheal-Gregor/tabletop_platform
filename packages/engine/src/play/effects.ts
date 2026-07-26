@@ -52,8 +52,16 @@ export function hookHk9BeforeEffectApply(d: EffectDescriptor): void {
   if (!EFX_V1_1_1.includes(d.fx as EfxName)) {
     throw new EffectRefusal(String(d.fx), 'GX-7/R-3/HK-9', 'unknown descriptor — halt, never skip');
   }
-  if (!Object.isFrozen(EFX_V1_1_1)) {
-    throw new EffectRefusal(String(d.fx), 'GX-7/HK-9', 'vocabulary unsealed — dispatch integrity lost');
+  // (ext-audit-2 OBS-1: the former isFrozen leg was dead — a frozen object cannot be
+  // unfrozen in JS, so the check was unobservable. Removed; the freeze at definition
+  // plus MUT-7-class tests carry the seal.)
+}
+
+/** ext-audit-2 F2-R2-2 closure: arithmetic must stay finite AT APPLICATION — refuse the
+ * mutation, never lazily discover an illegal value at hash time. */
+function assertFiniteResult(fx: string, field: string, v: number): void {
+  if (!Number.isFinite(v)) {
+    throw new EffectRefusal(fx, 'GX-7/I-5′', `${field} overflowed to a non-finite value — refused at application`);
   }
 }
 
@@ -84,9 +92,17 @@ function fxPay(state: State, d: EffectDescriptor): JsonObject {
   const to = d['to'] as string;
   const amount = d['amount'] as number;
   const from = d['from'] as string | undefined;
-  let next = mapSeat(state, to, (s) => ({ ...s, cash: s.cash + amount }));
+  let next = mapSeat(state, to, (s) => {
+    const cash = s.cash + amount;
+    assertFiniteResult('pay', `seat "${to}" cash`, cash);
+    return { ...s, cash };
+  });
   if (from !== undefined) {
-    next = mapSeat(next, from, (s) => ({ ...s, cash: s.cash - amount }));
+    next = mapSeat(next, from, (s) => {
+      const cash = s.cash - amount;
+      assertFiniteResult('pay', `seat "${from}" cash`, cash);
+      return { ...s, cash };
+    });
   }
   return next; // balanced-move POSTING is Ledger law (F5, R-5) — N/A-by-absence here
 }
@@ -104,7 +120,11 @@ function fxCapitalize(state: State, d: EffectDescriptor): JsonObject {
 function fxGrantFavor(state: State, d: EffectDescriptor): JsonObject {
   const to = d['to'] as string;
   const n = d['n'] as number;
-  return mapSeat(state, to, (s) => ({ ...s, favor: s.favor + n }));
+  return mapSeat(state, to, (s) => {
+    const favor = s.favor + n;
+    assertFiniteResult('grant_favor', `seat "${to}" favor`, favor);
+    return { ...s, favor };
+  });
 }
 
 function fxLevy(state: State, d: EffectDescriptor): JsonObject {
@@ -116,10 +136,19 @@ function fxLevy(state: State, d: EffectDescriptor): JsonObject {
     const rows = seatRows(state);
     return {
       ...state,
-      seats: rows.map((s) => (s.eliminated ? s : { ...s, cash: s.cash - amount })),
+      seats: rows.map((s) => {
+        if (s.eliminated) return s;
+        const cash = s.cash - amount;
+        assertFiniteResult('levy', `seat "${s.id}" cash`, cash);
+        return { ...s, cash };
+      }),
     } as JsonObject;
   }
-  return mapSeat(state, scope, (s) => ({ ...s, cash: s.cash - amount }));
+  return mapSeat(state, scope, (s) => {
+    const cash = s.cash - amount;
+    assertFiniteResult('levy', `seat "${scope}" cash`, cash);
+    return { ...s, cash };
+  });
 }
 
 function fxDeckInject(state: State, d: EffectDescriptor): JsonObject {
@@ -158,7 +187,10 @@ function fxOpenWindow(state: State, d: EffectDescriptor, ctx: EffectContext): Js
     decider: d['decider'] as string,
     options: d['options'] as JsonValue,
     auto: (d['auto'] as number) ?? 0,
-    gated: (d['gated'] as boolean) ?? true,
+    // ext-audit-2 F2-R2-5 closure (I-19): gating is ENGINE-RESERVED — every content
+    // window gates (S-8: open windows block advance). Content may not opt out; the
+    // gated field exists for future engine-opened advisory windows (F5 territory).
+    gated: true,
     status: 'open',
   };
   return { ...state, windows: [...windows, win], windowSeq: counter + 1 } as JsonObject;

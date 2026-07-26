@@ -18,7 +18,7 @@ import {
   hookHk4ValidatePack,
 } from '../src/index.js';
 import type { Genesis, JsonObject } from '../src/index.js';
-import { F2_PACK, f2PackRef, f2Seats } from './f2-fixture.js';
+import { F2_PACK, f2PackRef, f2Seats, forgedTrapGenesis } from './f2-fixture.js';
 
 const PACK_CHOICE = {
   ...F2_PACK,
@@ -59,48 +59,15 @@ describe('D2 · HK-3 on the REAL passSeat path (kills MUT-4)', () => {
 });
 
 describe('D3 · depth-1 law on the AUTO path (kills MUT-13)', () => {
-  const PACK_AUTO_TRAP = {
-    ...F2_PACK,
-    seats: [{ id: 'A' }, { id: 'B', eliminated: true }],
-    cards: {
-      summons: {
-        fx: [
-          {
-            fx: 'open_window',
-            kind: 'auto-trap',
-            decider: 'B',
-            options: [
-              {
-                label: 'recurse',
-                fx: [
-                  {
-                    fx: 'open_window',
-                    kind: 'inner',
-                    decider: 'A',
-                    options: [{ label: 'noop', fx: [] }],
-                    auto: 0,
-                  },
-                ],
-              },
-            ],
-            auto: 0,
-          },
-        ],
-      },
-    },
-    decks: { main: { cards: ['summons'] } },
-  };
-
-  it('auto-resolving an option that opens a window → refused (R-17 on the auto path)', () => {
-    const { genesis, wire } = loadPack(PACK_AUTO_TRAP);
-    const core = new EngineCore(f2PackRef, f2Seats, 'd3-seed', genesis);
-    wire(core);
-    core.submit({ type: 'deck:draw', seat: 'A', args: { deck: 'main' } });
-    const win = (core.getState()['windows'] as readonly { id: string; status: string }[]).find(
-      (w) => w.status === 'open'
-    )!;
+  it('auto-resolving an option that opens a window → refused (R-17 on the auto path; forged genesis per F2-R2-1)', () => {
+    const genesis = forgedTrapGenesis('B', [
+      { id: 'A', eliminated: false },
+      { id: 'B', eliminated: true }, // decider eliminated → auto-eligible
+    ]);
+    const core = new EngineCore(f2PackRef, f2Seats, 'd3-seed', genesis as never);
+    wirePack(core, { ...F2_PACK });
     expect(() =>
-      core.submit({ type: 'window:auto', seat: 'A', args: { window: win.id } })
+      core.submit({ type: 'window:auto', seat: 'A', args: { window: 'w1' } })
     ).toThrow(/R-17|depth|inside/);
   });
 });

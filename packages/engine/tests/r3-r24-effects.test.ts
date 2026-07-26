@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import * as engine from '../src/index.js';
 import { EFX_V1_1_1, EffectEngine, EffectRefusal } from '../src/index.js';
-import { newF2Core, seat } from './f2-fixture.js';
+import { F2_PACK, forgedTrapGenesis, newF2Core, seat } from './f2-fixture.js';
 
 const draw = (core: ReturnType<typeof newF2Core>) => {
   const r = core.submit({ type: 'deck:draw', seat: 'A', args: { deck: 'main' } });
@@ -114,24 +114,24 @@ describe('GBC-16 · depth-1 window law (GX-11 = R-17 engine side)', () => {
     ).toThrow(/R-17|depth|inside/);
   });
 
-  it('end-to-end: resolving a trap option that recurses → loud refusal, state intact, unlogged', () => {
-    const core = newF2Core();
-    // draw until the trap ('nested') window is open — deck order is seeded, draws are legal
-    for (let i = 0; i < 8; i++) {
-      const windows = core.getState()['windows'] as readonly { kind: string; status: string }[];
-      if (windows.some((w) => w.kind === 'nested' && w.status === 'open')) break;
-      const r = core.submit({ type: 'deck:draw', seat: 'A', args: { deck: 'main' } });
-      if ('refused' in r) throw new Error(`fixture defect: ${r.detail}`);
-    }
-    const win = (core.getState()['windows'] as readonly { id: string; kind: string; status: string }[]).find(
-      (w) => w.kind === 'nested' && w.status === 'open'
+  it('end-to-end (forged genesis — nested content is load-refused per F2-R2-1): resolving a recursing option → loud refusal, state intact, unlogged', () => {
+    const { EngineCore, wirePack } = engine;
+    const genesis = forgedTrapGenesis('A', [
+      { id: 'A', eliminated: false },
+      { id: 'B', eliminated: false },
+    ]);
+    const core = new EngineCore(
+      { id: 'forged', version: '0', hash: '00' },
+      [{ id: 'A' }, { id: 'B' }],
+      'trap-seed',
+      genesis as never
     );
-    expect(win).toBeDefined();
+    wirePack(core, { ...F2_PACK });
 
     const hashBefore = core.getStateHash();
     const logBefore = core.getLogLength();
     expect(() =>
-      core.submit({ type: 'window:resolve', seat: 'A', args: { window: win!.id, option: 0 } })
+      core.submit({ type: 'window:resolve', seat: 'A', args: { window: 'w1', option: 0 } })
     ).toThrow(EffectRefusal);
     expect(core.getStateHash()).toBe(hashBefore); // appliers are pure — old state intact
     expect(core.getLogLength()).toBe(logBefore); // never logged (GX-3)
