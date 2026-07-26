@@ -81,3 +81,18 @@ implementation, persisted (vectors/V-2.json, V-3.json), re-derived — now live 
 anchors in the suite (87/87). M3 IntentLog and M9 EffectEngine: CC-5 satisfied-CLAIMED;
 per RD-1 their completion confirmation is BOUND to the next K7 entry (the F3 review will
 re-check CC-5 alongside its own scope). V-1 remains post-F5.
+
+## F3 rows (opened at build slot 3)
+
+| Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
+|---|---|---|---|---|
+| ME1 KindRegistry | R-14 (claim) | — | — | BUILT — awaiting K7 |
+| ME5 AdmissibilityGate | GBC-18 legs (claim) | **V-5 DEFERRED → blocks; dischargeable at the F3 R gate** | HK-7 (claim) | BUILT — awaiting K7 |
+| ME2 RoleBinder | R-11 (claim) | — | — | BUILT — awaiting K7 |
+| ME3 RelationEngine | R-12, R-13 (claims) | — | HK-8 (claim) | BUILT — awaiting K7 |
+| ME4 SurfaceManager | GBC-23/24 (claims) | **V-6 DEFERRED → blocks; dischargeable at the F3 R gate** | — | BUILT — awaiting K7 |
+
+**Builder note (2026-07-25):** F3 built instruments-first (GX-13..18, GBC-18..24,
+I-20..I-23); suite 115/115; tsc clean; HK-6 green. Statuses are CLAIMS per RD-2. The F3
+K7 entry ALSO carries the bound CC-5 re-check for M3/M9 (V-2/V-3 discharge, RD-1).
+I-20 flags an upstream record question for the owner: "12 kinds" vs 11 named.

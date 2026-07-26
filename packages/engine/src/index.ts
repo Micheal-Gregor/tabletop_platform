@@ -41,3 +41,23 @@ export {
   loadPack,
 } from './play/packloader.js';
 export type { ContentPack, CardDef } from './play/packloader.js';
+
+// ── F3 Ontology (public surface) ──
+export { ROLES, bindingFor, usableBinding, RoleRefusal } from './ontology/roles.js';
+export type { RoleName, RoleBinding } from './ontology/roles.js';
+export { KindRegistry, KindRefusal, NAMED_ROSTER } from './ontology/kinds.js';
+export type { KindDef } from './ontology/kinds.js';
+export {
+  RELATION_TYPES,
+  RelationRefusal,
+  hookHk8BeforeRelationForm,
+  formRelation,
+  dissolveRelation,
+  readThroughRepresentation,
+  writeThroughRepresentation,
+} from './ontology/relations.js';
+export type { RelationType, RelationSpec, RelationRow } from './ontology/relations.js';
+export { TOPOLOGIES, SurfaceRefusal, positionValid, addSurface, placeComponent, composeSurface, retireComposedSurface } from './ontology/surfaces.js';
+export type { Topology } from './ontology/surfaces.js';
+export { AdmissibilityGate, hookHk7BeforeKindAdmission, seededRegistry } from './ontology/admission.js';
+export { wireOntology } from './ontology/wire.js';

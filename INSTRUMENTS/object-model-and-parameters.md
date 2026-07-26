@@ -31,6 +31,17 @@ until their build slots open, own no behavior, and gain instrument rows when the
 | M6 Deck | packages/engine/src/play/deck.ts | S3 F2·M6 ← S2 M6 | Draw/discard/reserve; shuffle + draw from named streams; living inject order-preserving; empty draw legal | built |
 | M8 PackLoader | packages/engine/src/play/packloader.ts | S3 F2·M8 ← S2 M8 · S-5 · R-2 · HK-4 · I-2 | validate() names defects (EFX closure, schema, versions); genesis() builds engine state from the pack; wire() registers F2 intents; flavor attaches, never read | built |
 
+## Modules — F3 Ontology (build slot 3, ACTIVE)
+
+| Module | File | Traces to | Responsibility | Status |
+|---|---|---|---|---|
+| ME1 KindRegistry | packages/engine/src/ontology/kinds.ts | S3 F3·ME1 ← S2 ME1 · R-14 | Admitted KindDefs (identity, state shape, roles, relations-grantable); supersede-never-respec; seeded with the named roster THROUGH the gate (dogfood) | built |
+| ME5 AdmissibilityGate | packages/engine/src/ontology/admission.ts | S3 F3·ME5 ← S2 ME5 · S-5 · HK-7 · EX-2 | Admission-by-rule: the EX-2 predicate (identity+shape ∧ bindable roles ∧ relations ⊆ the five); refusal NAMES the defect; V-5's decision surface | built |
+| ME2 RoleBinder | packages/engine/src/ontology/roles.ts | S3 F3·ME2 ← S2 ME2 · R-11 · EX-3 · ODG-e1 | Role→primitive bindings (Randomizer→RNGStreams · Tracker→derived state · Reference→ruleset presentation · TimeSource→DEFERRED behind ODG-e1); unbindable → refuse | built |
+| ME3 RelationEngine | packages/engine/src/ontology/relations.ts | S3 F3·ME3 ← S2 Relation family · S-4 · HK-8 · R-12/R-13 · EX-5/EX-6 | Five typed relations w/ formation/dissolution predicates + state effects; on-form/on-dissolve EMISSION recorded for the F4 HookBus (S-4 supply); Representation = read-only view (view-never-owns) | built |
+| ME4 SurfaceManager | packages/engine/src/ontology/surfaces.ts | S3 F3·ME4 ← S2 ME4 · EX-4 | Surfaces w/ five topologies (grid·hex·track·slots·freeform); topology-aware placement; **composition-forms-a-Surface recursion** (V-6's law) | built |
+| ontology/wire | packages/engine/src/ontology/wire.ts | S-1 (guarded intents for ontology ops) | relation:form / relation:dissolve / component:place intents — HK-7/HK-8 on the REAL path | built |
+
 **S3 F2 note:** EffectEngine "fed by BOTH registry-dispatched contributions and
 module-native library effects" — the registry feed arrives at F4, library feeds at F5;
 at F2 the feeds are card-borne fx (pack content through the closed vocabulary). Explicit

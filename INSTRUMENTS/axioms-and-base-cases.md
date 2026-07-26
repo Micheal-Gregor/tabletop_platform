@@ -93,6 +93,54 @@ an executable test BEFORE its feature ships. IDs are stable.
 - **GBC-17 —** *Given* a full F2 scenario (load, draws, window, wrap), *then* rebuild
   from the row is byte-identical. *(GX-3/4 carried into F2 machinery; feeds V-2)*
 
+## Axioms — F3 set
+
+- **GX-13 — Admission by rule, never enumeration.** A kind is admitted iff it declares
+  identity + state shape, roles with EX-3-bindable bindings, and grantable relations ⊆
+  the five. The gate refuses NAMING the defect. *Cites EX-2, S-5, R-14 adjacency, HK-7.*
+- **GX-14 — Roles bind to platform primitives.** Randomizer→RNGStreams · Tracker→derived
+  state · Reference→ruleset presentation · TimeSource→DEFERRED (ODG-e1: admit the kind,
+  defer the binding; USE of the deferred binding refuses). Unbindable → inadmissible.
+  *Cites EX-3, R-11, RD-e5.*
+- **GX-15 — Relations are typed and predicated.** Exactly five (Placement, Composition,
+  Attachment, Overlay, Representation); formation/dissolution by predicate (HK-8);
+  form/dissolve EMISSIONS recorded on-state for the F4 HookBus (S-4). A formation
+  without a holding predicate refuses. *Cites EX-5, R-13, HK-8.*
+- **GX-16 — Views never own.** A Representation relation reads a derived-state path,
+  mode read-only, always; any write path through it refuses. *Cites EX-6, R-12, SC-2.*
+- **GX-17 — Surfaces and the recursion.** Placement occurs on Surfaces (topology ∈
+  {grid, hex, track, slots, freeform}); components COMPOSED side-by-side FORM a Surface
+  — the built map is itself a Surface and accepts placement. *Cites EX-4, ER-e3 (V-6).*
+- **GX-18 — Supersede, never respec.** An admitted kind is never redefined in place;
+  supersession records the chain. *Cites R-14.*
+
+## Base cases — F3 set
+
+- **GBC-18 —** *Given* a novel kind declaring identity+shape, bindable roles, and legal
+  relations, *when* admitted, *then* it enters the registry (admission by RULE — the
+  "standee" proof). *Given* one missing leg (no shape / TimeSource-required / relation
+  ∉ five), *then* refusal NAMES the leg. *(GX-13 = V-5's table; HK-7)*
+- **GBC-19 —** *Given* role Randomizer/Tracker/Reference, *then* bound to its primitive;
+  *given* TimeSource, *then* DEFERRED(ODG-e1) — admissible, unusable; *given* an unknown
+  role, *then* R-11 refusal. *(GX-14)*
+- **GBC-20 —** *Given* an admitted kind re-registered, *then* R-14 refusal; *given* a
+  supersession, *then* new def + recorded chain. *(GX-18)*
+- **GBC-21 —** *Given* a Placement whose predicate holds, *then* formed + on-form
+  emission recorded; *given* a failing predicate or unknown relation type, *then* HK-8/
+  R-13 refusal, nothing emitted. Dissolution mirrors. *(GX-15)*
+- **GBC-22 —** *Given* a Representation relation, *then* reads return the derived value;
+  a write attempt through it → R-12 refusal; forming one with mode ≠ read-only → refused
+  at formation. *(GX-16)*
+- **GBC-23 —** *Given* each topology, *then* position-shape validity is enforced (grid
+  int x/y · hex q/r · track index · slots slot-id · freeform numeric x/y); a wrong-shape
+  placement refuses. *(GX-17)*
+- **GBC-24 —** *Given* tiles composed side-by-side, *then* a NEW Surface exists whose
+  substrate is the composed set, and placement onto it succeeds (V-6's law); dissolving
+  the composition retires it. *(GX-17 recursion)*
+
+**N/A-by-absence (F3 slot):** contribution dispatch (F4 — emissions recorded, consumed
+later per I-21); kind SKINS/fidelity (F6); specific piece stats (pattern/content tier).
+
 **N/A-by-absence (F1 slot):** window gating, EFX closure, admission, projection — their
 rules live with F2/F3/F4/F6 and are N/A here by structure (no such surface exists in F1).
 **N/A-by-absence (F2 slot):** balanced-move posting (R-5, Ledger = F5); registry dispatch
