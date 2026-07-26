@@ -71,3 +71,36 @@ describe('V-6 · composed-Surface integrity (golden, computed 2026-07-25)', () =
     expect(v6.retiredHash).toBe(pinned.retiredHash);
   });
 });
+
+import { computeV7, computeV8 } from '../../../vectors/scenarios.js';
+const V7_PATH = resolve(__dirname, '../../../vectors/V-7.json');
+const V8_PATH = resolve(__dirname, '../../../vectors/V-8.json');
+
+describe('V-7 · rule-dispatch order (golden, computed 2026-07-25)', () => {
+  it('per-firing snapshot + bearer-entry-seq total order — matches the discharged vector', () => {
+    const v7 = computeV7();
+    expect(v7.deckOrder.slice(0, 3)).toEqual(['Z', 'Y', 'X']); // the law, independent of the pin
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V7_PATH, JSON.stringify({ computed: '2026-07-25', gate: 'R-gate owner-approved', ...v7 }, null, 2));
+      return;
+    }
+    const pinned = JSON.parse(readFileSync(V7_PATH, 'utf8')) as typeof v7;
+    expect(v7.finalHash).toBe(pinned.finalHash);
+    expect(v7.deckOrder).toEqual(pinned.deckOrder);
+  });
+});
+
+describe('V-8 · the monster room (golden, computed 2026-07-25)', () => {
+  it('registers on FORM (fires through EFX), inert after dissolve — matches the discharged vector', () => {
+    const v8 = computeV8();
+    expect(v8.monsterFired).toBe(1); // the law: fired exactly once, on formation
+    expect(v8.afterFormHash).not.toBe(v8.afterDissolveHash);
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V8_PATH, JSON.stringify({ computed: '2026-07-25', gate: 'R-gate owner-approved', ...v8 }, null, 2));
+      return;
+    }
+    const pinned = JSON.parse(readFileSync(V8_PATH, 'utf8')) as typeof v8;
+    expect(v8.afterFormHash).toBe(pinned.afterFormHash);
+    expect(v8.afterDissolveHash).toBe(pinned.afterDissolveHash);
+  });
+});

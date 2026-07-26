@@ -15,7 +15,8 @@ Live human gate, per-abstraction. RC-3 order: resolution RECORDED first, body fi
 | Vector | Status | Note |
 |---|---|---|
 | V-2, V-3 | **DISCHARGED 2026-07-25** — owner-approved R gate ("yes") | computed from the certified F2 implementation (DISCHARGE run), persisted vectors/V-2.json + V-3.json, re-derived same-run and on every suite run (vectors.test.ts); refusal-not-repair applies — a mismatch is a divergence to explain |
-| V-1, V-4..V-9 | DEFERRED | discharge as owning modules complete; each blocks completion per the ledger (V-1 post-F5 per I-14) |
+| V-7, V-8 | **DISCHARGED 2026-07-25** — owner-approved R gate ("yes") | computed (DISCHARGE run), persisted vectors/V-7.json + V-8.json, re-derived every run; MR1 CC-5 satisfied — completion confirmation binds to the next K7 entry (RD-1) |
+| V-1, V-4, V-9 | DEFERRED | V-1 post-F5 (I-14) · V-4 at F7 (BOTY pack) · V-9 at F6 |
 | R gate 2 (F3) | **V-5 + V-6 DISCHARGED** — owner-approved 2026-07-25 ("yes, discharge") | computed (DISCHARGE run), persisted vectors/V-5.json + V-6.json, re-derived every run; 135/135 |
 | SP-4 → SUP-2 | **EXECUTED** 2026-07-25 — ontology-mutation authority wording + P13 fold | governance/S3/TABLETOP_Phase3_Supersession_SUP-2.md |
 | I-20 → SUP-3 | **RESOLVED** 2026-07-25 — "12 kinds" = pre-merge artifact; the truth is ELEVEN named + open family | governance/S3/TABLETOP_Phase3_Supersession_SUP-3.md |

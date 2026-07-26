@@ -1,0 +1,11 @@
+{
+  "computed": "2026-07-25",
+  "gate": "R-gate owner-approved",
+  "deckOrder": [
+    "Z",
+    "Y",
+    "X",
+    "base"
+  ],
+  "finalHash": "67a1cf0b95cf85e4"
+}

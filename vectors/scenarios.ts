@@ -178,3 +178,65 @@ export function computeV6(): { composedHash: string; placedOntoMapHash: string; 
     retiredHash: hashState(retireComposedSurface(placed, 'map1')),
   };
 }
+
+// ── V-7 / V-8 (discharged at the owner's R gate, 2026-07-25) ──
+import { RuleRegistry, formRelation, dissolveRelation, pumpRelationEvents } from '../packages/engine/src/index.js';
+import type { RuleContribution, RelationRow } from '../packages/engine/src/index.js';
+
+const V78_VOCABS = { efx: '1.1.1', hooks: '1.0' } as const;
+
+function ontoState(): State {
+  return {
+    seats: [
+      { id: 'A', cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false },
+      { id: 'B', cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false },
+    ],
+    turn: { round: 1, seatIdx: 0, phase: 'start', wrappedRound: 0, maxRounds: 3, status: 'playing' },
+    decks: { main: { draw: ['base'], discard: [], reserve: [] } },
+    windows: [], windowSeq: 0,
+    components: { tok: { kind: 'Token', value: 0 }, card1: { kind: 'Card', faceUp: false } },
+    surfaces: { table: { topology: 'grid' } },
+    relations: [], relationEvents: [], relationSeq: 0,
+  } as State;
+}
+
+/** V-7: the precedence law — per-firing snapshot, total order (hook, bearer-entry-seq). */
+export function computeV7(): { deckOrder: readonly string[]; finalHash: string } {
+  const registry = new RuleRegistry();
+  const mk = (id: string, card: string): RuleContribution => ({
+    id, bearer: { kind: 'Card' }, trigger: 'on-card-drawn', condition: { op: 'always' },
+    effects: [{ fx: 'deck_inject', deck: 'main', card, policy: 'top' }],
+    declaredSlots: [{ name: 'fired', reset: 'never' }],
+    slotWrites: [{ slot: 'fired', increment: 1 }],
+    vocabVersions: V78_VOCABS,
+  });
+  registry.register(mk('first', 'X'));
+  registry.register(mk('second', 'Y'));
+  registry.register(mk('third', 'Z'));
+  const out = registry.dispatch(ontoState(), 'on-card-drawn', { hook: 'on-card-drawn' }, { windowDepth: 0 });
+  return {
+    deckOrder: (out['decks'] as Record<string, { draw: readonly string[] }>)['main']!.draw,
+    finalHash: hashState(out),
+  };
+}
+
+/** V-8: the monster room — a relation-borne contribution registers on FORM, dies on dissolve. */
+export function computeV8(): { afterFormHash: string; afterDissolveHash: string; monsterFired: unknown } {
+  const registry = new RuleRegistry();
+  registry.register({
+    id: 'monster', bearer: { relationType: 'Attachment' }, trigger: 'on-form:Attachment',
+    condition: { op: 'always' },
+    effects: [{ fx: 'levy', scope: 'table', amount: 2 }],
+    declaredSlots: [{ name: 'fired', reset: 'never' }],
+    slotWrites: [{ slot: 'fired', increment: 1 }],
+    vocabVersions: V78_VOCABS,
+  });
+  let s = formRelation(ontoState(), { type: 'Attachment', from: 'tok', to: 'card1' });
+  s = pumpRelationEvents(s, registry, { windowDepth: 0 }) as State;
+  const afterFormHash = hashState(s);
+  const monsterFired = ((s['ruleSlots'] as Record<string, Record<string, unknown>>)['monster'] ?? {})['fired'];
+  const relId = (s['relations'] as readonly RelationRow[])[0]!.id;
+  s = dissolveRelation(s, relId) as State;
+  s = pumpRelationEvents(s, registry, { windowDepth: 0 }) as State; // inert — derived activation
+  return { afterFormHash, afterDissolveHash: hashState(s), monsterFired };
+}

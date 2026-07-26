@@ -139,3 +139,8 @@ residuals, then this can be signed off without another external round"). Report 
 (K7_AUDIT_REPORT-3B.md). All three 3B residuals closed with falsifying tests; suite
 168/168. **F4 CERTIFIED (internal K7 r2 + external 3/3B).** MR3 7, MR4 8 per auditor
 re-score. STANDING: V-7/V-8 at the owner's R gate.
+
+**R-GATE DISCHARGE 3 (2026-07-25, owner-approved):** V-7 + V-8 computed, persisted,
+re-derived — live anchors (170/170). Six of nine vectors now frozen. MR1: CC-5
+satisfied-CLAIMED; confirmation binds to the next K7 entry (the F5 review). Remaining:
+V-1 (post-F5) · V-4 (F7/BOTY pack) · V-9 (F6).
