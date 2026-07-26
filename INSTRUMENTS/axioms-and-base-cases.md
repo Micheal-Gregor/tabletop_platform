@@ -178,6 +178,52 @@ an executable test BEFORE its feature ships. IDs are stable.
 **N/A-by-absence (F4 slot):** turn/lifecycle hook EMISSION from engine paths = I-29 (F5
 weave); UniqueDef art/params consumption (F6/packs); VerbSets consumption (F6).
 
+## Axioms — F5 set
+
+- **GX-25 — Balanced or refused.** With the Ledger loaded, every resource move posts as
+  zero-sum legs (bank absorbs); an unbalanced post THROWS; final cash ≡ derived account
+  balances (RC-D). Application flows through EffectEngine (S5 held). *Cites R-5, RC-3.*
+- **GX-26 — Venture is the sole contract primitive.** General (multi-party, routed,
+  debt-carried) AND degenerate (single-portion Job, RC-A′) forms; lifecycle spawn →
+  assigned → work → all-complete → payoff DIST | lapse → penalty. *Cites T2, RC-A′.*
+- **GX-27 — Decisions gate and log.** A windowed routing decision opens a gated IWN
+  (blocks advance, S-8); the choice closes it; effectuation is the SUBSEQUENT logged
+  library intent carrying the decision as arguments (I-36 — human inputs as arguments,
+  AX-3; auto/AI parity preserved: both paths are logged intents). *Cites T3, A-2b-02.*
+- **GX-28 — One crew, one portion.** Assignment to a busy crew member refuses; work
+  burns exactly one unit per work intent. *Cites CRW.*
+- **GX-29 — Timed effects tick at the wrap, once.** TFX charges apply at round wrap
+  through the weave (never twice — GX-9 guards the wrap); duration expires to removal;
+  charges post balanced when the Ledger is loaded. *Cites RC-G, T6.*
+- **GX-30 — The Closing Round closes the books.** At 'closing': trailing-first order,
+  receivables force-collected as balanced posts, rank by cash, champion recorded, status
+  'ended' — I-17's reserved vocabulary finally set. *Cites RCK, QG1-Q1.*
+
+## Base cases — F5 set
+
+- **GBC-33 —** balanced post lands (legs on state, cash via EffectEngine, derivation ≡
+  cash); unbalanced post → LedgerRefusal naming the imbalance. *(GX-25 = R-5)*
+- **GBC-34 —** degenerate venture: spawn(1 portion, self) → assign → work 1→0 →
+  complete → receivable lands. General: route windowed → window gates pass → decision →
+  route intent → counterparty portion + carried debt; completion → receivable to
+  counterparty. *(GX-26/27)*
+- **GBC-35 —** assigning a busy crew member refuses; work on an unassigned portion
+  refuses. *(GX-28)*
+- **GBC-36 —** TFX(table, levy 1, duration 1): tick at wrap charges all living seats
+  (balanced when loaded), then expires; no second tick. *(GX-29)*
+- **GBC-37 —** debts due round N settle at N's upkeep as balanced posts. *(GX-25)*
+- **GBC-38 —** reckon: receivables collected, ranking trailing-first computed, champion
+  by cash, status 'ended'; reckon before 'closing' refuses. *(GX-30)*
+- **GBC-39 —** the weave: turn:end at the last seat wraps the round ONCE, dispatches
+  on-round-wrap through the F4 bus, ticks TFX, resets per-round slots. *(GX-29, I-29)*
+- **GBC-40 —** THE MINIMAL GAME (Stage-2b S0..S10, σ=7): A ends at 0, B at +3, B is
+  champion; every ledger entry balanced; cash ≡ derived balances; rebuild ×2
+  byte-identical. Feeds V-1 — pinned only at the owner's R gate. *(everything)*
+
+**N/A-by-absence (F5 slot):** estates/respawn mechanics (viability PO LICY args recorded,
+full elimination flows = pack/universe content); commission_now routing (parameter point,
+not exercised by MINIMAL — content-reachable per Stage-2b §2).
+
 **N/A-by-absence (F3 slot):** contribution dispatch (F4 — emissions recorded, consumed
 later per I-21); kind SKINS/fidelity (F6); specific piece stats (pattern/content tier).
 

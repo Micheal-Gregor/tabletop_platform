@@ -144,3 +144,23 @@ re-score. STANDING: V-7/V-8 at the owner's R gate.
 re-derived — live anchors (170/170). Six of nine vectors now frozen. MR1: CC-5
 satisfied-CLAIMED; confirmation binds to the next K7 entry (the F5 review). Remaining:
 V-1 (post-F5) · V-4 (F7/BOTY pack) · V-9 (F6).
+
+---
+
+## F5 Mechanics Library (opened 2026-07-26 after R-gate discharge 3)
+
+| Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
+|---|---|---|---|---|
+| M13 Ledger | R-5 = GX-25 (claim: GBC-33) | — | — | BUILT — awaiting K7 |
+| M10 Venture + M11 Routing | GX-26/27 legs (claims: GBC-34) | — | — | BUILT — awaiting K7 |
+| M12a Outfit + M12b Crew | GX-28 legs (claims: GBC-35) | — | — | BUILT — awaiting K7 |
+| M14 TimedEffects | GX-29 legs (claims: GBC-36/39) | — | — | BUILT — awaiting K7 |
+| M15 ClosingRound | GX-30 gate (claim: GBC-38) | — | — | BUILT — awaiting K7 |
+| library/wire (the weave, I-29) | R-6 through turn:end (claim: GBC-40 gate probe) | **V-1 DEFERRED → blocks; dischargeable at the F5 R gate** | HK-5 on turn:end path (claim) | BUILT — NOT-COMPLETE by rule |
+
+Statuses are CLAIMS (RD-1) — K7 confirms or returns. GBC-40 (the MINIMAL game,
+Stage-2b S0..S10) passes end-to-end at build: A ends 0, B ends +3, B champion; every
+ledger entry balanced; cash ≡ derived balances; rebuild ×2 byte-identical; off-turn
+probe refused unlogged. Suite 181/181; HK-6 tier gate OK. V-1 is NOT pinned — it feeds
+from GBC-40 and is discharged only at the owner's R gate. STANDING carried: MR1
+completion confirmation binds to THIS K7 entry (RD-1, from R-gate discharge 3).

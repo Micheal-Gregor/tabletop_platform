@@ -55,6 +55,17 @@ until their build slots open, own no behavior, and gain instrument rows when the
 | MR6 RulesetView | packages/engine/src/rules/rulesetview.ts | S3 F4·MR6 · RE-12 seam (→ MP7) | Total exposure: vocabularies + registered contributions as a derivable view | built |
 | rules/wire | packages/engine/src/rules/wire.ts | S-1 · I-29 | rules:pump intent (turn-disciplined) driving the HookBus cursor | built |
 
+## Modules — F5 Mechanics Library (build slot 5, ACTIVE — opt-in per QG1-Q2)
+
+| Module | File | Traces to | Responsibility | Status |
+|---|---|---|---|---|
+| M13 Ledger | packages/engine/src/library/ledger.ts | S3 F5·M13 · R-5 · RC-3/RC-D | loaded flag; BALANCED posts only (legs sum to zero, R-5); application via EffectEngine pay/levy (S5 law held); derivedBalances = per-seat leg sums (RC-D) | built |
+| M10 Venture + M11 Routing | packages/engine/src/library/ventures.ts | S3 F5·M10/M11 · RC-A′ · RC-E · T2/T3 | spawn (general + single-portion degenerate); portions (party, task-role, funding); windowed routing gates advance, decision effectuated by the logged route intent (I-36); completion → payoff receivables + carried debts; deadline → penalty path | built |
+| M12a Outfit + M12b Crew | packages/engine/src/library/outfit.ts | S3 F5·M12a/b · EX-3 roles · CRW law | seat roles; crew one-portion-at-a-time (assign refuses if busy); work burns portions; viability policies = pack policy args | built |
+| M14 TimedEffects | packages/engine/src/library/timedfx.ts | S3 F5·M14 · RC-G · RE-10 | attach (scope outfit|table); tick at round wrap: charges post through the Ledger when loaded (RC-D) else EffectEngine; duration expiry | built |
+| M15 ClosingRound | packages/engine/src/library/closing.ts | S3 F5·M15 · QG1-Q1 · RCK | reckon at status 'closing': trailing-first order, close-books force-collects receivables (balanced posts), rank by cash, champion; status → 'ended' (I-17 CLOSES) | built |
+| library/wire | packages/engine/src/library/wire.ts | S-1 · I-29/I-33 | upkeep · venture:spawn/route · crew:assign/work · tfx:attach · turn:end (THE WEAVE: pass + on-round-wrap dispatch + TFX tick + per-round/per-turn slot resets) · closing:reckon — all turn-disciplined | built |
+
 **S3 F2 note:** EffectEngine "fed by BOTH registry-dispatched contributions and
 module-native library effects" — the registry feed arrives at F4, library feeds at F5;
 at F2 the feeds are card-borne fx (pack content through the closed vocabulary). Explicit

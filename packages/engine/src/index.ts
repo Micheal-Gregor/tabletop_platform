@@ -76,3 +76,15 @@ export type { ContractCycle, CycleObligations } from './rules/extension.js';
 export { renderRuleset } from './rules/rulesetview.js';
 export type { RulesetViewModel } from './rules/rulesetview.js';
 export { wireRules } from './rules/wire.js';
+
+// ── F5 Mechanics Library (public surface; opt-in per QG1-Q2) ──
+export { post, transfer, derivedBalances, ledgerLoaded, LedgerRefusal } from './library/ledger.js';
+export type { LedgerLeg } from './library/ledger.js';
+export { spawnVenture, routeVenture, completeIfDone, lapseExpired, ventures, receivablesOf, debtsOf, VentureRefusal } from './library/ventures.js';
+export type { VentureSpec, PortionSpec } from './library/ventures.js';
+export { assignCrew, workCrew, crewOf } from './library/outfit.js';
+export type { CrewRow } from './library/outfit.js';
+export { attachTimedFx, tickTimedEffects, timedEffects } from './library/timedfx.js';
+export type { TimedFx } from './library/timedfx.js';
+export { reckon, ClosingRefusal } from './library/closing.js';
+export { wireLibrary } from './library/wire.js';
