@@ -32,8 +32,6 @@ const VERBS: Readonly<Record<string, VerbFactory>> = Object.freeze({
   'reckon': (seat) => ({ type: 'closing:reckon', seat, args: {} }),
 });
 
-export const VERB_NAMES: readonly string[] = Object.freeze(Object.keys(VERBS));
-
 /** Emit — R-23's door: the output is validated to be an INTENT and only an intent. */
 export function emit(verb: string, seat: string, args: Readonly<Record<string, unknown>> = {}): EmittedIntent {
   const factory = Object.hasOwn(VERBS, verb) ? VERBS[verb] : undefined;
@@ -45,11 +43,17 @@ export function emit(verb: string, seat: string, args: Readonly<Record<string, u
     typeof out !== 'object' || out === null ||
     typeof (out as EmittedIntent).type !== 'string' ||
     typeof (out as EmittedIntent).seat !== 'string' ||
-    typeof (out as EmittedIntent).args !== 'object' || (out as EmittedIntent).args === null ||
-    typeof (out as { then?: unknown }).then === 'function' || typeof out === 'function' ||
-    Object.values(out as Record<string, unknown>).some((v) => typeof v === 'function')
+    typeof (out as EmittedIntent).args !== 'object' || (out as EmittedIntent).args === null
   ) {
     throw new EmissionRefusal(`verb "${verb}" produced a non-intent — presentation emits intents, nothing else`);
   }
-  return out as EmittedIntent;
+  // K7-F6 D1 (DF6-1): the door is DEEP — the emission must be PURE DATA at every depth.
+  // A nested function, thenable, symbol, or any non-cloneable smuggled through args must
+  // refuse HERE, typed, never detonate untyped at the seam. The clone also severs
+  // aliasing: the caller's args object can never tamper the emitted intent post-hoc.
+  try {
+    return structuredClone(out) as EmittedIntent;
+  } catch {
+    throw new EmissionRefusal(`verb "${verb}" produced a non-data emission (function/thenable/uncloneable inside) — presentation emits pure-data intents, nothing else`);
+  }
 }

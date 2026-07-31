@@ -2,7 +2,7 @@
  *  IntentEmitter intents). Headless model + SVG-string renderer (ODG-p1/I-47). */
 export { project, unbox, hookHk10BeforeRenderRead, ProjectionBreach, UnboxRefusal } from './projector.js';
 export type { SeatView } from './projector.js';
-export { emit, VERB_NAMES, EmissionRefusal } from './emitter.js';
+export { emit, EmissionRefusal } from './emitter.js';
 export type { EmittedIntent } from './emitter.js';
 export { validateContract, bind, placeholderSkin, bindPlaceholder, SkinRefusal } from './skin.js';
 export type { TokenContract, Skin, BoundSkin } from './skin.js';

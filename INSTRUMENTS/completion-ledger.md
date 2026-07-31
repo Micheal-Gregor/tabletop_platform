@@ -341,3 +341,16 @@ Statuses are CLAIMS (RD-1). ODG-p1 completed on the record (headless + SVG strin
 I-47); D-1/D-2 doctrines realized as ratified; ODG-e1 stays OPEN. GBC-54 (die-tile-page)
 passes at build — feeds V-9, pinned only at the owner's R gate. Suite 251/251; tsc clean
 ×3; HK-6 OK.
+
+**K7-F6 round 1 (2026-07-30): RETURN** — 2 blocking (DF6-1 shallow emission door: nested
+functions/thenables crossed the seam and detonated untyped — GX-37 breached + M7
+survivor; DF6-2 vacuous a11y floor — M8 survivor) + 1 moderate (DF6-3 EP-1′ /
+fidelity-min-formula silence) + 3 minor. 14/16 mutants killed at review; the
+projection/redaction core, skin law, theater law, two clocks, and S-6 seam all passed
+adversarial testing outright. All findings closed same-day: DEEP pure-data door
+(structuredClone round-trip → typed refusal; the clone also severs args aliasing) with
+poisoned-args tests; a11y negative cases; EP-1′/fidelity terms ruled UNRECOVERABLE from
+the record → routed upstream as SP-6 (F-backflow), N/A-BY-UNRECOVERABILITY stated,
+"labels split" corrected; D-2 flourish-home record corrected; I-48 registered; row
+fixes; dead VERB_NAMES export removed. Builder re-ran M7/M8 → each killed by a named
+test. Suite 252/252; tsc clean ×3; HK-6 OK. Awaiting K7 re-verify.

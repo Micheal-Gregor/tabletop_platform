@@ -39,3 +39,18 @@ Both can be true (player intents AND a docketed effect), but the record should S
 may reshape ontology and when. **Proposed wording:** "Ontology mutation flows through
 S-1 intents under turn discipline; content-TRIGGERED formation awaits the docketed
 form_relation member via its ExtensionContract cycle." **Status: EXECUTED as SUP-2 (owner-approved 2026-07-25); P13 folded in; I-20 resolved by SUP-3 (11 kinds, pre-merge artifact).**
+
+
+## SP-6 — EP-1′ and "fidelity = min formula" are unrecoverable (F6, K7-F6 D3)
+
+The S3 F6 Honors line (Specification §2 F6: "Honors: theater-over-truth (TheaterSync),
+EP-1′, tokens-only, fidelity = min formula") names two terms with NO recoverable
+definition anywhere in the S3 pair or the upstream annexes — only EP-2 (theater-sync,
+V-9's rule) is defined. Their meanings were lost in compression upstream of Phase 3.
+Phase 4 cannot implement, and must not invent, pinned semantics (RD-2 class). **Proposed
+disposition for the Phase 3 revision run:** either (a) supersede the Honors line to
+excise the two tokens as compression artifacts, or (b) restore their definitions from
+the owner's Phase 1/2 record and hand them back as a bounded F6 increment. **Pending the
+owner's ruling, both terms are N/A-BY-UNRECOVERABILITY on the record (never silently
+skipped); TheaterSync and tokens-only — the two RECOVERABLE Honors terms — are built and
+K7-verified.** Status: OPEN — awaiting the owner's Phase 3 channel.

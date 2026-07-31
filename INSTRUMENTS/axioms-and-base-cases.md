@@ -357,4 +357,8 @@ triggered venture spawn (awaits the docketed spawn_venture EFX member).
 
 **N/A-by-absence (F6 slot):** live DOM/framework binding, real assets, sound playback,
 input handling (Phase 5/utilization — the model is headless by the ODG-p1 ruling);
-TimeSource binding (ODG-e1 open); network presence UI (S3 §8).
+TimeSource binding (ODG-e1 open); network presence UI (S3 §8); **EP-1′ and "fidelity =
+min formula" — N/A-BY-UNRECOVERABILITY (K7-F6 D3): the S3 names them but no definition
+survives anywhere in the record; routed upstream as SP-6, never silently skipped.** The
+MP9 "labels split" claim is CORRECTED append-only: the FLOOR shipped (every element
+titled); a separate labels channel is Phase-5 adaptation work.

@@ -100,6 +100,17 @@ describe('GBC-50 · emission (GX-37 = R-23): verbs → intents the ENGINE accept
     expect(() => emit('cast-fireball', 'A')).toThrow(EmissionRefusal); // closed map
     expect(() => emit('draw', '')).toThrow(/seat required/);
   });
+
+  it('K7-F6 D1: a NON-INTENT emission refuses typed AT THE DOOR — nested functions/thenables never cross the seam', () => {
+    expect(() => emit('draw', 'A', { deck: () => 'evil' })).toThrow(EmissionRefusal);
+    expect(() => emit('draw', 'A', { deck: { then: () => 'thenable' } })).toThrow(EmissionRefusal);
+    expect(() => emit('spawn-venture', 'A', { spec: { id: 'V', hidden: { deep: [Symbol('x')] } } })).toThrow(EmissionRefusal);
+    // and the clone severs aliasing: mutating the caller's args cannot tamper the emitted intent
+    const args = { deck: 'A' };
+    const intent = emit('draw', 'A', args);
+    args.deck = 'TAMPERED';
+    expect(intent.args['deck']).toBe('A');
+  });
 });
 
 describe('GBC-51 · theater over truth (GX-38 = R-20; D-2)', () => {
@@ -137,6 +148,9 @@ describe('GBC-52 · render: tokens-only + the a11y floor (GX-36/GX-39)', () => {
     const booklet = renderBooklet(renderRuleset(registry));
     expect(booklet).toContain('house-rule');
     expect(a11yAudit(booklet)).toBe(0);
+    // K7-F6 D2: the floor MUST be able to fail — an unlabeled group counts (kills M8)
+    expect(a11yAudit('<g><rect/></g>')).toBe(1);
+    expect(a11yAudit('<g><title>ok</title></g><g><rect/></g><g><rect/></g>')).toBe(2);
   });
 
   it('the full table scene renders through the projection with a clean a11y floor', () => {
