@@ -334,7 +334,7 @@ Suite 239/239; full ci green. **The BOTY slice is CERTIFIED. The F6 slot is open
 | MP3 IntentEmitter | R-23 (claims: GBC-50 — closed map; non-intent refused; engine accepts emissions) | — | — | BUILT — awaiting K7 |
 | MP4 SkinBinder + D-1 Placeholder | R-21, R-22 (claims: GBC-49 — missing named; raw values incl. filenames/colors/paths refused; placeholder complete) | — | HK-12 (claim) | BUILT — awaiting K7 |
 | MP1/MP2/MP7 Renderers | GBC-52 (claims: tokens-only; a11y floor 0; booklet total exposure) | — | — | BUILT — awaiting K7 |
-| MP8 TheaterSync + D-2 flourishes | R-20 (K7 r1-r2 verified) | V-9 FROZEN (R-gate discharge 6 — the die-tile-page scene) | HK-11 (mutation-proven M3a/M3b) | satisfied-CLAIMED — completion confirmation binds to the next K7 entry (RD-1) |
+| MP8 TheaterSync + D-2 flourishes | R-20 (K7 r1-r2 verified) | V-9 FROZEN (R-gate discharge 6) | HK-11 (mutation-proven M3a/M3b) | **COMPLETE** (narrow K7 entry confirmed per RD-1) |
 | MP9 ClockDriver + A11y | GBC-53 (claims: two clocks; timeline touches no state byte) | — | — | BUILT — awaiting K7 |
 
 Statuses are CLAIMS (RD-1). ODG-p1 completed on the record (headless + SVG strings,
@@ -375,3 +375,12 @@ COMPLETE: V-1..V-9 all frozen, all computed from the implementation, none hand-w
 MP8: CC-5 satisfied-CLAIMED; confirmation binds to the next K7 entry per RD-1.
 Remaining open on the record: SP-6 (owner's Phase 3 channel) · ODG-e1 (by design) ·
 Phase 5 utilization per its roster.
+
+**K7 NARROW CONFIRMATION (2026-07-30): MP8 COMPLETE — THE LEDGER CLOSES.** The V-9 pin
+proven live (one-byte corruption fails the suite), computeV9 single-sourced, the die
+hand-re-derived to 1 off the named stream. Every module row in this ledger now reads
+COMPLETE or VERIFIED. **THE PHASE 4 CONFORMANCE BUILD IS DONE**: 7 facets + 1 content
+pack certified · 9/9 vectors frozen (all computed, none hand-written) · 24 refusal tests
++ 12 hooks live and mutation-falsifiable · 6 R-gate discharges · 6 supersessions/
+backflow items handled on the record (SP-6 OPEN upstream) · 4 external audit rounds ·
+253/253. The drift ledger does not close at deployment — Phase 5 runs per its roster.

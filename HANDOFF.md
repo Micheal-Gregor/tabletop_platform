@@ -1,8 +1,9 @@
 # HANDOFF — Resume the TABLETOP Conformance Build here
 
 *For ANY fresh session (any model) picking up this build. The repo is the record; no
-conversation history is required or assumed. Updated 2026-07-26 at HEAD `2eb46a9`
-(tags `k7-pass-f5`, `resolution-run-4`). Owner: Micheal Gregor.*
+conversation history is required or assumed. Updated 2026-07-30: **THE PHASE 4
+CONFORMANCE BUILD IS COMPLETE** (tags through `k7-pass-f6`, `k7-pass-boty`,
+`resolution-run-6`). Owner: Micheal Gregor.*
 
 ## Who you are
 
@@ -10,7 +11,7 @@ The BUILDER in a #MetaFramework Phase 4 Conformance Build. Read, in order:
 1. `CLAUDE.md` (root) — THE build instruction + process contract. It governs everything.
 2. `governance/Phase4_Conformance_Build_Roster.md` — the C4/B/K7/R/F/H machine.
 3. `INSTRUMENTS/` — the four living instruments. The Interpretation Register
-   (drift-ledger.md, I-1..I-40) is binding: registered interpretations are law;
+   (drift-ledger.md, I-1..I-48) is binding: registered interpretations are law;
    unregistered inventions are defects.
 4. `governance/S3/` — FROZEN spec + supersessions SUP-1..3. Never edit; supersede via F.
 5. `AUDITOR_CHARTER.md` — hand to any external/distinct K7 reviewer.
@@ -19,11 +20,10 @@ The BUILDER in a #MetaFramework Phase 4 Conformance Build. Read, in order:
 
 | Facet | Status |
 |---|---|
-| F1 Kernel · F2 Play · F3 Ontology · F4 Rules · F5 Mechanics Library | **CERTIFIED** (tags k7-pass-f1..f5; F1/F2/F4 also externally audited — reports in governance/audits/). THE ENTIRE ENGINE CORE IS DONE. F5's K7 ran 3 rounds (DF5-1..12 closed; note DF5-1: turn:pass is SUPERSEDED by the weave when the library is wired — I-37) |
-| F7 Edges | **NEXT** (build slot open): M16 Transport (lockstep controller, AE-c6-CF shape; packRef-mismatch divergence obligation from SUP-1; consumes ONLY the S-2 row contract + subscribe/submit/resume) · M17 PatternLibrary (ODG-3 catalog shape resolves at design — owner ruling) · TierCriterion (HK-6 is live in tools/check-tiers.mjs; R-4 test owed) |
-| BOTY pack → F6 Presentation | after F7: `packs/boty/` (ODG-4: BOTY as FIRST CONTENT PACK; V-4). Then F6 = own package, S-6 law |
-| Vectors | **SEVEN of nine FROZEN: V-1/2/3/5/6/7/8** (live anchors in vectors/ — a mismatch is a divergence to EXPLAIN, never a value to update; V-1 = the MINIMAL game, hash b773bf95ff085494, champion B at +3). V-4 at F7/BOTY. V-9 at F6 |
-| Suite | 204/204 (`npm test`) · `npm run ci` = tiers + build + test |
+| ALL SEVEN FACETS + BOTY | **CERTIFIED & COMPLETE** (k7-pass-f1..f7, k7-pass-boty; external audits 1-4C in governance/audits/). Every completion-ledger row COMPLETE/VERIFIED |
+| Vectors | **NINE OF NINE FROZEN** (V-1..V-9 in vectors/ — computed, never hand-written; a mismatch is a divergence to EXPLAIN) |
+| Next | **Phase 5 utilization** per governance/Phase5_Utilization_Roster.md (bindings in utilization/, never in core) · SP-6 OPEN at the owner's Phase 3 channel (EP-1′/fidelity-min-formula unrecoverable) · ODG-e1 open by design · optional external audit sweep of F6/F7/BOTY |
+| Suite | 253/253 (`npm test`) · `npm run ci` = tiers + build (incl. packs/boty) + test |
 
 ## Non-negotiable process (the short version)
 
