@@ -1,6 +1,7 @@
 /**
- * BOTY slice — contributions, presets-as-content, and the wire.
- * Tier law: content imports engine + patterns DOWNWARD only; nothing imports content.
+ * BOTY slice — contributions, presets-as-content, layouts, and the wire.
+ * Tier law: content imports engine + patterns + presentation DOWNWARD only;
+ * nothing imports content.
  */
 import type { EngineCore, Genesis, PackRef, RuleContribution, RuleRegistry } from '@tabletop/engine';
 import { validateContribution, wireLibrary, wirePack, wireRules } from '@tabletop/engine';
@@ -8,6 +9,7 @@ import { buildGlobal, buildJob, buildRouted, buildRouting } from '@tabletop/patt
 import { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
 
 export { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
+export { BOTY_LAYOUTS, FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE } from './layouts.js';
 
 const VOCABS = { efx: '1.1.1', hooks: '1.0' };
 

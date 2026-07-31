@@ -375,3 +375,19 @@ titled); a separate labels channel is Phase-5 adaptation work.
 - **GBC-57 —** the camera is stateless toward the game: cameraViewBox is a pure
   function; focus presets derive from the table layout; panning changes no state byte
   and the scene re-renders byte-identically for the same camera. *(GX-39 family)*
+
+## Base cases — BOTY v1-extraction layouts (content tier; no new axioms — I-50's door governs, content adds NO law)
+
+- **GBC-58 —** the four BOTY children (`boty:fortune-card`, `boty:round-card`,
+  `boty:shop-board`, `boty:town-table`) each build lawfully through extendLayout with
+  their EXACT shadowing declared and queryable (the recorded overridden/added/suppressed
+  sets match the module's documented anatomy, no more, no less); each child's lineage
+  names its parent; every region stays inside the unit space. A child attempting the
+  same anatomy WITHOUT declaration (e.g. adding a region id the parent owns) refuses
+  named — the inherited I-50 refusals hold at the content tier. *(I-50, I-51)*
+- **GBC-59 —** modal-as-card (I-51a): the round interstitial and the character/fortune
+  draw are the SAME layout law — `boty:round-card` and `boty:fortune-card` rendered via
+  renderLayout with two different content fills produce a11y-clean frames (audit 0),
+  and rendering one child at a camera focus preset is pure composition: no new
+  machinery, no state touch, byte-identical for the same (child, content, camera).
+  *(I-50, I-51, GX-39 family)*

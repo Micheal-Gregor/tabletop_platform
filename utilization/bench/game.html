@@ -1,10 +1,20 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><title>BOTY — the table</title>
-<style>body{font:14px system-ui;margin:10px}#halt{display:none;background:#fee;border:2px solid #c00;padding:8px;font-weight:bold}
+<style>body{font:14px system-ui;margin:0;padding:0 10px 10px}#halt{display:none;background:#fee;border:2px solid #c00;padding:8px;font-weight:bold}
 button{margin:2px}input,select{width:64px}#stage svg{border:1px solid #ccc;background:#fafafa}
-#captions{position:fixed;top:70px;right:24px}.caption{background:#333;color:#fff;padding:6px 12px;border-radius:14px;margin:4px;font-style:italic;animation:fade 1.2s forwards}
-@keyframes fade{0%{opacity:0}15%{opacity:1}75%{opacity:1}100%{opacity:0}}</style></head>
+#captions{position:fixed;top:70px;right:24px;z-index:30}.caption{background:#333;color:#fff;padding:6px 12px;border-radius:14px;margin:4px;font-style:italic;animation:fade 1.2s forwards}
+@keyframes fade{0%{opacity:0}15%{opacity:1}75%{opacity:1}100%{opacity:0}}
+/* CHROME — bench furniture (I-51d): header · banner · footer, the v1 arrangement */
+#hdr{display:flex;gap:16px;align-items:baseline;border-bottom:1px solid #ddd;padding:8px 4px}
+#hdr-place{font-weight:700}#hdr-round{color:#666}#hdr-turn{margin-left:auto;font-weight:600}
+.banner{border:1px solid #ddd;border-radius:6px;padding:5px 10px;margin:6px 0;color:#888}
+.banner.on{border-color:#c90;background:#fffbea;color:#7a5c00;font-weight:600}
+#footer-nav{display:flex;gap:8px;justify-content:center;padding:6px;border-top:1px solid #ddd;margin-top:6px}
+/* MODAL-AS-CARD (I-51a): the popped child in its fixed frame, like v1 */
+#overlay{display:none;position:fixed;inset:0;background:rgba(10,12,18,.55);z-index:20;align-items:center;justify-content:center;cursor:pointer}
+#popped{background:#fff;border-radius:12px;padding:10px;box-shadow:0 12px 40px rgba(0,0,0,.4)}</style></head>
 <body>
-<h1>BOTY <small>— Maple Hollow · click the deck to draw · click a crew token, then a portion, to assign · click a busy crew to work</small></h1>
+<div id="hdr"><span id="hdr-place">Maple Hollow</span><span id="hdr-round">—</span><span id="hdr-turn">—</span></div>
+<div id="banner" class="banner">booting…</div>
 <div id="halt" role="alert"></div><div id="status" aria-live="polite">booting…</div>
 <div>
   <button id="new-game">new game</button> view as <select id="seat"><option>moe</option><option>pete</option><option>edie</option></select>
@@ -19,5 +29,7 @@ button{margin:2px}input,select{width:64px}#stage svg{border:1px solid #ccc;backg
 </div>
 <div id="captions"></div>
 <div id="stage"></div>
+<div id="footer-nav"><small>click a standings row to focus that shop · click the deck to draw · wheel to zoom · click a popped card to dismiss</small></div>
+<div id="overlay" title="click to dismiss"><div id="popped"></div></div>
 <script type="module" src="./dist/game.js"></script>
 </body></html>
