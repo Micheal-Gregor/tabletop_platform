@@ -34,7 +34,11 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     });
     const art = FORTUNE_CARD.regions.find((r) => r.id === 'art')!;
     expect(art.h).toBeGreaterThan(CARD_PARENT.regions.find((r) => r.id === 'art')!.h); // v1's lesson: art DOMINATES
-    expect(art.h).toBeGreaterThanOrEqual(50); // measured 55–70% of v1 card height
+    // AUDIT-EXT-5 F1 closure: the coded fraction must sit INSIDE the measured band
+    // (auditor's pixel readings 65–75%, I-51b band 55–70) — ≥50 alone let 52% ship.
+    expect(art.h).toBeGreaterThanOrEqual(55);
+    expect(art.h).toBeLessThanOrEqual(70);
+    expect(art.h).toBeGreaterThan(ROUND_CARD.regions.find((r) => r.id === 'art')!.h); // v1: fortune art MORE dominant than round art
     expect(FORTUNE_CARD.regions.some((r) => r.id === 'modifiers')).toBe(false);
   });
 

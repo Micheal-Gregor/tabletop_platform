@@ -27,18 +27,21 @@ import type { LayoutDef, LayoutOverlay } from '@tabletop/presentation';
 /**
  * The fortune/character card — v1's drawn-card AND its character popup are ONE child
  * with two content fills (Hal Ramsey ≡ "Win the county fair raffle", structurally).
- * Measured: art ~0–70%, then name, italic org/quote lines, payout strip at the foot.
+ * Measured (AUDIT-EXT-5 pixel readings): art 65–75% across three instances (modal 68%,
+ * column ~65%/~75%); coded at 66% — INSIDE the measured band and the I-51b 55–70 band
+ * (the original 52% was RETURNED as Finding 1: under-encoding the very dominance the
+ * child exists to express). Then name, italic org line, effect/quote, payout foot.
  */
 export const FORTUNE_OVERLAY: LayoutOverlay = {
   id: 'boty:fortune-card',
   override: [
-    { id: 'art', role: 'art', x: 6, y: 4, w: 88, h: 52 }, // art-dominant (I-51b)
-    { id: 'title', role: 'title', x: 6, y: 58, w: 88, h: 8 }, // the name, BELOW the art
-    { id: 'text', role: 'text', x: 6, y: 74, w: 88, h: 12 }, // effect/quote line (italic in v1)
+    { id: 'art', role: 'art', x: 6, y: 3, w: 88, h: 66 }, // art-dominant FOR REAL (I-51b, EXT-5 F1)
+    { id: 'title', role: 'title', x: 6, y: 71, w: 88, h: 7 }, // the name, BELOW the art
+    { id: 'text', role: 'text', x: 6, y: 84, w: 88, h: 6 }, // effect/quote line (italic in v1)
   ],
   add: [
-    { id: 'subtitle', role: 'org-subtitle', x: 6, y: 67, w: 88, h: 6 }, // "Chamber of Commerce"
-    { id: 'payout', role: 'payout-strip', x: 6, y: 88, w: 88, h: 8 }, // "+$550" gold strip
+    { id: 'subtitle', role: 'org-subtitle', x: 6, y: 79, w: 88, h: 4 }, // "Chamber of Commerce"
+    { id: 'payout', role: 'payout-strip', x: 6, y: 91, w: 88, h: 7 }, // "+$550" gold strip
   ],
   suppress: ['modifiers'],
 };

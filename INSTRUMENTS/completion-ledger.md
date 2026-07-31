@@ -408,3 +408,18 @@ all dimensions ≥ 7. Suite 270/270 · BATTERY 21/21 · DRILLS 5/5 · V-9 safe b
 (packages/ untouched) and re-derived. I-51/I-52 registered; RESOLUTION_RECORD carries the
 owner's "go". Next-increment candidates recorded: SeatView crew projection (redaction =
 owner call), hire/fire + equipment mechanics, CPU opponents, per-shop trades projected.
+
+**AUDIT-EXT-5 (external visual conformance, 2026-07-31): RETURN → closures landed.**
+The first audit of VISUALS to SOURCE DOCUMENTS: independent session attested the nine
+archived v1 screens by SHA256, walked the live site (landing FAITHFUL; play now behind a
+new auth wall — F2), pixel-measured the archived screens, and drove the bench in real
+Chromium (all 8 structural requirements ✅, BATTERY 21/21 · DRILLS 5/5 from a space-free
+path — runner space-in-path portability noted). Verdict RETURN on **F1: fortune-card art
+coded 52% vs measured 65–75%** — under the increment's own 55–70 band. The internal K7
+missed it because the test pinned "taller than parent / ≥50" instead of the BAND; the
+external gate caught exactly the class of drift it exists for. Closure: art recoded to
+66% (regions reflowed), test pins 55–70 AND fortune > round dominance ordering; I-53
+registers all four dispositions. F2 registered (live-product drift + coverage gap;
+authenticated re-walk = owner-optional); F3/F4 registered as correct-by-design.
+Awaiting external re-verify of the recoded child (charge: re-measure fortune-card only
++ confirm no other diff). Suite green post-closure; V-9 re-derived; packages/ untouched.
