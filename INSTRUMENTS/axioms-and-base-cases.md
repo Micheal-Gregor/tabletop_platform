@@ -362,3 +362,16 @@ min formula" — N/A-BY-UNRECOVERABILITY (K7-F6 D3): the S3 names them but no de
 survives anywhere in the record; routed upstream as SP-6, never silently skipped.** The
 MP9 "labels split" claim is CORRECTED append-only: the FLOOR shipped (every element
 titled); a separate labels channel is Phase-5 adaptation work.
+
+## Base cases — Layout contracts (F6 supersession; no new axioms — GX-35/36/39 govern)
+
+- **GBC-55 —** parent layouts validate (regions in unit bounds, ids unique, roles named);
+  a child OVERRIDE of an undeclared region refuses named; an ADD colliding with an
+  existing id refuses; a SUPPRESS of an unknown region refuses; a lawful overlay yields
+  a child whose changes are QUERYABLE (declared shadowing). *(I-50)*
+- **GBC-56 —** geometry tailors freely: a five-sided board overlay renders with every
+  parent region intact; renderLayout output carries a <title> per region (a11y floor 0)
+  and only placeholder-frame content. *(I-50, I-48b, GX-36/39)*
+- **GBC-57 —** the camera is stateless toward the game: cameraViewBox is a pure
+  function; focus presets derive from the table layout; panning changes no state byte
+  and the scene re-renders byte-identically for the same camera. *(GX-39 family)*

@@ -11,3 +11,9 @@ export type { Flourish, FlourishInstance, Caption, SyncVerdict } from './theater
 export { KIND_CONTRACTS, renderComponent, renderJoin, renderBooklet, renderTable, a11yAudit } from './render.js';
 export { displayClock, Timeline } from './clock.js';
 export type { DisplayClock } from './clock.js';
+export {
+  LayoutRefusal, validateLayout, extendLayout, renderLayout,
+  CARD_PARENT, CARD_BACK_PARENT, BOARD_PARENT, TABLE_PARENT, PARENT_LAYOUTS,
+  cameraViewBox, focusPresets, shadow, TABLE_TILT,
+} from './layout.js';
+export type { Region, LayoutDef, LayoutOverlay, Camera, World } from './layout.js';
