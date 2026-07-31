@@ -312,3 +312,49 @@ economy tables (content fidelity = Phase 5/production); multi-TARGET routing of 
 venture (GX-27 routes all unassigned portions to ONE counterparty — per-portion routing
 = repeated spawn/route or a docketed extension); estates/elimination flows; content-
 triggered venture spawn (awaits the docketed spawn_venture EFX member).
+
+## Axioms — F6 set
+
+- **GX-35 — Scoped purity.** Every render read flows through SeatProjector: views are
+  branded, deep-frozen, and REDACTED per seat; any renderer handed an unbranded object
+  refuses (ProjectionBreach). *Cites R-19, HK-10, S-6.*
+- **GX-36 — Tokens only; the Placeholder is complete.** Presentation contracts name
+  TOKENS; a raw value in a contract refuses naming it (R-22); binding refuses naming
+  every missing token (R-21/HK-12); the D-1 Placeholder Skin binds ANY contract
+  completely by construction — frames before assets. *Cites R-21, R-22, HK-12, D-1.*
+- **GX-37 — Presentation emits intents, nothing else.** The verb map is closed; emission
+  is DATA {type, seat, args}; anything else refuses. *Cites R-23, S-6.*
+- **GX-38 — Theater over truth.** Flourishes are data presets (D-2); at animation
+  complete, displayed ≡ seeded or the mismatch is FLAGGED and the seeded result wins —
+  always. Sound placeholders are captions that self-remove (D-1). *Cites R-20, HK-11, EP-2.*
+- **GX-39 — Two clocks; the floor is labeled.** The game clock derives from the view;
+  the animation timeline is local and never writes state (ODG-e1 stays open — no
+  TimeSource binding); every rendered element carries a label (a11y floor). *Cites
+  EP-cluster, ODG-e1.*
+
+## Base cases — F6 set
+
+- **GBC-48 —** projection: opponent deck CONTENTS absent (counts present); window
+  options visible only to the decider; the view is frozen + branded; a renderer handed
+  raw State refuses. *(GX-35 = R-19)*
+- **GBC-49 —** skin: binding a contract with missing tokens refuses NAMING them; a raw
+  value ('#ff0000', 'flip.png') in a contract refuses; the Placeholder Skin binds any
+  contract with zero refusals. *(GX-36 = R-21/R-22, D-1)*
+- **GBC-50 —** emitter: each verb emits a well-formed intent that the ENGINE accepts;
+  an unknown verb refuses; a non-intent emission refuses. *(GX-37 = R-23)*
+- **GBC-51 —** theater: a flourish completing with displayed ≡ seeded → no flag; a
+  mismatch → FLAGGED and the seeded result returned (truth wins); a sound caption
+  expires after its ttl. *(GX-38 = R-20)*
+- **GBC-52 —** render: component SVG contains the bound token values and a <title>
+  label per element (a11y floor 0 missing); the booklet lists every contribution.
+  *(GX-36/GX-39)*
+- **GBC-53 —** clock: displayClock mirrors the view's turn row; advancing the local
+  timeline changes NO state byte. *(GX-39)*
+- **GBC-54 —** THE DIE-TILE-PAGE SCENE (feeds V-9 — pinned only at the owner's R gate):
+  a seeded die result + a placed tile + a booklet page, projected and rendered under the
+  Placeholder Skin; every theater-sync verdict ≡; the rendered scene is deterministic
+  across rebuilds. *(GX-35..39, EP-2)*
+
+**N/A-by-absence (F6 slot):** live DOM/framework binding, real assets, sound playback,
+input handling (Phase 5/utilization — the model is headless by the ODG-p1 ruling);
+TimeSource binding (ODG-e1 open); network presence UI (S3 §8).

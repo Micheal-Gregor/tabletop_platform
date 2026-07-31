@@ -323,3 +323,21 @@ survivor MUT-5; D4 vacuous assertion; D5 ci gap) — all closed same-day: paths 
 comment rectified, drawn-card identity asserted (MUT-5 now dies), poisoned-contribution
 probe replaces the length check, ci typechecks the pack. Content rows → VERIFIED.
 Suite 239/239; full ci green. **The BOTY slice is CERTIFIED. The F6 slot is open.**
+
+---
+
+## F6 Presentation (opened 2026-07-30 after BOTY certification; ODG-p1 completed by owner ruling)
+
+| Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
+|---|---|---|---|---|
+| MP5 SeatProjector + MP6 Unboxer | R-19 (claims: GBC-48 — raw state refused; redaction; validated reveal) | — | HK-10 (claim: brand door on the real render path) | BUILT — awaiting K7 |
+| MP3 IntentEmitter | R-23 (claims: GBC-50 — closed map; non-intent refused; engine accepts emissions) | — | — | BUILT — awaiting K7 |
+| MP4 SkinBinder + D-1 Placeholder | R-21, R-22 (claims: GBC-49 — missing named; raw values incl. filenames/colors/paths refused; placeholder complete) | — | HK-12 (claim) | BUILT — awaiting K7 |
+| MP1/MP2/MP7 Renderers | GBC-52 (claims: tokens-only; a11y floor 0; booklet total exposure) | — | — | BUILT — awaiting K7 |
+| MP8 TheaterSync + D-2 flourishes | R-20 (claims: GBC-51 — mismatch FLAGGED, truth wins; captions self-remove) | **V-9 DEFERRED → blocks; dischargeable at the F6 R gate** | HK-11 (claim) | BUILT — NOT-COMPLETE by rule |
+| MP9 ClockDriver + A11y | GBC-53 (claims: two clocks; timeline touches no state byte) | — | — | BUILT — awaiting K7 |
+
+Statuses are CLAIMS (RD-1). ODG-p1 completed on the record (headless + SVG strings,
+I-47); D-1/D-2 doctrines realized as ratified; ODG-e1 stays OPEN. GBC-54 (die-tile-page)
+passes at build — feeds V-9, pinned only at the owner's R gate. Suite 251/251; tsc clean
+×3; HK-6 OK.
