@@ -269,3 +269,13 @@ GX-32/GX-33/RESOLUTION_RECORD corrected append-only; F7 section header added): s
 clone fan-out + per-listener containment/eviction + listenerFaults(); D1/D2/D7 falsifying
 tests; bare-specifier content probe. Builder re-ran MUT-C3 + the D1/D2 reverts → each
 killed by a named test. Suite 234/234; tsc clean; HK-6 OK. Awaiting K7 re-verify.
+
+**K7-F7 round 2 (2026-07-30): RETURN(narrow) → closures landed.** All 8 round-1 closures
+reconstructed live and CLOSED (6/6 round-2 mutants killed); TierCriterion and M17 clear
+(8s across); library/wire COMPLETE stands. One narrow blocker: NEW-1 — the containment
+catch crashed on `throw null` (the closure-narrower-than-claim signature, falsifying
+I-45 as registered) + NEW-2 minor (fault entries aliased). Closed same-commit: safe
+extraction (any thrown value), frozen fault rows, I-45 corrected append-only, falsifying
+test legs (throw null / string-throw / corruption probe); builder re-ran both reverts →
+each killed. Suite 236/236; tsc clean; HK-6 OK. Awaiting the narrow re-verify (NEW-1
+probe + MUT-R1 against the extended D1).

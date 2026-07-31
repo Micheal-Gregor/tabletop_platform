@@ -130,3 +130,35 @@ describe('K7-F7 closures D1/D2/D7 · the fan-out is sealed and isolated (GX-31)'
     expect(() => LockstepController.resume(tampered as never, MIN_REF, minimalGenesis, wire())).toThrow(/[Dd]ivergence/);
   });
 });
+
+describe('K7-F7 r2 closures NEW-1/NEW-2 · containment survives ANY throw', () => {
+  it('NEW-1: a listener doing `throw null` is contained + evicted like any other — writer unaffected, survivors miss nothing', () => {
+    const t = LockstepController.host(MIN_REF, MIN_SEATS, 'r2n1', minimalGenesis, wire());
+    t.join('cA', 'A');
+    const survivor: number[] = [];
+    // eslint-disable-next-line no-throw-literal
+    t.subscribe(() => { throw null; }); // the primitive-throw class
+    t.subscribe(() => { throw 'string-throw'; });
+    t.subscribe((_m, i) => survivor.push(i));
+    const r1 = t.submit('cA', { type: 'upkeep', seat: 'A', args: {} });
+    const r2 = t.submit('cA', { type: 'deck:draw', seat: 'A', args: { deck: 'A' } });
+    expect('refused' in r1).toBe(false); // writer never sees the poison
+    expect('refused' in r2).toBe(false);
+    expect(survivor).toEqual([0, 1]); // the survivor missed nothing
+    expect(t.row().moves.length).toBe(2);
+    const faults = t.listenerFaults();
+    expect(faults.length).toBe(2); // both evicted, once each
+    expect(faults[0]!.error).toBe('null'); // safe extraction, never a malformed row
+    expect(faults[1]!.error).toBe('string-throw');
+  });
+
+  it('NEW-2: the fault surface aliases nothing — a caller cannot corrupt the internal record', () => {
+    const t = LockstepController.host(MIN_REF, MIN_SEATS, 'r2n2', minimalGenesis, wire());
+    t.join('cA', 'A');
+    t.subscribe(() => { throw new Error('poison'); });
+    t.submit('cA', { type: 'upkeep', seat: 'A', args: {} });
+    const out = t.listenerFaults();
+    expect(() => { (out[0] as { error: string }).error = 'CORRUPTED'; }).toThrow(); // frozen
+    expect(t.listenerFaults()[0]!.error).toBe('poison'); // internal record intact
+  });
+});

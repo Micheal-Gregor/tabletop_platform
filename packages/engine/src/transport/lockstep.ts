@@ -129,7 +129,11 @@ export class LockstepController {
           l(sealed, before, hash);
         } catch (e) {
           this.listeners.delete(l);
-          this.faults.push({ index: before, error: (e as Error).message });
+          // K7-F7 r2 NEW-1: the catch must survive ANY throw — `throw null` / a string /
+          // a plain object all extract safely (never crash inside the containment).
+          const error = e instanceof Error ? e.message : String(e);
+          // NEW-2: entries are frozen at push — the diagnostic surface aliases nothing.
+          this.faults.push(Object.freeze({ index: before, error }));
         }
       }
     }
