@@ -47,7 +47,7 @@ export function renderTable(view: SeatView, bound: BoundSkin): string {
     .map((s, i) => `<g data-seat="${esc(s.id)}"><title>${esc(s.id)}: cash ${s.cash}, favor ${s.favor}</title><text x="8" y="${20 + i * 16}">${esc(s.id)} · ${s.cash}</text></g>`)
     .join('');
   const decks = Object.entries(view.decks)
-    .map(([ref, d]) => `<g data-deck="${esc(ref)}"><title>deck ${esc(ref)}: ${d.drawCount} cards</title><text x="200" y="20">${esc(ref)}:${d.drawCount}</text></g>`)
+    .map(([ref, d], i) => `<g data-deck="${esc(ref)}"><title>deck ${esc(ref)}: ${d.drawCount} cards</title><text x="200" y="${20 + i * 16}">${esc(ref)}:${d.drawCount}</text></g>`)
     .join('');
   const windows = view.windows
     .filter((w) => w.status === 'open')
