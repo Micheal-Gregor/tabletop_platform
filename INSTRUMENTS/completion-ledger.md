@@ -384,3 +384,11 @@ pack certified · 9/9 vectors frozen (all computed, none hand-written) · 24 ref
 + 12 hooks live and mutation-falsifiable · 6 R-gate discharges · 6 supersessions/
 backflow items handled on the record (SP-6 OPEN upstream) · 4 external audit rounds ·
 253/253. The drift ledger does not close at deployment — Phase 5 runs per its roster.
+
+**K7-L (layout contracts, 2026-07-31): RETURN → PASS.** The ninth appearance of the
+signature pattern — four correct guards shipped unfalsifiable + a lineage gap; closed
+test-only (the code was right); reviewer re-ran all five survivors live → each killed;
+all dimensions 9. MP-L certified. The parent visual vocabulary (card/card-back/board/
+table), the extension door with declared shadowing, and the 2.5D camera are law-backed
+template surfaces. Suite 261/261; showcase smoked in Chromium (6 layouts, 68 titles,
+pan live).
