@@ -41,6 +41,29 @@ describe('GBC-55 · the extension door: shadowing is DECLARED, breakage refuses 
     expect(() => extendLayout(CARD_PARENT, { id: 'x', add: [{ id: 'off', role: 'x', x: 90, y: 90, w: 20, h: 20 }] })).toThrow(/escapes the unit space/);
     expect(() => extendLayout(CARD_PARENT, { id: 'x', shape: [[0, 0], [100, 0]] })).toThrow(/at least three points/);
   });
+
+  it('K7-L closures: duplicate ids, unnamed regions, NaN geometry, escaped shape points ALL refuse (the four survivors)', () => {
+    // duplicate id — including the live hole: two ids inside ONE overlay.add
+    expect(() =>
+      extendLayout(CARD_PARENT, { id: 'x', add: [{ id: 'twin', role: 'r', x: 0, y: 0, w: 5, h: 5 }, { id: 'twin', role: 'r', x: 10, y: 0, w: 5, h: 5 }] })
+    ).toThrow(/duplicate region "twin"/);
+    // missing id / role
+    expect(() => extendLayout(CARD_PARENT, { id: 'x', add: [{ id: '', role: 'r', x: 0, y: 0, w: 5, h: 5 }] })).toThrow(/needs id and role/);
+    expect(() => extendLayout(CARD_PARENT, { id: 'x', add: [{ id: 'a', role: '', x: 0, y: 0, w: 5, h: 5 }] })).toThrow(/needs id and role/);
+    // NaN coordinate — load-bearing: NaN would sail through the bounds check
+    expect(() => extendLayout(CARD_PARENT, { id: 'x', add: [{ id: 'a', role: 'r', x: NaN, y: 0, w: 5, h: 5 }] })).toThrow(/not finite/);
+    // shape point escaping the unit space
+    expect(() => extendLayout(CARD_PARENT, { id: 'x', shape: [[0, 0], [100, 0], [150, 50]] })).toThrow(/shape point escapes/);
+  });
+
+  it('K7-L closure: lineage ACCUMULATES across generations; so does suppression', () => {
+    const child = extendLayout(CARD_PARENT, { id: 'child', suppress: ['modifiers'] });
+    const grandchild = extendLayout(child, { id: 'grandchild', suppress: ['text'] });
+    expect(grandchild.lineage).toEqual(['template:card', 'child']);
+    expect(grandchild.regions.some((r) => r.id === 'modifiers')).toBe(false); // suppression carried
+    expect(grandchild.regions.some((r) => r.id === 'text')).toBe(false);
+    expect(grandchild.regions.some((r) => r.id === 'title')).toBe(true);
+  });
 });
 
 describe('GBC-56 · geometry tailors freely; the frame renders labeled (I-48b, GX-36/39)', () => {
