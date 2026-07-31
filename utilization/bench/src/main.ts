@@ -98,7 +98,7 @@ function submitVerb(verb: string, args: Record<string, unknown> = {}): void {
     const view = project(stateOf(table), table.viewSeat);
     const active = view.seats[view.turn.seatIdx]!.id;
     const intent = emit(verb, active, args); // S-6: verbs → intents, nothing else
-    const res = table.controller.submit(CLIENT, intent);
+    const res = table.controller.submit(CLIENT, intent as never); // JSON-safe by the R-23 deep-clone door
     if ('refused' in res) {
       status(`refused [${(res as { rule: string }).rule}]: ${(res as { detail: string }).detail}`);
       return; // a refusal is not a halt — the game breathes, the state never moved

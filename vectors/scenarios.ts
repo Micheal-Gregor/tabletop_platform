@@ -242,7 +242,6 @@ export function computeV8(): { afterFormHash: string; afterDissolveHash: string;
 }
 
 // ── V-1: THE MINIMAL micro-game (σ=7, two seats, three cards, Stage-2b S0..S10) ──
-import { RuleRegistry } from '../packages/engine/src/index.js';
 import { MIN_REF as V1_REF, MIN_SEATS as V1_SEATS, minimalGenesis, wireMinimal } from '../packages/engine/tests/f5-fixture.js';
 
 /**

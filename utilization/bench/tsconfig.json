@@ -1,1 +1,20 @@
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "noEmit": true, "rootDir": "../..", "lib": ["ES2022", "DOM", "DOM.Iterable"], "resolveJsonModule": true }, "include": ["src", "../../vectors", "../../packages/engine/tests/f5-fixture.ts", "../../packs/boty/src"] }
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../..",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src",
+    "../../vectors/**/*",
+    "../../packages/*/src/**/*",
+    "../../packs/boty/src/**/*",
+    "../../packages/engine/tests/f5-fixture.ts"
+  ]
+}
