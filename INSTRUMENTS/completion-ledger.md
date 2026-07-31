@@ -232,3 +232,12 @@ each killed); I-40(b) extended to the ventures module-door masking (FA-2); D11 o
 range + done-portion refusals (FA-3); D12 per-turn slot sweep on a non-wrapping turn:end
 (FA-4). Suite 209/209; tsc clean; HK-6 OK. Awaiting the auditor's narrow re-verify
 (FA-1 legs) to clear M10/M11 + library/wire base-case teeth.
+
+**EXTERNAL AUDIT round 4C (F5, 2026-07-30): PASS — F5 EXTERNAL AUDIT SIGNED OFF.**
+Report archived (K7_AUDIT_REPORT-4C.md). All four 4B findings independently re-verified
+by live mutation (6/6 killed by the named D10/D11/D12 tests, zero survivors in scope);
+I-40(b) extension confirmed accurate; M10/M11 and library/wire base-case 6→8 — teeth
+released. **F5 now carries: internal K7 r3 PASS + external 4B/4C sign-off.** Combined
+with tag k7-pass-f5 and R-gate discharge 4 (V-1 frozen), the F5 chapter closes. The F7
+slot stands open per K7-F5 r3; library/wire completion confirmation still binds to the
+F7 K7 entry (RD-1).
