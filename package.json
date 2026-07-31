@@ -5,7 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "check:tiers": "node tools/check-tiers.mjs",
-    "build": "tsc -b packages/engine packages/presentation packages/patterns",
+    "build": "tsc -b packages/engine packages/presentation packages/patterns && tsc -p packs/boty/tsconfig.json",
     "ci": "npm run check:tiers && npm run build && npm run test"
   },
   "devDependencies": {

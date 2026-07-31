@@ -40,7 +40,11 @@ describe('GBC-46 · the pack LOADS through the doors (GX-10/R-15)', () => {
     expect(() => hookHk4ValidatePack(BOTY_PACK)).not.toThrow();
     const poisoned = { ...BOTY_PACK, cards: { ...BOTY_PACK.cards, hex: { fx: [{ fx: 'summon_dragon' }] } } };
     expect(() => hookHk4ValidatePack(poisoned as never)).toThrow(/summon_dragon/);
-    expect(BOTY_CONTRIBUTIONS.length).toBe(2); // both validated at wire time (wireBoty throws otherwise)
+    // K7-BOTY D4: prove the MR3 door refuses a poisoned contribution AT WIRE (not a length check)
+    const poisonedRegistry = new RuleRegistry();
+    expect(() =>
+      poisonedRegistry.register({ ...BOTY_CONTRIBUTIONS[0]!, id: 'bad', trigger: 'on-dragon-sneeze' })
+    ).toThrow(/on-dragon-sneeze/);
     expect(() => newBoty()).not.toThrow();
   });
 });
@@ -55,6 +59,8 @@ describe('GBC-47 · THE SLICE GAME — content drives the whole machine', () => 
     // ── Round 1 ── moe: wages, posting, the brake job end-to-end (RC-A′ preset)
     ok(core.submit({ type: 'upkeep', seat: 'moe', args: { overhead: 1 } }), 'moe upkeep r1');
     ok(core.submit({ type: 'deck:draw', seat: 'moe', args: { deck: 'moe' } }), 'moe draw'); // job-posting, fx-less
+    // K7-BOTY D3: observe the drawn card's IDENTITY (kills the deck-order mutant)
+    expect((core.getState()['decks'] as Record<string, { discard: readonly string[] }>)['moe']!.discard[0]).toBe('job-posting');
     ok(core.submit({ type: 'venture:spawn', seat: 'moe', args: { spec: botyJob() as never } }), 'spawn J1');
     ok(core.submit({ type: 'crew:assign', seat: 'moe', args: { crew: 'crew-moe', venture: 'J1', portion: 0 } }), 'assign');
     ok(core.submit({ type: 'crew:work', seat: 'moe', args: { crew: 'crew-moe' } }), 'work');

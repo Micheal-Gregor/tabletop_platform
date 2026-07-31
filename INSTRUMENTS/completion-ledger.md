@@ -249,7 +249,7 @@ F7 K7 entry (RD-1).
 | Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
 |---|---|---|---|---|
 | M16 Transport (lockstep) | GX-31/32 legs (claims: GBC-41/42/43 — packRef legs NAMED; writer breach unlogged) | — | — | BUILT — awaiting K7 |
-| M17 PatternLibrary | GX-33 legs (K7 r1-r3 verified) | V-4 FROZEN (R-gate discharge 5 — the full 24-entry catalog sweep) | — | satisfied-CLAIMED — completion confirmation binds to the next K7 entry (RD-1) |
+| M17 PatternLibrary | GX-33 legs (K7 r1-r3 verified) | V-4 FROZEN (R-gate discharge 5 — the full 24-entry catalog sweep) | — | **COMPLETE** (K7-BOTY entry confirmed per RD-1) |
 | TierCriterion | R-4 (claim: GBC-45 — four injected inversions each FAIL naming the file; clean tree passes) | — | HK-6 (claim: falsifiable, not presence-of-script) | BUILT — awaiting K7 |
 
 Statuses are CLAIMS (RD-1) — K7 confirms or returns. ODG-3 resolved on the record
@@ -304,11 +304,22 @@ RD-1. Remaining: V-9 (F6). **The BOTY pack + F6 slots are open.**
 
 | Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
 |---|---|---|---|---|
-| BOTY pack + genesis | GBC-46 (claims: HK-4 names the poison; MR3 door on both contributions) | — | — | BUILT — awaiting K7 |
-| BOTY slice game | GBC-47 (claims: R-6 gate probe; full loop; I-46a reconciliation; replay ×2) | — (content owns no vector; V-4 anchors the presets it consumes) | — | BUILT — awaiting K7 |
+| BOTY pack + genesis | GBC-46 (K7-BOTY verified: MUT-1/3 killed) | — | — | VERIFIED (K7-BOTY PASS) |
+| BOTY slice game | GBC-47 (K7-BOTY verified: reconciliation hand-confirmed; MUT-4/6 killed, MUT-5 closed at D3) | — (content owns no vector; V-4 anchors the presets it consumes) | — | VERIFIED (K7-BOTY PASS) |
 
 Statuses are CLAIMS (RD-1). Content adds NO law: 8 cards ⊆ EFX v1.1.1, contributions
 through the MR3 door, presets consumed as data, tier gate clean (content imports
 downward only; nothing imports content). Suite 239/239 (vitest now includes
 packs/*/tests); tsc clean (engine, patterns, boty); HK-6 OK. STANDING carried: M17
 completion confirmation binds to THIS K7 entry (RD-1, from R-gate discharge 5).
+
+**K7-BOTY round 1 (2026-07-30): PASS.** Content adds no law — proven by mutation, not
+presence: EFX/MR3/venture/tfx/route doors all refused genuine poison on the real paths
+(MUT-1/3/4/6 killed; P1-P4 probes held); I-46a reconciliation independently hand-walked
+and confirmed exact; tier gate clean and falsifiable; SUP-1 legs named via Transport.
+Auditor CONFIRMED M17 completion per RD-1 (the ledger records it here: **M17 COMPLETE**).
+Five non-blocking findings (D1 phantom paths; D2 door-call theater; D3 deck-order
+survivor MUT-5; D4 vacuous assertion; D5 ci gap) — all closed same-day: paths corrected,
+comment rectified, drawn-card identity asserted (MUT-5 now dies), poisoned-contribution
+probe replaces the length check, ci typechecks the pack. Content rows → VERIFIED.
+Suite 239/239; full ci green. **The BOTY slice is CERTIFIED. The F6 slot is open.**

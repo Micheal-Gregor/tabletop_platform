@@ -59,7 +59,7 @@ export function wireBoty(registry: RuleRegistry): (core: EngineCore) => void {
     wireRules(core, registry);
     wireLibrary(core, registry);
     for (const c of BOTY_CONTRIBUTIONS) {
-      validateContribution(c); // the MR3 door — content passes through, never around
+      validateContribution(c); // defense-in-depth DUPLICATE — THE door lives inside register() (K7-BOTY D2/MUT-3)
       registry.register(c);
     }
   };
