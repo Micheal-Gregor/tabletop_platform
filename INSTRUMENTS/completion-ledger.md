@@ -354,3 +354,13 @@ the record → routed upstream as SP-6 (F-backflow), N/A-BY-UNRECOVERABILITY sta
 "labels split" corrected; D-2 flourish-home record corrected; I-48 registered; row
 fixes; dead VERB_NAMES export removed. Builder re-ran M7/M8 → each killed by a named
 test. Suite 252/252; tsc clean ×3; HK-6 OK. Awaiting K7 re-verify.
+
+**K7-F6 round 2 (2026-07-30): PASS — F6's internal K7 is complete.** All six DF6
+closures reconstructed live (both survivors killed by named tests; the round-1 leak
+refused typed; SP-6's unrecoverability claim independently re-verified); all dimensions
+≥ 7 — teeth released. Two r2 observations recorded on I-48 (launder semantics; the
+TypedArray engine-seam minor candidate). **F6 CERTIFIED (internal K7 r2). ALL SEVEN
+FACETS + THE FIRST CONTENT PACK ARE NOW CERTIFIED.** STANDING at the owner's gates:
+V-9 (the LAST vector) dischargeable at the F6 R gate — MP8 NOT-COMPLETE until then,
+completion confirmation binding to the next K7 entry (RD-1) · SP-6 OPEN to the owner's
+Phase 3 channel (EP-1′/fidelity-min-formula) · ODG-e1 open by design.
