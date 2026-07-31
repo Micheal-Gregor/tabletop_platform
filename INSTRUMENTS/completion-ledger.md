@@ -219,3 +219,16 @@ charge BEGINS with `git fetch --tags && git pull` + HEAD/tag attestation BEFORE 
 Report archived (K7_AUDIT_REPORT-4.md). F5 external audit to be RE-ISSUED against the
 true HEAD; K7-4-3 (audit reports untracked in the owner's worktree) is already satisfied
 in the repo — governance/audits/ is committed; the owner's loose copies are working files.
+
+**EXTERNAL AUDIT round 4B (F5, 2026-07-30): RETURN(narrow) → closures landed.** Report
+archived (K7_AUDIT_REPORT-4B.md). Attestation step held (audited tree = b2fc773). The
+auditor found the SEVENTH closure-narrower-than-claim: FA-1 — the spawn door's
+deadline/work/party legs present and correct but unfalsifiable at BOTH doors (44 other
+mutations killed; no state-breaking defect anywhere; S5, the weave, the supersession
+door, and V-1 all independently verified sound — V-1 re-derived to b773bf95ff085494).
+All four findings closed same-day (EXT4B-1..4): D10 falsifying door tests (deadline 0/
+NaN/-1/1.5, work 0/NaN/-2/0.5, party GHOST — builder re-ran all three door deletions →
+each killed); I-40(b) extended to the ventures module-door masking (FA-2); D11 out-of-
+range + done-portion refusals (FA-3); D12 per-turn slot sweep on a non-wrapping turn:end
+(FA-4). Suite 209/209; tsc clean; HK-6 OK. Awaiting the auditor's narrow re-verify
+(FA-1 legs) to clear M10/M11 + library/wire base-case teeth.

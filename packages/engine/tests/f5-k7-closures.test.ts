@@ -285,6 +285,88 @@ describe('D7 · unloaded-Ledger upkeep is coherent (Probe-3 — GBC-37 in the op
   });
 });
 
+describe('D10 · EXT-4B closures: the spawn door legs FA-1 named (deadline / work / party)', () => {
+  it('venture:spawn with deadline 0 / NaN → refused typed, hash stable (kills FA-1a)', () => {
+    const { core } = newMinimalCore('d10a');
+    const hash = core.getStateHash();
+    for (const deadline of [0, NaN, -1, 1.5]) {
+      const res = core.submit({
+        type: 'venture:spawn', seat: 'A',
+        args: { spec: { id: 'V', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1 }], deadline, payoffs: [] } },
+      });
+      expect('refused' in res).toBe(true);
+      expect((res as { detail: string }).detail).toMatch(/deadline/);
+    }
+    expect(core.getStateHash()).toBe(hash);
+  });
+
+  it('venture:spawn with portion.work 0 / NaN → refused typed, hash stable (kills FA-1b)', () => {
+    const { core } = newMinimalCore('d10b');
+    const hash = core.getStateHash();
+    for (const work of [0, NaN, -2, 0.5]) {
+      const res = core.submit({
+        type: 'venture:spawn', seat: 'A',
+        args: { spec: { id: 'V', initiator: 'A', portions: [{ party: 'A', task: 'α', work }], deadline: 2, payoffs: [] } },
+      });
+      expect('refused' in res).toBe(true);
+      expect((res as { detail: string }).detail).toMatch(/work/);
+    }
+    expect(core.getStateHash()).toBe(hash);
+  });
+
+  it('venture:spawn with portion.party an unknown seat → refused typed, hash stable (kills FA-1c)', () => {
+    const { core } = newMinimalCore('d10c');
+    const hash = core.getStateHash();
+    const res = core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'V', initiator: 'A', portions: [{ party: 'GHOST', task: 'α', work: 1 }], deadline: 2, payoffs: [] } },
+    });
+    expect('refused' in res).toBe(true);
+    expect((res as { detail: string }).detail).toMatch(/party.*GHOST/);
+    expect(core.getStateHash()).toBe(hash);
+  });
+});
+
+describe('D11 · EXT-4B FA-3: crew assignment edge refusals', () => {
+  it('assigning to an out-of-range portion index refuses; assigning to a DONE portion refuses', () => {
+    const { core } = newMinimalCore('d11');
+    core.submit({
+      type: 'venture:spawn', seat: 'A',
+      args: { spec: { id: 'W', initiator: 'A', portions: [{ party: 'A', task: 'α', work: 1 }, { party: 'A', task: 'α', work: 2 }], deadline: 2, payoffs: [] } },
+    });
+    expect(() => core.submit({ type: 'crew:assign', seat: 'A', args: { crew: 'crew-A', venture: 'W', portion: 9 } })).toThrow(/no portion 9/);
+    core.submit({ type: 'crew:assign', seat: 'A', args: { crew: 'crew-A', venture: 'W', portion: 0 } });
+    core.submit({ type: 'crew:work', seat: 'A', args: { crew: 'crew-A' } }); // portion 0 → done, crew freed
+    expect(() => core.submit({ type: 'crew:assign', seat: 'A', args: { crew: 'crew-A', venture: 'W', portion: 0 } })).toThrow(/already done/);
+  });
+});
+
+describe('D12 · EXT-4B FA-4: the per-turn slot reset leg of the weave', () => {
+  it('a per-turn slot clears after a NON-wrapping turn:end', () => {
+    const registry = new RuleRegistry();
+    registry.register({
+      id: 'turn-scratch',
+      bearer: { kind: 'Card' },
+      trigger: 'on-card-drawn',
+      condition: { op: 'always' },
+      effects: [],
+      declaredSlots: [{ name: 't', reset: 'per-turn' }],
+      slotWrites: [],
+      vocabVersions: { efx: '1.1.1', hooks: '1.0' },
+    });
+    // slot pre-populated at genesis (the on-state region the weave must sweep)
+    const g: typeof minimalGenesis = (ref, seats, seed) => ({
+      ...(minimalGenesis(ref, seats, seed) as JsonObject),
+      ruleSlots: { 'turn-scratch': { t: 5 } },
+    });
+    const core = new EngineCore(MIN_REF, MIN_SEATS, 'd12', g);
+    wireMinimal(registry)(core);
+    expect(readSlot(core.getState(), 'turn-scratch', 't')).toBe(5);
+    core.submit({ type: 'turn:end', seat: 'A', args: {} }); // A → B, NO wrap
+    expect(readSlot(core.getState(), 'turn-scratch', 't')).toBeUndefined(); // per-turn sweep ran
+  });
+});
+
 describe('D8 · the reserved bank account (DF5-10)', () => {
   it("a seat named 'bank' collides with the implicit account → post refuses", () => {
     const g = {
