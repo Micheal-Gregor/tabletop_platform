@@ -22,7 +22,8 @@ The BUILDER in a #MetaFramework Phase 4 Conformance Build. Read, in order:
 |---|---|
 | ALL SEVEN FACETS + BOTY | **CERTIFIED & COMPLETE** (k7-pass-f1..f7, k7-pass-boty; external audits 1-4C in governance/audits/). Every completion-ledger row COMPLETE/VERIFIED |
 | Vectors | **NINE OF NINE FROZEN** (V-1..V-9 in vectors/ — computed, never hand-written; a mismatch is a divergence to EXPLAIN) |
-| Next | **Phase 5 utilization** per governance/Phase5_Utilization_Roster.md (bindings in utilization/, never in core) · SP-6 OPEN at the owner's Phase 3 channel (EP-1′/fidelity-min-formula unrecoverable) · ODG-e1 open by design · optional external audit sweep of F6/F7/BOTY |
+| Phase 5 | **COMPLETE — K8 PASS, tag k8-pass-1.** Target: local-first browser bench (owner-ruled Option A). Run: `cd utilization/bench && node build.mjs && python3 -m http.server 4173` → http://localhost:4173 · health check: `node run-target-check.mjs` (expect BATTERY 21/21 · DRILLS 5/5). Discharge record + operations pack in utilization/ |
+| Still open (by design) | SP-6 (owner's Phase 3 channel) · ODG-e1 · the Option-B online-multiplayer supersession + other recorded revisit triggers (discharge-record.md) · the drift ledger NEVER closes |
 | Suite | 253/253 (`npm test`) · `npm run ci` = tiers + build (incl. packs/boty) + test |
 
 ## Non-negotiable process (the short version)
