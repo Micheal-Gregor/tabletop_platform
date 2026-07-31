@@ -279,3 +279,11 @@ extraction (any thrown value), frozen fault rows, I-45 corrected append-only, fa
 test legs (throw null / string-throw / corruption probe); builder re-ran both reverts →
 each killed. Suite 236/236; tsc clean; HK-6 OK. Awaiting the narrow re-verify (NEW-1
 probe + MUT-R1 against the extended D1).
+
+**K7-F7 round 3 (2026-07-30): PASS — F7's internal K7 is complete.** All closures
+reconstructed live over the full throw domain; 24 valid mutants across three rounds,
+zero unregistered survivors; M16/M17/TierCriterion all ≥ 7 every dimension — teeth
+released. **F7 CERTIFIED (internal K7 r3).** STANDING by rule: M17 NOT-COMPLETE until
+V-4 discharges at the owner's R gate (I-44 — the GBC-44 floor grows to the FULL catalog
+sweep at discharge); after discharge, M17 completion confirmation binds to the next K7
+entry (RD-1). Remaining vectors: V-4 (F7 R gate) · V-9 (F6). The F6 slot may open.
