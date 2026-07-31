@@ -14,14 +14,21 @@
  *   (d) the table gains standings + log — v1's "The table" panel as declared adds.
  */
 import { BOARD_PARENT, CARD_PARENT, TABLE_PARENT, extendLayout } from '@tabletop/presentation';
-import type { LayoutDef } from '@tabletop/presentation';
+import type { LayoutDef, LayoutOverlay } from '@tabletop/presentation';
+
+/**
+ * The OVERLAYS are exported alongside the children so the construction path is
+ * FALSIFIABLE (K7-v1x D5): a test re-runs extendLayout(parent, overlay) and requires
+ * deep equality with the exported child — a hand-built literal (even with forged
+ * lineage) cannot survive drift against the door's own output.
+ */
 
 /**
  * The fortune/character card — v1's drawn-card AND its character popup are ONE child
  * with two content fills (Hal Ramsey ≡ "Win the county fair raffle", structurally).
  * Measured: art ~0–70%, then name, italic org/quote lines, payout strip at the foot.
  */
-export const FORTUNE_CARD: LayoutDef = extendLayout(CARD_PARENT, {
+export const FORTUNE_OVERLAY: LayoutOverlay = {
   id: 'boty:fortune-card',
   override: [
     { id: 'art', role: 'art', x: 6, y: 4, w: 88, h: 52 }, // art-dominant (I-51b)
@@ -33,14 +40,15 @@ export const FORTUNE_CARD: LayoutDef = extendLayout(CARD_PARENT, {
     { id: 'payout', role: 'payout-strip', x: 6, y: 88, w: 88, h: 8 }, // "+$550" gold strip
   ],
   suppress: ['modifiers'],
-});
+};
+export const FORTUNE_CARD: LayoutDef = extendLayout(CARD_PARENT, FORTUNE_OVERLAY);
 
 /**
  * The round interstitial — v1's "Round N · Season" card: sepia art, season title,
  * italic lore, gold callout ("CPU 2 leads off this round."), one action. Rendered at
  * a focus preset it IS v1's modal (I-51a).
  */
-export const ROUND_CARD: LayoutDef = extendLayout(CARD_PARENT, {
+export const ROUND_OVERLAY: LayoutOverlay = {
   id: 'boty:round-card',
   override: [
     { id: 'art', role: 'art', x: 6, y: 4, w: 88, h: 50 },
@@ -52,7 +60,8 @@ export const ROUND_CARD: LayoutDef = extendLayout(CARD_PARENT, {
     { id: 'action', role: 'action-button', x: 6, y: 89, w: 88, h: 8 }, // "Next ▶"
   ],
   suppress: ['modifiers'],
-});
+};
+export const ROUND_CARD: LayoutDef = extendLayout(CARD_PARENT, ROUND_OVERLAY);
 
 /**
  * The shop board — v1's middle column decomposed onto BOARD_PARENT: every parent
@@ -60,7 +69,7 @@ export const ROUND_CARD: LayoutDef = extendLayout(CARD_PARENT, {
  * Top→bottom: art banner · identity/counters · building-tier · tradespeople(crew) /
  * equipment / local-play · jobs list / hand · AR · AP · actions.
  */
-export const SHOP_BOARD: LayoutDef = extendLayout(BOARD_PARENT, {
+export const SHOP_OVERLAY: LayoutOverlay = {
   id: 'boty:shop-board',
   override: [
     { id: 'identity', role: 'title', x: 2, y: 20, w: 44, h: 8 }, // "Jumpin_Jack · mechanic"
@@ -78,19 +87,29 @@ export const SHOP_BOARD: LayoutDef = extendLayout(BOARD_PARENT, {
     { id: 'ap', role: 'payables', x: 34, y: 82, w: 30, h: 9 }, // "AP — you owe"
     { id: 'actions', role: 'actions', x: 66, y: 82, w: 32, h: 9 }, // Bank Credit · End turn
   ],
-});
+};
+export const SHOP_BOARD: LayoutDef = extendLayout(BOARD_PARENT, SHOP_OVERLAY);
 
 /**
  * The town table — TABLE_PARENT plus v1's "The table" panel: ranked standings rows
  * (gold cash, active row gold-outlined — skin-era treatments, recorded not painted)
  * and the TABLE LOG.
  */
-export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, {
+export const TOWN_OVERLAY: LayoutOverlay = {
   id: 'boty:town-table',
   add: [
     { id: 'standings', role: 'standings', x: 8, y: 66, w: 50, h: 28 }, // ranked player rows
     { id: 'log', role: 'table-log', x: 62, y: 70, w: 30, h: 26 }, // the table log
   ],
-});
+};
+export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
 
 export const BOTY_LAYOUTS: readonly LayoutDef[] = Object.freeze([FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE]);
+
+/** (parent, overlay, child) triples — the construction-falsifiability fixture (K7-v1x D5). */
+export const BOTY_LAYOUT_DERIVATIONS = Object.freeze([
+  { parent: CARD_PARENT, overlay: FORTUNE_OVERLAY, child: FORTUNE_CARD },
+  { parent: CARD_PARENT, overlay: ROUND_OVERLAY, child: ROUND_CARD },
+  { parent: BOARD_PARENT, overlay: SHOP_OVERLAY, child: SHOP_BOARD },
+  { parent: TABLE_PARENT, overlay: TOWN_OVERLAY, child: TOWN_TABLE },
+] as const);

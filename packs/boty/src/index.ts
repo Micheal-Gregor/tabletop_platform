@@ -9,7 +9,11 @@ import { buildGlobal, buildJob, buildRouted, buildRouting } from '@tabletop/patt
 import { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
 
 export { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
-export { BOTY_LAYOUTS, FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE } from './layouts.js';
+export {
+  BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS,
+  FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE,
+  FORTUNE_OVERLAY, ROUND_OVERLAY, SHOP_OVERLAY, TOWN_OVERLAY,
+} from './layouts.js';
 
 const VOCABS = { efx: '1.1.1', hooks: '1.0' };
 

@@ -177,9 +177,9 @@ function boardGroup(view: SeatView, seat: string, i: number): string {
     const busy = c.assignedTo !== undefined;
     return `<g data-crew="${esc(c.id)}" class="hot"><title>${esc(c.id)}${busy ? ` — working ${esc(c.assignedTo!.venture)} (click to WORK)` : sel ? ' — selected (click a portion to assign)' : ' — click to select'}</title><circle cx="${crewR.x + 8 + ci * 14}" cy="${crewR.y + 14}" r="6" class="${busy ? 'tok-busy' : sel ? 'tok-sel' : 'tok'}"/></g>`;
   }).join('');
-  // AR / AP — v1's twin panels, filled from the shared truth
-  const recv = (state['receivables'] as readonly { holder: string; amount: number }[] ?? []).filter((r) => r.holder === seat);
-  const owed = (state['debts'] as readonly { debtor: string; creditor: string; amount: number }[] ?? []).filter((d) => d.debtor === seat);
+  // AR / AP — v1's twin panels, filled from the PROJECTION (the sole read — K7-v1x D3)
+  const recv = view.receivables.filter((r) => r.holder === seat);
+  const owed = view.debts.filter((d) => d.debtor === seat);
   const sum = (xs: readonly { amount: number }[]) => xs.reduce((a, b) => a + b.amount, 0);
   const arTxt = `<text x="${arR.x + 2}" y="${arR.y + 7.5}" class="fine">${recv.length ? `${recv.length} · $${sum(recv)}` : 'none'}</text>`;
   const apTxt = `<text x="${apR.x + 2}" y="${apR.y + 7.5}" class="fine">${owed.length ? `${owed.length} · $${sum(owed)}` : 'none'}</text>`;
@@ -192,9 +192,9 @@ function boardGroup(view: SeatView, seat: string, i: number): string {
   const hand = handTop ? at(handR.x + 2, handR.y + 1, 0.3, renderLayout(CARD_PARENT, `${seat}'s last draw: ${handTop}`, { title: handTop })) : '';
   const inner = renderLayout(SHOP_BOARD, `${seat}'s shop${active ? ' — TO ACT' : ''}`, {
     'art-banner': `${seat}'s shop`,
-    identity: `${seat}${active ? ' ★' : ''} · trade`,
+    identity: `${seat}${active ? ' ★' : ''} · [trade]`,
     counters: `$${s.cash} · ♥${s.favor}`,
-    'building-tier': `shop · tier 1 · ${mine.length} crew cap`,
+    'building-tier': `[building · tier — · next increment] · ${mine.length} crew`,
     'jobs-list': jobsN ? `${jobsN} job(s) crewed` : 'no jobs in queue',
     ar: 'AR — owed to you',
     ap: 'AP — you owe',
@@ -212,14 +212,15 @@ function drawPopped(): void {
   ${renderLayout(popped.layout, popped.label, popped.content)}</svg>`;
 }
 
-function popRound(round: number): void {
+/** The callout derives from the PROJECTED view — theater never outruns truth (K7-v1x D2). */
+function popRound(round: number, leader: string): void {
   popped = {
     layout: ROUND_CARD,
     label: `Round ${round} · ${seasonOf(round)}`,
     content: {
       title: `Round ${round} · ${seasonOf(round)}`,
       text: 'Maple Hollow lore',
-      callout: `${SEATS[0]} leads off this round.`,
+      callout: `${leader} leads off this round.`,
       action: 'Next ▶ (click to continue)',
     },
   };
@@ -230,7 +231,7 @@ function draw(): void {
   const view = project(stateOf(table), table.viewSeat);
   const active = view.seats[view.turn.seatIdx]!.id;
   // ROUND INTERSTITIAL — v1's proven rhythm: the round announces itself as a CARD
-  if (lastRound !== null && view.turn.round !== lastRound && view.turn.status === 'playing') popRound(view.turn.round);
+  if (lastRound !== null && view.turn.round !== lastRound && view.turn.status === 'playing') popRound(view.turn.round, active);
   lastRound = view.turn.round;
   const scene = tableGroup(view) + SEATS.map((s, i) => boardGroup(view, s, i)).join('');
   $('stage').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${cameraViewBox(camera, WORLD)}" width="1240" height="720">
@@ -239,7 +240,7 @@ function draw(): void {
   ${scene}</svg>`;
   // CHROME (bench furniture, I-51d): header · alert banner · footer already in the page
   $('hdr-place').textContent = 'Maple Hollow';
-  $('hdr-round').textContent = `${seasonOf(view.turn.round)} · round ${view.turn.round} / ${(BOTY_PACK as unknown as { maxRounds?: number }).maxRounds ?? '—'}`;
+  $('hdr-round').textContent = `${seasonOf(view.turn.round)} · round ${view.turn.round} / ${BOTY_PACK.maxRounds}`;
   $('hdr-turn').textContent = `▶ ${active}'s turn`;
   const banner = $('banner');
   if (view.results) {
@@ -259,6 +260,16 @@ function draw(): void {
 }
 
 function hit(ev: Event): void {
+  try {
+    hitInner(ev);
+  } catch (e) {
+    // same classification law as act() — a domain refusal is a status line, the unknown halts (K7-v1x D8)
+    if (e instanceof Error && /Refusal|Breach|Violation/.test(e.name)) status(`refused: ${e.message}`);
+    else halt(e);
+  }
+}
+
+function hitInner(ev: Event): void {
   let el = ev.target as HTMLElement | null;
   while (el && el !== $('stage')) {
     const d = (el as HTMLElement).dataset ?? {};
@@ -314,7 +325,7 @@ function boot(): void {
     }
     const view = project(stateOf(table), table.viewSeat);
     lastRound = view.turn.round;
-    if (view.turn.status === 'playing') popRound(view.turn.round); // v1 opens ON a round card
+    if (view.turn.status === 'playing') popRound(view.turn.round, view.seats[view.turn.seatIdx]!.id); // v1 opens ON a round card
     draw();
   } catch (e) { halt(e); }
 }
@@ -339,7 +350,7 @@ function wireUi(): void {
   $('overlay').addEventListener('click', () => { popped = null; drawPopped(); });
   $('cam-bar').innerHTML = Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('');
   $('cam-bar').onclick = (ev) => { const k = (ev.target as HTMLElement).dataset['cam']; if (k) { camera = presets[k]!; draw(); } };
-  $('new-game').onclick = () => { table = fresh(); $('halt').style.display = 'none'; const v = project(stateOf(table!), table!.viewSeat); lastRound = v.turn.round; popRound(v.turn.round); draw(); };
+  $('new-game').onclick = () => { table = fresh(); $('halt').style.display = 'none'; const v = project(stateOf(table!), table!.viewSeat); lastRound = v.turn.round; popRound(v.turn.round, v.seats[v.turn.seatIdx]!.id); draw(); };
   $('upkeep').onclick = () => act('upkeep', ($('overhead') as HTMLInputElement).value ? { overhead: Number(($('overhead') as HTMLInputElement).value) } : {});
   $('spawn-job').onclick = () => act('spawn-venture', { spec: botyJob() });
   $('spawn-gc').onclick = () => act('spawn-venture', { spec: botyGcContract() });

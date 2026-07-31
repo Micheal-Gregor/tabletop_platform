@@ -11,7 +11,7 @@ import {
   renderLayout,
   validateLayout,
 } from '@tabletop/presentation';
-import { BOTY_LAYOUTS, FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE } from '../src/index.js';
+import { BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE } from '../src/index.js';
 
 describe('GBC-58 · the four children build lawfully; shadowing EXACT and queryable (I-50/I-51)', () => {
   it('all four validate, are frozen, and name their parent in lineage', () => {
@@ -64,6 +64,16 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     expect(TOWN_TABLE.shadowed).toEqual({ overridden: [], added: ['standings', 'log'], suppressed: [] });
     for (const id of TABLE_PARENT.regions.map((r) => r.id)) {
       expect(TOWN_TABLE.regions.find((r) => r.id === id)).toEqual(TABLE_PARENT.regions.find((r) => r.id === id));
+    }
+  });
+
+  it('K7-v1x D5 closure: every shipped child IS the door\'s own output — extendLayout(parent, overlay) deep-equals it', () => {
+    // A hand-built literal (even with forged lineage/shadowed data) cannot survive this:
+    // the child on the export surface must equal a LIVE re-run of the extension door.
+    expect(BOTY_LAYOUT_DERIVATIONS.length).toBe(BOTY_LAYOUTS.length);
+    for (const { parent, overlay, child } of BOTY_LAYOUT_DERIVATIONS) {
+      expect(extendLayout(parent, overlay)).toEqual(child);
+      expect(BOTY_LAYOUTS).toContain(child); // the fixture covers the whole export surface
     }
   });
 
