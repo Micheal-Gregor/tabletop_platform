@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>TABLETOP — playtest bench</title>
+<style>body{font:14px system-ui;margin:12px}#halt{display:none;background:#fee;border:2px solid #c00;padding:8px;font-weight:bold}#board svg{border:1px solid #ccc;width:640px;height:300px}button{margin:2px}input,select{width:70px}</style></head>
+<body>
+<h1>TABLETOP <small>— playtest bench (Placeholder Skin · frames before assets)</small></h1>
+<div id="halt" role="alert"></div>
+<div id="status" aria-live="polite">booting…</div>
+<div>
+  <button id="new-boty">new BOTY</button><button id="new-minimal">new MINIMAL</button>
+  view as <select id="seat"><option>moe</option><option>pete</option><option>edie</option><option>A</option><option>B</option></select>
+  <button id="export">export row</button> import <input type="file" id="import">
+</div>
+<div>
+  <button id="upkeep">upkeep</button> overhead <input id="overhead" value="1">
+  <button id="draw">draw</button>
+  <button id="spawn-job">spawn job</button><button id="spawn-gc">spawn GC</button><button id="route-gc">route GC→pete</button>
+  <button id="recession">recession</button>
+  crew <input id="crew" value="crew-moe"> venture <input id="venture" value="J1"> portion <input id="portion" value="0">
+  <button id="assign">assign</button><button id="work">work</button>
+  <button id="end-turn">end turn</button><button id="reckon">reckon</button>
+</div>
+<div id="windows"></div>
+<div id="board" aria-label="the table"></div>
+<script type="module" src="./dist/main.js"></script>
+</body></html>
