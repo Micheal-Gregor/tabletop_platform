@@ -128,3 +128,31 @@ describe('V-1 · the MINIMAL micro-game (golden, computed 2026-07-26)', () => {
     expect(v1.moveCount).toBe(pinned.moveCount);
   });
 });
+
+import { computeV4 } from '../../../vectors/scenarios.js';
+const V4_PATH = resolve(__dirname, '../../../vectors/V-4.json');
+
+describe('V-4 · pattern-preset fidelity (golden, computed 2026-07-30)', () => {
+  it('the full catalog sweep reproduces inventory-documented behavior — matches the discharged vector', () => {
+    const v4 = computeV4() as Record<string, Record<string, unknown>>;
+    // The laws, stated independently of the pin (SP-5/VK-8):
+    expect(v4['catalog:families']).toEqual({ VNT: 6, RTM: 3, IWN: 9, TFX: 2, CLOSING: 1 });
+    expect(v4['vnt:routed']!['routingWindowOpened']).toBe(true); // unassigned → gated routing
+    expect(v4['vnt:job']!['routingWindowOpened']).toBe(false); // degenerate: self-assigned
+    expect(v4['vnt:job:lifecycle']!['status']).toBe('complete'); // RC-A′ end to end
+    expect(v4['vnt:job:lifecycle']!['receivable']).toMatchObject({ holder: 'A', amount: 4 });
+    for (const k of ['threat', 'court', 'damages', 'settle', 'poach', 'mayor', 'referral', 'routing', 'estate']) {
+      expect(v4[`iwn:${k}`]).toMatchObject({ kind: k, gated: true, status: 'open' }); // all nine, engine-gated
+    }
+    expect(v4['tfx:global']!['cash']).toEqual([['A', -1], ['B', -1]]); // table scope
+    expect(v4['tfx:modifier']!['cash']).toEqual([['A', 0], ['B', -1]]); // one outfit only
+
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V4_PATH, JSON.stringify({ computed: '2026-07-30', gate: 'R-gate discharge 5, owner-approved', table: v4 }, null, 2));
+      return;
+    }
+    expect(existsSync(V4_PATH)).toBe(true);
+    const pinned = JSON.parse(readFileSync(V4_PATH, 'utf8')) as { table: typeof v4 };
+    expect(v4).toEqual(pinned.table);
+  });
+});

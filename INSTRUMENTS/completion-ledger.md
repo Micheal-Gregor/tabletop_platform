@@ -249,7 +249,7 @@ F7 K7 entry (RD-1).
 | Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
 |---|---|---|---|---|
 | M16 Transport (lockstep) | GX-31/32 legs (claims: GBC-41/42/43 — packRef legs NAMED; writer breach unlogged) | — | — | BUILT — awaiting K7 |
-| M17 PatternLibrary | GX-33 legs (claims: build refusals incl. non-EFX fx + nested window + unknown kind/model) | **V-4 DEFERRED → blocks; dischargeable at the F7 R gate (I-44)** | — | BUILT — NOT-COMPLETE by rule |
+| M17 PatternLibrary | GX-33 legs (K7 r1-r3 verified) | V-4 FROZEN (R-gate discharge 5 — the full 24-entry catalog sweep) | — | satisfied-CLAIMED — completion confirmation binds to the next K7 entry (RD-1) |
 | TierCriterion | R-4 (claim: GBC-45 — four injected inversions each FAIL naming the file; clean tree passes) | — | HK-6 (claim: falsifiable, not presence-of-script) | BUILT — awaiting K7 |
 
 Statuses are CLAIMS (RD-1) — K7 confirms or returns. ODG-3 resolved on the record
@@ -287,3 +287,13 @@ released. **F7 CERTIFIED (internal K7 r3).** STANDING by rule: M17 NOT-COMPLETE 
 V-4 discharges at the owner's R gate (I-44 — the GBC-44 floor grows to the FULL catalog
 sweep at discharge); after discharge, M17 completion confirmation binds to the next K7
 entry (RD-1). Remaining vectors: V-4 (F7 R gate) · V-9 (F6). The F6 slot may open.
+
+**R-GATE DISCHARGE 5 (2026-07-30, owner-approved):** V-4 computed as the FULL catalog
+sweep (I-44): all 6 VNT spawned through the engine (routed opens its gated routing
+window, job runs RC-A′ end-to-end to its receivable), 3 RTM fragments + subcontract-debt
+driven through venture:route, all 9 IWN kinds opened engine-gated, both TFX scopes
+ticked at the wrap (table charges both, modifier charges one outfit), closing defaults +
+family counts — 24 entries, persisted, re-derived on the full suite (237/237). The laws
+stand independently of the pin (SP-5/VK-8). EIGHT of nine vectors frozen. M17: CC-5
+satisfied-CLAIMED; confirmation binds to the next K7 entry (the F6/BOTY review) per
+RD-1. Remaining: V-9 (F6). **The BOTY pack + F6 slots are open.**

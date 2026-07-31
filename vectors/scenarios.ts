@@ -323,3 +323,113 @@ export function computeV1(): {
     row,
   };
 }
+
+// ── V-4: pattern-preset fidelity — THE FULL CATALOG SWEEP (I-44; discharged at the
+// owner's R gate 5). The rule, independent of the pin (SP-5/VK-8): each preset's built
+// fragment, exercised THROUGH THE ENGINE, reproduces its inventory-documented behavior.
+import {
+  CATALOG,
+  CLOSING_DEFAULTS,
+  IWN_KINDS,
+  buildCivic,
+  buildExpansion,
+  buildGlobal,
+  buildIncident,
+  buildJob,
+  buildModifier,
+  buildProject,
+  buildRouted,
+  buildRouting,
+  buildWindow,
+} from '@tabletop/patterns';
+import { EffectEngine as V4Fx } from '../packages/engine/src/index.js';
+import type { State as V4State } from '../packages/engine/src/index.js';
+import { newMinimalCore, minimalGenesis as v4Genesis, MIN_REF as V4_REF } from '../packages/engine/tests/f5-fixture.js';
+
+export function computeV4(): Record<string, unknown> {
+  const table: Record<string, unknown> = {};
+
+  // VNT sweep: spawn each preset through the engine; record the observable lifecycle facts.
+  const vntSpecs = {
+    'vnt:job': buildJob({ id: 'J', initiator: 'A', task: 'α', amount: 4, deadline: 2 }),
+    'vnt:project': buildProject({ id: 'P', initiator: 'A', deadline: 2, phases: [{ task: 'α', work: 1, party: 'A' }, { task: 'α', work: 1, party: 'A' }], amount: 6 }),
+    'vnt:civic': buildCivic({ id: 'C', initiator: 'A', deadline: 2, seatIds: ['A', 'B'], task: 'α', amountPerSeat: 2 }),
+    'vnt:routed': buildRouted({ id: 'R', initiator: 'A', deadline: 2, tasks: ['α', 'β', 'γ'], amount: 6 }),
+    'vnt:incident': buildIncident({ id: 'I', initiator: 'A', deadline: 1, task: 'α', amount: 1 }),
+    'vnt:expansion': buildExpansion({ id: 'X', initiator: 'A', deadline: 2, task: 'α', work: 3, amount: 9 }),
+  } as const;
+  for (const [key, spec] of Object.entries(vntSpecs)) {
+    const { core } = newMinimalCore(`v4-${key}`);
+    const res = core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: spec as never } });
+    if ('refused' in res) throw new Error(`V-4 sweep defect at ${key}: ${JSON.stringify(res)}`);
+    const s = core.getState();
+    const windows = (s['windows'] as readonly { kind: string; status: string; gated: boolean }[]).filter((w) => w.status === 'open');
+    table[key] = {
+      portions: spec.portions.length,
+      unassigned: spec.portions.filter((p) => p.party === undefined).length,
+      payoffTargets: spec.payoffs.map((p) => p.to),
+      routingWindowOpened: windows.some((w) => w.kind === 'routing' && w.gated),
+      hash: core.getStateHash(),
+    };
+  }
+  // the job preset's FULL RC-A′ lifecycle (the degenerate form, end to end):
+  {
+    const { core } = newMinimalCore('v4-job-life');
+    core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: vntSpecs['vnt:job'] as never } });
+    core.submit({ type: 'crew:assign', seat: 'A', args: { crew: 'crew-A', venture: 'J', portion: 0 } });
+    core.submit({ type: 'crew:work', seat: 'A', args: { crew: 'crew-A' } });
+    const s = core.getState();
+    table['vnt:job:lifecycle'] = {
+      status: (s['ventures'] as readonly { status: string }[])[0]!.status,
+      receivable: (s['receivables'] as readonly { holder: string; amount: number }[])[0],
+      hash: core.getStateHash(),
+    };
+  }
+
+  // RTM sweep: the three model fragments verbatim + subcontract-debt driven through the engine.
+  table['rtm:subcontract-debt'] = buildRouting('subcontract-debt', { venture: 'V', from: 'A', to: 'B', amount: 2, due: 2 });
+  table['rtm:commission-now'] = buildRouting('commission-now', { venture: 'V', from: 'A', to: 'B', amount: 1 });
+  table['rtm:deferred-referral'] = buildRouting('deferred-referral', { venture: 'V', from: 'A', to: 'B' });
+  {
+    const { core } = newMinimalCore('v4-rtm');
+    core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: { id: 'V', initiator: 'A', portions: [{ task: 'β', work: 1 }], deadline: 2, payoffs: [] } } });
+    const win = (core.getState()['windows'] as readonly { id: string; status: string }[]).find((w) => w.status === 'open')!;
+    core.submit({ type: 'window:resolve', seat: 'A', args: { window: win.id, option: 0 } });
+    const frag = buildRouting('subcontract-debt', { venture: 'V', from: 'A', to: 'B', amount: 2, due: 2 });
+    core.submit({ type: 'venture:route', seat: 'A', args: frag.routeArgs as never });
+    table['rtm:subcontract-debt:engine'] = { debts: core.getState()['debts'], hash: core.getStateHash() };
+  }
+
+  // IWN sweep: all nine kinds opened through EffectEngine on the MINIMAL genesis.
+  for (const kind of IWN_KINDS) {
+    const frag = buildWindow(kind, { decider: 'A' });
+    const s = V4Fx.apply(v4Genesis(V4_REF, [], `v4-iwn-${kind}`) as V4State, frag as never, { windowDepth: 0 }) as V4State;
+    const win = (s['windows'] as readonly { kind: string; gated: boolean; status: string; options: readonly unknown[] }[])[0]!;
+    table[`iwn:${kind}`] = { kind: win.kind, gated: win.gated, status: win.status, options: win.options.length };
+  }
+
+  // TFX sweep: both scopes ticked at the wrap through the weave.
+  {
+    const { core } = newMinimalCore('v4-tfx-global');
+    core.submit({ type: 'tfx:attach', seat: 'A', args: { tfx: buildGlobal({ id: 'G', charge: 1, rounds: 1, source: 'GLB' }) as never } });
+    core.submit({ type: 'turn:end', seat: 'A', args: {} });
+    core.submit({ type: 'turn:end', seat: 'B', args: {} });
+    const seats = core.getState()['seats'] as readonly { id: string; cash: number }[];
+    table['tfx:global'] = { cash: seats.map((s) => [s.id, s.cash]), expired: (core.getState()['timedEffects'] as unknown[]).length === 0, hash: core.getStateHash() };
+  }
+  {
+    const { core } = newMinimalCore('v4-tfx-mod');
+    core.submit({ type: 'tfx:attach', seat: 'A', args: { tfx: buildModifier({ id: 'M', outfit: 'B', charge: 1, rounds: 1, source: 'MOD' }) as never } });
+    core.submit({ type: 'turn:end', seat: 'A', args: {} });
+    core.submit({ type: 'turn:end', seat: 'B', args: {} });
+    const seats = core.getState()['seats'] as readonly { id: string; cash: number }[];
+    table['tfx:modifier'] = { cash: seats.map((s) => [s.id, s.cash]), hash: core.getStateHash() };
+  }
+
+  table['closing:defaults'] = CLOSING_DEFAULTS;
+  table['catalog:families'] = Object.values(CATALOG).reduce<Record<string, number>>((acc, e) => {
+    acc[e.family] = (acc[e.family] ?? 0) + 1;
+    return acc;
+  }, {});
+  return table;
+}

@@ -1,0 +1,215 @@
+{
+  "computed": "2026-07-30",
+  "gate": "R-gate discharge 5, owner-approved",
+  "table": {
+    "vnt:job": {
+      "portions": 1,
+      "unassigned": 0,
+      "payoffTargets": [
+        "A"
+      ],
+      "routingWindowOpened": false,
+      "hash": "8bc33de8f3b4b73f"
+    },
+    "vnt:project": {
+      "portions": 2,
+      "unassigned": 0,
+      "payoffTargets": [
+        "A"
+      ],
+      "routingWindowOpened": false,
+      "hash": "2f0621281d022ea1"
+    },
+    "vnt:civic": {
+      "portions": 2,
+      "unassigned": 0,
+      "payoffTargets": [
+        "A",
+        "B"
+      ],
+      "routingWindowOpened": false,
+      "hash": "4ff6d792e59fb158"
+    },
+    "vnt:routed": {
+      "portions": 3,
+      "unassigned": 3,
+      "payoffTargets": [
+        "A"
+      ],
+      "routingWindowOpened": true,
+      "hash": "9a735ec9b52923e5"
+    },
+    "vnt:incident": {
+      "portions": 1,
+      "unassigned": 0,
+      "payoffTargets": [
+        "A"
+      ],
+      "routingWindowOpened": false,
+      "hash": "67c34e140f1dfb62"
+    },
+    "vnt:expansion": {
+      "portions": 1,
+      "unassigned": 0,
+      "payoffTargets": [
+        "A"
+      ],
+      "routingWindowOpened": false,
+      "hash": "7874a64f1d1bbf0e"
+    },
+    "vnt:job:lifecycle": {
+      "status": "complete",
+      "receivable": {
+        "holder": "A",
+        "amount": 4,
+        "source": "J"
+      },
+      "hash": "f363bd864731a068"
+    },
+    "rtm:subcontract-debt": {
+      "model": "subcontract-debt",
+      "routeArgs": {
+        "venture": "V",
+        "to": "B",
+        "debts": [
+          {
+            "debtor": "A",
+            "creditor": "B",
+            "amount": 2,
+            "due": 2
+          }
+        ]
+      },
+      "windowed": true
+    },
+    "rtm:commission-now": {
+      "model": "commission-now",
+      "routeArgs": {
+        "venture": "V",
+        "to": "B",
+        "debts": []
+      },
+      "upfront": {
+        "fx": "pay",
+        "to": "B",
+        "from": "A",
+        "amount": 1
+      },
+      "windowed": false
+    },
+    "rtm:deferred-referral": {
+      "model": "deferred-referral",
+      "routeArgs": {
+        "venture": "V",
+        "to": "B",
+        "debts": []
+      },
+      "windowed": true
+    },
+    "rtm:subcontract-debt:engine": {
+      "debts": [
+        {
+          "debtor": "A",
+          "creditor": "B",
+          "amount": 2,
+          "due": 2
+        }
+      ],
+      "hash": "16f30e9f67f17ac2"
+    },
+    "iwn:threat": {
+      "kind": "threat",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:court": {
+      "kind": "court",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:damages": {
+      "kind": "damages",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:settle": {
+      "kind": "settle",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:poach": {
+      "kind": "poach",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:mayor": {
+      "kind": "mayor",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:referral": {
+      "kind": "referral",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:routing": {
+      "kind": "routing",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "iwn:estate": {
+      "kind": "estate",
+      "gated": true,
+      "status": "open",
+      "options": 2
+    },
+    "tfx:global": {
+      "cash": [
+        [
+          "A",
+          -1
+        ],
+        [
+          "B",
+          -1
+        ]
+      ],
+      "expired": true,
+      "hash": "fa10041a56515187"
+    },
+    "tfx:modifier": {
+      "cash": [
+        [
+          "A",
+          0
+        ],
+        [
+          "B",
+          -1
+        ]
+      ],
+      "hash": "a712d4c9761e4018"
+    },
+    "closing:defaults": {
+      "order": "trailing-first",
+      "receivables": "force-collect",
+      "payablesSurvive": true,
+      "doc": "BOTY inventory §3 closeBooks · stage-2b S10 · GX-30"
+    },
+    "catalog:families": {
+      "VNT": 6,
+      "RTM": 3,
+      "IWN": 9,
+      "TFX": 2,
+      "CLOSING": 1
+    }
+  }
+}
