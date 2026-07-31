@@ -1,0 +1,10 @@
+{
+  "computed": "2026-07-30",
+  "gate": "R-gate discharge 6, owner-approved",
+  "dieResult": "1",
+  "syncMismatch": null,
+  "tileSvg": "<g data-join=\"Placement\"><title>die placed on the table</title><g data-kind=\"Die\" data-id=\"d6\"><title>die showing 1</title><rect width=\"72\" height=\"100\" rx=\"6\"/><text x=\"8\" y=\"20\">[die.face]</text><text class=\"value\" x=\"8\" y=\"40\">1</text></g></g>",
+  "pageSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" data-seat-view=\"A\"><title>table, seen from A</title><g data-skin=\"placeholder\"><title>skin</title><text x=\"300\" y=\"20\">[card.back]</text></g><g data-seat=\"A\"><title>A: cash -1, favor 0</title><text x=\"8\" y=\"20\">A · -1</text></g><g data-seat=\"B\"><title>B: cash 0, favor 0</title><text x=\"8\" y=\"36\">B · 0</text></g><g data-deck=\"A\"><title>deck A: 1 cards</title><text x=\"200\" y=\"20\">A:1</text></g><g data-deck=\"B\"><title>deck B: 1 cards</title><text x=\"200\" y=\"20\">B:1</text></g></svg>",
+  "rebuiltPageSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" data-seat-view=\"A\"><title>table, seen from A</title><g data-skin=\"placeholder\"><title>skin</title><text x=\"300\" y=\"20\">[card.back]</text></g><g data-seat=\"A\"><title>A: cash -1, favor 0</title><text x=\"8\" y=\"20\">A · -1</text></g><g data-seat=\"B\"><title>B: cash 0, favor 0</title><text x=\"8\" y=\"36\">B · 0</text></g><g data-deck=\"A\"><title>deck A: 1 cards</title><text x=\"200\" y=\"20\">A:1</text></g><g data-deck=\"B\"><title>deck B: 1 cards</title><text x=\"200\" y=\"20\">B:1</text></g></svg>",
+  "a11yMissing": 0
+}

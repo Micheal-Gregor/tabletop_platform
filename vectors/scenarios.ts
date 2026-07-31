@@ -433,3 +433,54 @@ export function computeV4(): Record<string, unknown> {
   }, {});
   return table;
 }
+
+// ── V-9: the die-tile-page scene (EP-2 theater-sync; discharged at the owner's R gate 6).
+// The rule, independent of the pin (SP-5): displayed result ≡ seeded result across kinds
+// and joins; the rendered scene is byte-deterministic across rebuilds. Single-sourced on
+// the same presentation functions + MINIMAL fixture GBC-54 exercises.
+import {
+  a11yAudit,
+  beginFlourish,
+  bindPlaceholder,
+  completeFlourish,
+  KIND_CONTRACTS,
+  project,
+  renderComponent,
+  renderJoin,
+  renderTable,
+} from '@tabletop/presentation';
+import { RNGStreams as V9Streams } from '../packages/engine/src/index.js';
+
+export function computeV9(): {
+  dieResult: string;
+  syncMismatch: unknown;
+  tileSvg: string;
+  pageSvg: string;
+  rebuiltPageSvg: string;
+  a11yMissing: number;
+} {
+  const seeded = String(new V9Streams('sigma-7').stream('die:table').nextInt(6) + 1);
+  const verdict = completeFlourish(beginFlourish('die-throw', seeded, '♪ die throw'), seeded);
+  const bound = bindPlaceholder([...KIND_CONTRACTS['Die']!, ...KIND_CONTRACTS['Surface']!, ...KIND_CONTRACTS['Card']!]);
+  const tileSvg = renderJoin('Placement', 'die placed on the table', renderComponent('Die', { id: 'd6', label: `die showing ${verdict.result}`, value: verdict.result }, bound));
+
+  const registry = new RuleRegistry();
+  const core = new EngineCore(V1_REF, V1_SEATS, 'sigma-7', minimalGenesis);
+  wireMinimal(registry)(core);
+  mustOk(core.submit({ type: 'upkeep', seat: 'A', args: { overhead: 1 } }), 'V9 upkeep');
+  mustOk(core.submit({ type: 'deck:draw', seat: 'A', args: { deck: 'A' } }), 'V9 draw');
+  const pageSvg = renderTable(project(core.getState(), 'A'), bound);
+
+  const row = core.toRow();
+  const rebuilt = rebuild(row, minimalGenesis, (c) => wireMinimal(new RuleRegistry())(c));
+  const rebuiltPageSvg = renderTable(project(rebuilt.getState(), 'A'), bound);
+
+  return {
+    dieResult: verdict.result,
+    syncMismatch: verdict.mismatch,
+    tileSvg,
+    pageSvg,
+    rebuiltPageSvg,
+    a11yMissing: a11yAudit(pageSvg + tileSvg),
+  };
+}

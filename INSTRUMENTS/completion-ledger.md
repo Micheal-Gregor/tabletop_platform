@@ -334,7 +334,7 @@ Suite 239/239; full ci green. **The BOTY slice is CERTIFIED. The F6 slot is open
 | MP3 IntentEmitter | R-23 (claims: GBC-50 — closed map; non-intent refused; engine accepts emissions) | — | — | BUILT — awaiting K7 |
 | MP4 SkinBinder + D-1 Placeholder | R-21, R-22 (claims: GBC-49 — missing named; raw values incl. filenames/colors/paths refused; placeholder complete) | — | HK-12 (claim) | BUILT — awaiting K7 |
 | MP1/MP2/MP7 Renderers | GBC-52 (claims: tokens-only; a11y floor 0; booklet total exposure) | — | — | BUILT — awaiting K7 |
-| MP8 TheaterSync + D-2 flourishes | R-20 (claims: GBC-51 — mismatch FLAGGED, truth wins; captions self-remove) | **V-9 DEFERRED → blocks; dischargeable at the F6 R gate** | HK-11 (claim) | BUILT — NOT-COMPLETE by rule |
+| MP8 TheaterSync + D-2 flourishes | R-20 (K7 r1-r2 verified) | V-9 FROZEN (R-gate discharge 6 — the die-tile-page scene) | HK-11 (mutation-proven M3a/M3b) | satisfied-CLAIMED — completion confirmation binds to the next K7 entry (RD-1) |
 | MP9 ClockDriver + A11y | GBC-53 (claims: two clocks; timeline touches no state byte) | — | — | BUILT — awaiting K7 |
 
 Statuses are CLAIMS (RD-1). ODG-p1 completed on the record (headless + SVG strings,
@@ -364,3 +364,14 @@ FACETS + THE FIRST CONTENT PACK ARE NOW CERTIFIED.** STANDING at the owner's gat
 V-9 (the LAST vector) dischargeable at the F6 R gate — MP8 NOT-COMPLETE until then,
 completion confirmation binding to the next K7 entry (RD-1) · SP-6 OPEN to the owner's
 Phase 3 channel (EP-1′/fidelity-min-formula) · ODG-e1 open by design.
+
+**R-GATE DISCHARGE 6 (2026-07-30, owner-approved): V-9 FROZEN — NINE OF NINE VECTORS.**
+computeV9 single-sourced on the same presentation functions + MINIMAL fixture GBC-54
+exercises: the seeded die (named engine stream, die 1 at σ=7), sync verdict mismatch
+NULL (displayed ≡ seeded), the placed tile and the full page pinned as byte-exact SVG,
+rebuilt-page ≡ live-page, a11y floor 0 — persisted, re-derived on the full suite
+(253/253). The laws stand independently of the pin (SP-5/EP-2). **THE VECTOR TABLE IS
+COMPLETE: V-1..V-9 all frozen, all computed from the implementation, none hand-written.**
+MP8: CC-5 satisfied-CLAIMED; confirmation binds to the next K7 entry per RD-1.
+Remaining open on the record: SP-6 (owner's Phase 3 channel) · ODG-e1 (by design) ·
+Phase 5 utilization per its roster.

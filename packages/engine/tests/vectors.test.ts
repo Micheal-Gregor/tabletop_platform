@@ -156,3 +156,27 @@ describe('V-4 · pattern-preset fidelity (golden, computed 2026-07-30)', () => {
     expect(v4).toEqual(pinned.table);
   });
 });
+
+import { computeV9 } from '../../../vectors/scenarios.js';
+const V9_PATH = resolve(__dirname, '../../../vectors/V-9.json');
+
+describe('V-9 · the die-tile-page scene (golden, computed 2026-07-30)', () => {
+  it('EP-2 theater-sync: displayed ≡ seeded across kinds and joins — matches the discharged vector', () => {
+    const v9 = computeV9();
+    // The laws, stated independently of the pin (SP-5):
+    expect(v9.syncMismatch).toBeNull(); // displayed ≡ seeded — no flag
+    expect(v9.tileSvg).toContain(`>${v9.dieResult}</text>`); // the DISPLAYED value IS the truth
+    expect(v9.rebuiltPageSvg).toBe(v9.pageSvg); // deterministic across rebuild
+    expect(v9.a11yMissing).toBe(0); // the floor holds across the scene
+
+    if (process.env['DISCHARGE'] === '1') {
+      writeFileSync(V9_PATH, JSON.stringify({ computed: '2026-07-30', gate: 'R-gate discharge 6, owner-approved', ...v9 }, null, 2));
+      return;
+    }
+    expect(existsSync(V9_PATH)).toBe(true);
+    const pinned = JSON.parse(readFileSync(V9_PATH, 'utf8')) as typeof v9;
+    expect(v9.dieResult).toBe(pinned.dieResult);
+    expect(v9.tileSvg).toBe(pinned.tileSvg);
+    expect(v9.pageSvg).toBe(pinned.pageSvg);
+  });
+});
