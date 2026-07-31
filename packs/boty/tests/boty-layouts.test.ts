@@ -68,8 +68,9 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
   });
 
   it('K7-v1x D5 closure: every shipped child IS the door\'s own output — extendLayout(parent, overlay) deep-equals it', () => {
-    // A hand-built literal (even with forged lineage/shadowed data) cannot survive this:
-    // the child on the export surface must equal a LIVE re-run of the extension door.
+    // A hand-built literal cannot survive this WITH ANY OBSERVABLE DRIFT: the child on
+    // the export surface must equal a LIVE re-run of the extension door (a byte-exact
+    // value clone is the accepted equivalent-mutant boundary — K7-v1x re-verify).
     expect(BOTY_LAYOUT_DERIVATIONS.length).toBe(BOTY_LAYOUTS.length);
     for (const { parent, overlay, child } of BOTY_LAYOUT_DERIVATIONS) {
       expect(extendLayout(parent, overlay)).toEqual(child);

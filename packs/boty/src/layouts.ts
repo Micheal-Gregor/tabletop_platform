@@ -19,8 +19,9 @@ import type { LayoutDef, LayoutOverlay } from '@tabletop/presentation';
 /**
  * The OVERLAYS are exported alongside the children so the construction path is
  * FALSIFIABLE (K7-v1x D5): a test re-runs extendLayout(parent, overlay) and requires
- * deep equality with the exported child — a hand-built literal (even with forged
- * lineage) cannot survive drift against the door's own output.
+ * deep equality with the exported child — a hand-built literal cannot survive WITH ANY
+ * OBSERVABLE DRIFT from the door's live output (a byte-exact value clone is the
+ * equivalent-mutant boundary, accepted on the record at the K7-v1x re-verify).
  */
 
 /**

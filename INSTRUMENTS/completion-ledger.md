@@ -392,3 +392,19 @@ all dimensions 9. MP-L certified. The parent visual vocabulary (card/card-back/b
 table), the extension door with declared shadowing, and the 2.5D camera are law-backed
 template surfaces. Suite 261/261; showcase smoked in Chromium (6 layouts, 68 titles,
 pan live).
+
+**K7-v1x (v1 extraction, 2026-07-31): RETURN → PASS.** The BOTY v1 screens (nine
+owner-supplied screenshots) mined into FOUR content-tier layout children — fortune-card,
+round-card, shop-board, town-table — all through the I-50 door, overlays exported so the
+construction path is falsifiable (M-E′ killed by the named D5 test and only by it; the
+byte-exact-clone equivalent-mutant boundary accepted on the record). Bench v5 consumes
+them: modal-as-card interstitials (callout derived from the PROJECTED leader — proven by
+live divergence-injection in Chromium), full shop anatomy with AR/AP from the projection,
+standings + table log, deck-shows-its-count, chrome as bench furniture. Skin grammar
+RECORDED not painted (skin-token-candidates.md, D-1 stands). Round 1 RETURN (8 defects:
+false register citation, hardcoded lead-off theater, projection bypass, invented tier/cap
+facts, unfalsifiable construction claim + 3 minors) — all closed same-day; re-verify PASS,
+all dimensions ≥ 7. Suite 270/270 · BATTERY 21/21 · DRILLS 5/5 · V-9 safe by construction
+(packages/ untouched) and re-derived. I-51/I-52 registered; RESOLUTION_RECORD carries the
+owner's "go". Next-increment candidates recorded: SeatView crew projection (redaction =
+owner call), hire/fire + equipment mechanics, CPU opponents, per-shop trades projected.
