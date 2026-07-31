@@ -7,9 +7,10 @@
  * Network/realtime infrastructure, host election, presence timeouts = production
  * concerns (S3 §8). UX orchestration is OUT-OF-PLATFORM.
  */
-import type { GameRow, Genesis, Intent, PackRef, Refusal, Seat } from '../kernel/types.js';
+import type { GameRow, Genesis, Intent, JsonObject, PackRef, Refusal, Seat } from '../kernel/types.js';
 import { EngineCore, rebuild } from '../kernel/core.js';
 import type { SubmitResult } from '../kernel/core.js';
+import { freezeDeep } from '../kernel/statetree.js';
 
 export class TransportRefusal extends Error {
   constructor(readonly rule: string, detail: string) {
@@ -26,6 +27,7 @@ export class LockstepController {
   /** seat id → holding client id. GX-32: only the holder writes for a seat. */
   private readonly holders = new Map<string, string>();
   private readonly present = new Set<string>();
+  private readonly faults: { index: number; error: string }[] = [];
 
   private constructor(
     private readonly core: EngineCore,
@@ -115,9 +117,28 @@ export class LockstepController {
     const result = this.core.submit(intent);
     if (this.core.getLogLength() > before) {
       const hash = this.core.getStateHash();
-      for (const l of this.listeners) l(intent, before, hash);
+      // K7-F7 D2 (DF7-2): fan out a SEALED copy, never the caller's alias — a mutating
+      // listener must not change what later listeners (or anyone) observe (GX-31; the
+      // kernel's D-2 aliasing law, applied at the transport door).
+      const sealed = freezeDeep(structuredClone(intent) as unknown as JsonObject) as unknown as Intent;
+      // K7-F7 D1 (DF7-1): each listener is ISOLATED — a throwing listener is contained
+      // and EVICTED (it can never poison the writer, the log, or the other listeners);
+      // the fault is recorded on the controller (surfacing policy per I-45).
+      for (const l of [...this.listeners]) {
+        try {
+          l(sealed, before, hash);
+        } catch (e) {
+          this.listeners.delete(l);
+          this.faults.push({ index: before, error: (e as Error).message });
+        }
+      }
     }
     return result;
+  }
+
+  /** Listener faults (D1 surfacing policy, I-45): evicted listeners land here, in order. */
+  listenerFaults(): readonly { readonly index: number; readonly error: string }[] {
+    return [...this.faults];
   }
 
   /** Lockstep fan-out: every subscriber sees the same ordered moves. Returns unsubscribe. */

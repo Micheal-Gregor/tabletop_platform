@@ -254,11 +254,15 @@ fix the model (backflow), don't skip the test.
   (R-9); never a partial adoption. *Cites AE-c6-CF, SUP-1.*
 - **GX-32 — Writer discipline; the row heals.** A client submits only for a seat it
   HOLDS (join/leave/takeover presence); a departed holder's seat is takeover-eligible;
-  an absent-holder submit refuses typed. Self-heal is never a patch: a rejoining client
+  a NON-holder submit refuses typed
+  *(clarified append-only per K7-F7 D5: a departed-but-not-taken-over holder MAY still
+  write — departure makes the seat takeover-ELIGIBLE, it does not revoke the hold)*. Self-heal is never a patch: a rejoining client
   rebuilds from the row. Host submits for AI seats (auto-parity, I-16 family).
   *Cites AE-c6-CF.*
-- **GX-33 — A preset is data.** A catalog entry = {id, family, doc, defaults,
-  build(params) → fragment}; builders EMIT DATA ONLY — no engine call, no state touch,
+- **GX-33 — A preset is data.** A catalog entry = {id, family, doc,
+  build(params) → fragment}; defaults live IN the builder signatures (e.g. work ?? 1)
+  — *corrected append-only per K7-F7 D4: the earlier "defaults" catalog field
+  overclaimed the shipped shape; I-41 is the accurate registration*; builders EMIT DATA ONLY — no engine call, no state touch,
   window fx ⊆ EFX v1.1.1. Bad params refuse at build (PatternRefusal). Fragment
   behavior — exercised through the ENGINE's doors — is what V-4 pins (VK-8).
   *Cites ODG-3/I-41, BOTY inventory §5.*

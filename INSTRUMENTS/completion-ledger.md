@@ -156,7 +156,7 @@ V-1 (post-F5) · V-4 (F7/BOTY pack) · V-9 (F6).
 | M12a Outfit + M12b Crew | GX-28 legs (claims: GBC-35) | — | — | BUILT — awaiting K7 |
 | M14 TimedEffects | GX-29 legs (claims: GBC-36/39) | — | — | BUILT — awaiting K7 |
 | M15 ClosingRound | GX-30 gate (claim: GBC-38) | — | — | BUILT — awaiting K7 |
-| library/wire (the weave, I-29) | R-6 through turn:end (K7 r1-r3 verified) | V-1 FROZEN (R-gate discharge 4) | HK-5 on turn:end proven (D2 divergence-injection) | satisfied-CLAIMED — completion confirmation binds to the next K7 entry (RD-1) |
+| library/wire (the weave, I-29) | R-6 through turn:end (K7 r1-r3 verified) | V-1 FROZEN (R-gate discharge 4) | HK-5 on turn:end proven (D2 divergence-injection) | **COMPLETE** (K7-F7 entry confirmed per RD-1) |
 
 Statuses are CLAIMS (RD-1) — K7 confirms or returns. GBC-40 (the MINIMAL game,
 Stage-2b S0..S10) passes end-to-end at build: A ends 0, B ends +3, B champion; every
@@ -256,3 +256,16 @@ Statuses are CLAIMS (RD-1) — K7 confirms or returns. ODG-3 resolved on the rec
 (RESOLUTION_RECORD.md; I-41). Suite 230/230; tsc clean both packages; HK-6 OK.
 STANDING carried: library/wire completion confirmation binds to THIS K7 entry (RD-1,
 from R-gate discharge 4).
+
+**K7-F7 round 1 (2026-07-30): RETURN** — 2 blocking (DF7-1 throwing-subscriber poison;
+DF7-2 raw-intent alias at the fan-out — the kernel D-2 class at the transport door) +
+2 moderate (DF7-3 content-branch theater under MUT-C3; DF7-4 'defaults' record drift) +
+4 minor. 15/16 mutants killed at review; SUP-1 legs, writer discipline, and GX-33 build
+refusals all proven falsifiable. Auditor CONFIRMED: library/wire completion (RD-1 bound
+from R-gate discharge 4 — the ledger records it here: **library/wire COMPLETE**); V-4
+deferral law held; tier law clean on the new code; catalog grounds verified against the
+inventory. All 8 findings closed same-day (DF7-1..8; I-45 registered; I-42 extended;
+GX-32/GX-33/RESOLUTION_RECORD corrected append-only; F7 section header added): sealed-
+clone fan-out + per-listener containment/eviction + listenerFaults(); D1/D2/D7 falsifying
+tests; bare-specifier content probe. Builder re-ran MUT-C3 + the D1/D2 reverts → each
+killed by a named test. Suite 234/234; tsc clean; HK-6 OK. Awaiting K7 re-verify.

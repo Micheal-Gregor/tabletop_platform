@@ -78,3 +78,14 @@ describe('GBC-45 · R-4: upward dependency → build refusal, file NAMED (GX-34)
     expect(r.status).toBe(0);
   });
 });
+
+describe('K7-F7 D3 · the content BRANCH itself is falsifiable (kills MUT-C3)', () => {
+  it('a BARE packs/ specifier (non-relative, non-package) → FAIL via the content branch only', () => {
+    // bare form: not a forbiddenPkg, not relative — ONLY check-tiers' packs/ branch catches it
+    withProbe('packages/patterns/src/__r4_probe.ts', `${IMP} 'packs/boty/index.js';\n`, () => {
+      const r = runChecker();
+      expect(r.status).not.toBe(0);
+      expect(r.out).toMatch(/content tier is imported by NOTHING/);
+    });
+  });
+});

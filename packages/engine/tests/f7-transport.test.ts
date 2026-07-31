@@ -94,3 +94,39 @@ describe('GBC-43 · writer discipline + takeover (GX-32)', () => {
     expect('refused' in t.submit('host', { type: 'upkeep', seat: 'A', args: {} })).toBe(false);
   });
 });
+
+describe('K7-F7 closures D1/D2/D7 · the fan-out is sealed and isolated (GX-31)', () => {
+  it('D1: a THROWING listener is contained + evicted — the writer still gets its result; survivors see every move', () => {
+    const t = LockstepController.host(MIN_REF, MIN_SEATS, 'd1', minimalGenesis, wire());
+    t.join('cA', 'A');
+    const survivor: number[] = [];
+    t.subscribe(() => { throw new Error('poison'); });
+    t.subscribe((_m, i) => survivor.push(i));
+    const r1 = t.submit('cA', { type: 'upkeep', seat: 'A', args: {} }); // must NOT throw
+    const r2 = t.submit('cA', { type: 'deck:draw', seat: 'A', args: { deck: 'A' } });
+    expect('refused' in r1).toBe(false);
+    expect('refused' in r2).toBe(false);
+    expect(survivor).toEqual([0, 1]); // the survivor missed nothing
+    expect(t.row().moves.length).toBe(2); // log advanced normally
+    expect(t.listenerFaults().length).toBe(1); // the fault surfaced (I-45), once — evicted
+  });
+
+  it('D2: a MUTATING listener cannot alter what later listeners observe (sealed fan-out)', () => {
+    const t = LockstepController.host(MIN_REF, MIN_SEATS, 'd2', minimalGenesis, wire());
+    t.join('cA', 'A');
+    const seen: string[] = [];
+    t.subscribe((m) => { try { (m as { type: string }).type = 'FORGED'; } catch { /* frozen — good */ } });
+    t.subscribe((m) => seen.push(m.type));
+    t.submit('cA', { type: 'upkeep', seat: 'A', args: {} });
+    expect(seen).toEqual(['upkeep']); // not FORGED
+    expect(t.row().moves[0]!.type).toBe('upkeep'); // and the row is untouched
+  });
+
+  it('D7: resuming a TAMPERED row → DivergenceError through rebuild, no partial state (R-9)', () => {
+    const row = playedController('d7').row();
+    const tampered = structuredClone(row) as { moves: { args: Record<string, unknown> }[] };
+    tampered.moves[0]!.args = { overhead: 999999 }; // legal-shaped but... make it ILLEGAL:
+    (tampered.moves[0] as { seat: string }).seat = 'GHOST'; // unknown seat → refusal mid-replay
+    expect(() => LockstepController.resume(tampered as never, MIN_REF, minimalGenesis, wire())).toThrow(/[Dd]ivergence/);
+  });
+});
