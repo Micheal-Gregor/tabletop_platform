@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>BOTY — the table</title>
+<style>body{font:14px system-ui;margin:10px}#halt{display:none;background:#fee;border:2px solid #c00;padding:8px;font-weight:bold}
+button{margin:2px}input,select{width:64px}#stage svg{border:1px solid #ccc;background:#fafafa}
+#captions{position:fixed;top:70px;right:24px}.caption{background:#333;color:#fff;padding:6px 12px;border-radius:14px;margin:4px;font-style:italic;animation:fade 1.2s forwards}
+@keyframes fade{0%{opacity:0}15%{opacity:1}75%{opacity:1}100%{opacity:0}}</style></head>
+<body>
+<h1>BOTY <small>— Maple Hollow · click the deck to draw · click a crew token, then a portion, to assign · click a busy crew to work</small></h1>
+<div id="halt" role="alert"></div><div id="status" aria-live="polite">booting…</div>
+<div>
+  <button id="new-game">new game</button> view as <select id="seat"><option>moe</option><option>pete</option><option>edie</option></select>
+  <span id="cam-bar"></span>
+  <button id="export">export row</button> import <input type="file" id="import">
+</div>
+<div>
+  <button id="upkeep">upkeep</button> overhead <input id="overhead" value="1">
+  <button id="spawn-job">post a job</button><button id="spawn-gc">post the GC bid</button><button id="route-gc">sub to Pete</button>
+  <button id="recession">recession</button>
+  <button id="end-turn">end turn</button><button id="reckon">final reckoning</button>
+</div>
+<div id="captions"></div>
+<div id="stage"></div>
+<script type="module" src="./dist/game.js"></script>
+</body></html>
