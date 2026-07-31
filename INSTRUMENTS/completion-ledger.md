@@ -206,3 +206,16 @@ full suite — a live anchor (204/204). The vector's rule stands independently o
 (V-1/2/3/5/6/7/8). library/wire: CC-5 satisfied-CLAIMED; confirmation binds to the next
 K7 entry (the F7 review) per RD-1 — the MR1 pattern. Remaining: V-4 (F7/BOTY pack) ·
 V-9 (F6). **The F7 slot is open.**
+
+**EXTERNAL AUDIT round 4 (F5): RETURN — AUDIT-SUBJECT MISMATCH, disposition recorded.**
+The external auditor ran against a stale local clone (HEAD 2cea884, F4-era; never pulled
+since external audit 3) and correctly refused to certify an absent increment — the right
+behavior for the seat, wrong tree for the charge. Verified same-day from the build
+environment: origin/main = 1114f1e; tags k7-pass-f5 (53af075) and resolution-run-4
+(2eb46a9) live on the remote; the full F5 range 4985beb..2eb46a9 exists. ROOT CAUSE
+(process, on the record): the audit charge omitted an explicit sync step — the builder's
+"pull latest first" lived outside the paste-block. CORRECTIVE: every future external
+charge BEGINS with `git fetch --tags && git pull` + HEAD/tag attestation BEFORE baseline.
+Report archived (K7_AUDIT_REPORT-4.md). F5 external audit to be RE-ISSUED against the
+true HEAD; K7-4-3 (audit reports untracked in the owner's worktree) is already satisfied
+in the repo — governance/audits/ is committed; the owner's loose copies are working files.
