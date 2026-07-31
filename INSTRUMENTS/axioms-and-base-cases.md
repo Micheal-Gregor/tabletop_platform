@@ -292,3 +292,23 @@ fix the model (backflow), don't skip the test.
 timeouts (production concerns, S3 §8); AI decision POLICY (host submits; policy = content
 tier); pattern-preset numeric tuning (content-pack parameters; the catalog carries
 STRUCTURE + defaults only).
+
+## Base cases — BOTY slice (content tier; no new axioms — content adds NO law)
+
+- **GBC-46 —** the pack LOADS: HK-4 validates every card (a poisoned variant with fx
+  'summon_dragon' refuses naming it); both contributions pass the MR3 door; the tier
+  gate stays clean (content imports engine/patterns downward only). *(GX-10, R-15, GX-34)*
+- **GBC-47 —** THE SLICE GAME (3 shops, 3 rounds, seed fixed): upkeep wages · card fx
+  fire through EFX (town levy, injected payday via living-deck, capitalize, sue right,
+  choice window) · job preset RC-A′ to its receivable · routed 3-portion GC → gated
+  routing window → subcontract-debt route → counterparty works all portions → completion
+  · recession TFX ticks once at the wrap · contributions fire each wrap · debt settles at
+  its due round's upkeep · closing:reckon crowns the champion — moe +4, pete −2, edie −6
+  · every ledger entry balanced · cash ≡ derived balances + KNOWN EFX deltas (the I-46
+  reconciliation) · rebuild ×2 byte-identical. *(the whole machine, content-driven)*
+
+**N/A-by-absence (BOTY slice):** the full card catalog, 6 trades, 24 rounds, tuned
+economy tables (content fidelity = Phase 5/production); multi-TARGET routing of one
+venture (GX-27 routes all unassigned portions to ONE counterparty — per-portion routing
+= repeated spawn/route or a docketed extension); estates/elimination flows; content-
+triggered venture spawn (awaits the docketed spawn_venture EFX member).

@@ -297,3 +297,18 @@ family counts — 24 entries, persisted, re-derived on the full suite (237/237).
 stand independently of the pin (SP-5/VK-8). EIGHT of nine vectors frozen. M17: CC-5
 satisfied-CLAIMED; confirmation binds to the next K7 entry (the F6/BOTY review) per
 RD-1. Remaining: V-9 (F6). **The BOTY pack + F6 slots are open.**
+
+---
+
+## Content — packs/boty (opened 2026-07-30 after R-gate discharge 5 + ODG-4 scope ruling)
+
+| Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
+|---|---|---|---|---|
+| BOTY pack + genesis | GBC-46 (claims: HK-4 names the poison; MR3 door on both contributions) | — | — | BUILT — awaiting K7 |
+| BOTY slice game | GBC-47 (claims: R-6 gate probe; full loop; I-46a reconciliation; replay ×2) | — (content owns no vector; V-4 anchors the presets it consumes) | — | BUILT — awaiting K7 |
+
+Statuses are CLAIMS (RD-1). Content adds NO law: 8 cards ⊆ EFX v1.1.1, contributions
+through the MR3 door, presets consumed as data, tier gate clean (content imports
+downward only; nothing imports content). Suite 239/239 (vitest now includes
+packs/*/tests); tsc clean (engine, patterns, boty); HK-6 OK. STANDING carried: M17
+completion confirmation binds to THIS K7 entry (RD-1, from R-gate discharge 5).
