@@ -88,3 +88,7 @@ export { attachTimedFx, tickTimedEffects, timedEffects } from './library/timedfx
 export type { TimedFx } from './library/timedfx.js';
 export { reckon, ClosingRefusal } from './library/closing.js';
 export { wireLibrary } from './library/wire.js';
+
+// ── F7 Transport (public surface; S-2 seam only) ──
+export { LockstepController, TransportRefusal } from './transport/lockstep.js';
+export type { MoveListener } from './transport/lockstep.js';

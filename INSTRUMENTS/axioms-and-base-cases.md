@@ -244,3 +244,47 @@ order (V-7, F4); admission (F3); presentation rules (F6). Venture/TFX semantics 
 
 Rule: a base case that cannot be expressed as a test signals the object model is wrong —
 fix the model (backflow), don't skip the test.
+
+## Axioms — F7 set
+
+- **GX-31 — The row is the session.** Transport is lockstep over the S-2 row: submits
+  append through the hosted core's guarded path; every subscriber observes the SAME
+  ordered moves; resume = full rebuild from {packRef, seed, seats, moves} (AX-4/SUP-1).
+  A packRef mismatch at resume — id, version, OR hash — refuses WHOLE as divergence
+  (R-9); never a partial adoption. *Cites AE-c6-CF, SUP-1.*
+- **GX-32 — Writer discipline; the row heals.** A client submits only for a seat it
+  HOLDS (join/leave/takeover presence); a departed holder's seat is takeover-eligible;
+  an absent-holder submit refuses typed. Self-heal is never a patch: a rejoining client
+  rebuilds from the row. Host submits for AI seats (auto-parity, I-16 family).
+  *Cites AE-c6-CF.*
+- **GX-33 — A preset is data.** A catalog entry = {id, family, doc, defaults,
+  build(params) → fragment}; builders EMIT DATA ONLY — no engine call, no state touch,
+  window fx ⊆ EFX v1.1.1. Bad params refuse at build (PatternRefusal). Fragment
+  behavior — exercised through the ENGINE's doors — is what V-4 pins (VK-8).
+  *Cites ODG-3/I-41, BOTY inventory §5.*
+- **GX-34 — Tiers point one way.** platform < library < patterns < content; an upward
+  import FAILS the build (HK-6); the criterion itself is falsifiable — R-4 injects an
+  inversion and the checker must name it. *Cites R-4, HK-6.*
+
+## Base cases — F7 set
+
+- **GBC-41 —** two subscribed clients: every submit through the controller reaches both
+  in the same order; final hashes identical; the controller's row replays byte-identical.
+  *(GX-31)*
+- **GBC-42 —** resume against a row whose packRef differs in id, version, or hash →
+  refused whole, each leg NAMED; no partial state escapes. *(GX-31 = the SUP-1
+  obligation)*
+- **GBC-43 —** writer discipline: a client submitting for a seat it does not hold →
+  typed refusal, unlogged; after the holder LEAVES, takeover succeeds and play
+  continues on the same row. *(GX-32)*
+- **GBC-44 —** preset fidelity floor: the 'job' VNT preset builds RC-A′ (spawn → assign
+  → work → complete → receivable through the engine); an IWN preset opens its named
+  gated window; a TFX preset ticks at the wrap; RTM configs carry the three routing
+  models' shapes. Feeds V-4 — pinned only at the owner's R gate. *(GX-33)*
+- **GBC-45 —** R-4: an injected upward import (patterns → presentation; engine →
+  patterns; any → packs) makes check-tiers FAIL naming the file. *(GX-34)*
+
+**N/A-by-absence (F7 slot):** network/realtime infrastructure, host election, presence
+timeouts (production concerns, S3 §8); AI decision POLICY (host submits; policy = content
+tier); pattern-preset numeric tuning (content-pack parameters; the catalog carries
+STRUCTURE + defaults only).

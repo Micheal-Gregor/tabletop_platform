@@ -241,3 +241,18 @@ released. **F5 now carries: internal K7 r3 PASS + external 4B/4C sign-off.** Com
 with tag k7-pass-f5 and R-gate discharge 4 (V-1 frozen), the F5 chapter closes. The F7
 slot stands open per K7-F5 r3; library/wire completion confirmation still binds to the
 F7 K7 entry (RD-1).
+
+---
+
+## F7 Edges & Content Tiers (opened 2026-07-30 after F5 certification + ODG-3 ruling)
+
+| Module | CC-4 refusals | CC-5 vectors | CC-6 hooks | Status |
+|---|---|---|---|---|
+| M16 Transport (lockstep) | GX-31/32 legs (claims: GBC-41/42/43 — packRef legs NAMED; writer breach unlogged) | — | — | BUILT — awaiting K7 |
+| M17 PatternLibrary | GX-33 legs (claims: build refusals incl. non-EFX fx + nested window + unknown kind/model) | **V-4 DEFERRED → blocks; dischargeable at the F7 R gate (I-44)** | — | BUILT — NOT-COMPLETE by rule |
+| TierCriterion | R-4 (claim: GBC-45 — four injected inversions each FAIL naming the file; clean tree passes) | — | HK-6 (claim: falsifiable, not presence-of-script) | BUILT — awaiting K7 |
+
+Statuses are CLAIMS (RD-1) — K7 confirms or returns. ODG-3 resolved on the record
+(RESOLUTION_RECORD.md; I-41). Suite 230/230; tsc clean both packages; HK-6 OK.
+STANDING carried: library/wire completion confirmation binds to THIS K7 entry (RD-1,
+from R-gate discharge 4).
