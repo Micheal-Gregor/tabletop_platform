@@ -1,6 +1,6 @@
 /**
  * THE PLAYTEST BENCH — W-ENV Option A (owner-ruled): local-first browser adapter.
- * The core is FIXED: this file composes PUBLIC surfaces only — LockstepController
+ * The core is FIXED: this file composes public surfaces + the named MINIMAL fixture (W-ENV record) — LockstepController
  * (S-2), project/renderTable (S-6 reads), emit (S-6 intents), the Placeholder Skin
  * (D-1: frames before assets). Both universes bind through this ONE path (ODG-p2).
  * A production HALT is a surrender to the human: banner + row export, never repair.

@@ -18,12 +18,12 @@ import pinV7 from '../../../vectors/V-7.json';
 import pinV8 from '../../../vectors/V-8.json';
 import pinV9 from '../../../vectors/V-9.json';
 import {
-  EngineCore, HookHk3Violation, HookHk5Violation, RuleRegistry, formRelation, hookHk4ValidatePack,
+  HookHk3Violation, HookHk5Violation, hookHk5BeforeSeatAdvance, formRelation, hookHk4ValidatePack,
   passSeat, seededRegistry, validateContribution,
 } from '@tabletop/engine';
 import type { State } from '@tabletop/engine';
-import { MIN_REF, MIN_SEATS, minimalGenesis, newMinimalCore, wireMinimal } from '../../../packages/engine/tests/f5-fixture.js';
-import { bindPlaceholder, hookHk10BeforeRenderRead, hookHk11AtAnimationComplete, KIND_CONTRACTS, bind } from '@tabletop/presentation';
+import { MIN_REF, minimalGenesis, newMinimalCore } from '../../../packages/engine/tests/f5-fixture.js';
+import { hookHk10BeforeRenderRead, hookHk11AtAnimationComplete, KIND_CONTRACTS, bind } from '@tabletop/presentation';
 
 type Verdict = { name: string; pass: boolean; detail: string };
 const out: Verdict[] = [];
@@ -69,9 +69,10 @@ function hooks(): void {
     core.submit({ type: 'venture:spawn', seat: 'A', args: { spec: { id: 'V', initiator: 'A', portions: [{ task: 'β', work: 1 }], deadline: 2, payoffs: [] } } });
     const r = core.submit({ type: 'turn:end', seat: 'A', args: {} });
     v('PR3/HK-5', 'refused' in r, 'gated window blocks the pass');
-    // and the applier-side leg (suborned-guard shape): direct hook call
-    let fired = false; try { HookHk5Violation; fired = true; } catch { /* type presence */ }
-    v('PR3/HK-5b', fired, 'violation type live in target');
+    // the applier-side leg: the hook itself blocks over the open gated window
+    let fired = false;
+    try { hookHk5BeforeSeatAdvance(core.getState()); } catch (e) { fired = e instanceof HookHk5Violation; }
+    v('PR3/HK-5b', fired, 'applier-side HK-5 blocks in target');
   }
   // HK-7 (admission): inadmissible kind refused by the seeded registry gate
   {
@@ -123,5 +124,3 @@ try {
 const failed = out.filter((x) => !x.pass);
 (window as unknown as Record<string, unknown>)['__K8__'] = { done: true, total: out.length, failed: failed.length, results: out };
 document.body.innerHTML = `<h1>K8 in-target battery: ${out.length - failed.length}/${out.length}</h1><pre>${out.map((x) => `${x.pass ? 'PASS' : 'FAIL'} ${x.name} ${x.detail}`).join('\n')}</pre>`;
-// EngineCore/MIN_SEATS/wireMinimal referenced to keep the module graph honest for esbuild
-void EngineCore; void MIN_SEATS; void wireMinimal; void RuleRegistry; void bindPlaceholder;

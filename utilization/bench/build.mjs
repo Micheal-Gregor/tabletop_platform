@@ -7,5 +7,4 @@ await build({
   outdir: 'dist',
   sourcemap: false,
   logLevel: 'info',
-  define: { 'process.env.DISCHARGE': '"0"' },
 });

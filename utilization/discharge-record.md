@@ -30,3 +30,12 @@ writer discipline — grant/revoke = join/leave/takeover, enforced live (K7-prov
 smoke re-proved in-target). SoD (approver ≠ counterparty) N/A-BY-FORM at a single-human
 bench; binds with the identity provider at PC-2's revisit trigger. AE-resolution
 authority = the owner, in the repo record (unchanged by deployment).
+
+---
+**K8 GATE (2026-07-30): PASS** — distinct reviewer ran the full PR-1..PR-7 battery
+itself, falsified the in-target battery, a vector pin, and the writer discipline (all
+demonstrably CAN fail), and ruled the core fixed (one non-behavioral dedup, now
+registered as I-49). Six non-blocking findings closed same-day: I-49 row · real
+applier-side HK-5b probe · W-ENV record names the fixture import · dead define +
+dead imports removed · PR-6 restore-annotation note stands. Final: 253/253 ·
+tsc clean ×4 · HK-6 OK · BATTERY 21/21 · DRILLS 5/5. **THE DEPLOYMENT IS BOUND. RUN.**

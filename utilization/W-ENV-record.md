@@ -9,9 +9,11 @@ format); identity = local seat-holding through the certified LockstepController
 
 **By-target ODG resolutions (with justification, never by default):**
 - ODG-5 / ODG-SE-01/02 (abstract/code boundary at realization): the bench is an
-  ADAPTER — it imports public package surfaces only, holds no game logic, and renders
-  exclusively through project()+renderTable. Justification: the S-6/S-1 seams already
-  define the boundary; the target adds nothing to it.
+  ADAPTER — it imports public package surfaces PLUS the MINIMAL fixture
+  (packages/engine/tests/f5-fixture.ts — the ODG-p2 second universe; NAMED here per K8
+  finding 3, promoting it to an exported surface = next-core-touch work), holds no game
+  logic, and renders exclusively through project()+renderTable. Justification: the
+  S-6/S-1 seams already define the boundary; the target adds nothing to it.
 - ODG-p2 (second-bridge validation): the bench binds BOTH universes (MINIMAL + BOTY)
   through one identical adapter path — the second bridge exercised at the target.
 - AE-c12-CF (simultaneity): N/A-by-absence — neither bound universe needs it.
