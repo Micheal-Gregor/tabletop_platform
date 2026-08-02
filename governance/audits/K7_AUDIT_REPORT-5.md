@@ -49,45 +49,42 @@ bytes SOURCES.md pins; the clone is at/after 77a2b8a with the tag present. Audit
 
 ## Step 1 — SOURCE FIDELITY (live walk vs the nine archived screens)
 
-Opened `https://boty-web.vercel.app`. **Landing was walked live; the rest of the flow is
-now gated behind an authentication wall that did not exist in the archived flow.**
+Opened `https://boty-web.vercel.app`. The live site now gates play behind a one-time
+email-code sign-in that did not exist in the archived flow; the **owner performed the
+sign-in step** (I did not touch the credential fields), after which I drove the full walk
+in the owner's own Chrome (Claude-in-Chrome): landing → Enter → home menu → Play Online →
+Host (Standard) → +Add CPU ×3 → Start → round-1 modal(s) → in-game panels → drawn-card
+modal. **All nine archived screens were reproduced and verified live.**
 
-- **Landing → `01-landing.jpg` — FAITHFUL (live-verified).** DOM tree: image "Business of
-  the Year", "🎀 The Maple Hollow Better Business Bureau presents", heading "Business of
-  the Year", subtitle "Run a trade. Outwork your rivals. Be named the pride of Maple
-  Hollow.", single gold CTA "▶ Enter Maple Hollow", "Click to begin — and to turn the
-  sound on." Full-bleed art + centered title + single gold CTA — the menu grammar of 01.
-- **Enter → sign-in wall (NEW, not in the archived set).** Clicking "Enter Maple Hollow"
-  now lands on a one-time-email-code sign-in form: *"Testers sign in with a one-time email
-  code — no password to remember."* + email textbox + "Email me a code ▶". No guest / "Play
-  (this device)" / local path is exposed pre-auth. The archived flow (02-home-menu → 03
-  Play Online → 04 lobby → 05+ in-game) is reachable only after authenticating.
-- **Screens 02–09 — NOT live-reproducible this session.** Completing a one-time-code email
-  sign-in is account authentication; per my operating constraints I did not perform it and
-  did not sign in as the owner. I therefore could not walk home-menu → Play Online → lobby
-  → in-game → round card → drawn card on the live site.
-
-**Verdicts, 02–09:** assessed against the *attested* archived sources + cross-screen
-internal consistency (the strongest evidence available without authenticating):
-
-| Screen | Verdict | Basis |
+| Screen | Verdict | Live evidence (content differs where noted; structure is the test) |
 |---|---|---|
-| 01 landing | **FAITHFUL** | live DOM matches |
-| 02 home menu | consistent-with-source (live-unverified) | gold-primary/dark-secondary stacked buttons; not falsified |
-| 03 play online | consistent-with-source (live-unverified) | twin Host/Join, MAPLE-XXXX code |
-| 04 lobby | consistent-with-source (live-unverified) | code chip MAPLE-LB2B, you/host badges, trade chips, +Add CPU, red "Leave" |
-| 05 in-game 3col | consistent-with-source (live-unverified) | see Step 2 — anatomy matches the coded children |
-| 06 job active | consistent-with-source (live-unverified) | jobs-list row + owned-equipment/Dispose |
-| 07 / 08 round modals | consistent-with-source (live-unverified) | card-shaped interstitials, see Step 2/3 |
-| 09 card/character | consistent-with-source (live-unverified) | see Step 2 |
+| 01 landing | **FAITHFUL** | full-bleed art, "…BBB presents", centered "Business of the Year", subtitle, single gold "▶ Enter Maple Hollow" |
+| 02 home menu | **FAITHFUL** | same tag/heading + identical button stack (gold Play/Play Online; dark Players→Credits; Support-$5). *New:* a "Signed in as secretfont@gmail.com / Sign out" footer (auth chrome) |
+| 03 play online | **FAITHFUL** | twin Host/Join panels, Difficulty (Steady/Standard/Cutthroat), MAPLE-XXXX join field, Chip-in-$5, ← Menu |
+| 04 lobby | **FAITHFUL** | Lobby heading, code chip + Copy + "· Standard", player row "Mr_Secret · you · host · Mechanic", six trade chips, +Add CPU, Start, red **Leave**, Invite-a-friend |
+| 05 in-game 3col | **FAITHFUL** | header place·season·"round 1/24"·turn·toolbar; banner "Your turn…"; CPU 2/3/4 presence; table panel (art banner + standings w/ gold-outlined "⭐ you" row + Table log); shop column (art→identity→counters→"🏚️ Garage tier 1·cap 2·Move→Shop"→Tradespeople→Equipment→Jobs→AR→AP→actions); Fortune deck "59 left" + drawn card; footer nav Table/Fortune/Your shop/Books |
+| 06 job active | **FAITHFUL** | Jobs(1) row "Tune-up [Queued] · 0/4 · $650 · net-30 · due in 4 · crew 0/2" + Assign/Sell/Drop; Equipment rack Buy/Rent (owned+Dispose is a later state, not reached) |
+| 07 / 08 round modals | **FAITHFUL** | the "Round 1 · Spring" **card** appeared: ~50–55% sepia art (Frontier Bank/Folsom) → "Round 1 · Spring" title → italic lore → gold callout "✨ You lead off — clear this and make your move!" → Next ▶. Card-shaped, not a dialog (I-51a). *New:* a "🎲 Who goes first?" die preamble modal precedes it (see below) |
+| 09 card/character | **FAITHFUL** | the drawn card pops as a card-shaped **modal** — art-dominant (~60–65%), type badge "JOB", title "Tune-up", italic quote, effect "new job J9 ($650, due turn 5)", Close. Same anatomy as the archived Hal-Ramsey character modal (the fortune-card is one child for both) |
 
-No FABRICATED indicators: the nine screens depict one coherent session (Maple Hollow ·
-Spring · round 1/24 · Jumpin_Jack the mechanic · $3,350 · Fortune "59 left" · the same
-street/garage art recurring across 01/05/06 · Hal Ramsey's card and the "Win the county
-fair raffle / +$550" drawn card matching). The **only structural drift observed live is
-the added auth gate** — a production-concern / chrome surface (SOURCES.md itself flags
-Play-Online as a "production-concern surface," not layout law), not a change to any of the
-four coded layout children. Recorded as **Finding 2 (major — audit-coverage gap)**.
+**No STALE, no FABRICATED — all nine FAITHFUL.** The archived screens are confirmed
+genuine v1 captures; the coded children's structural claims hold against *live* v1. Three
+**additive** elements were seen that are not in the archived set, none of them regressions
+and none touching the four coded layout children:
+
+1. **Sign-in auth gate** before the home menu (one-time email code). Production-concern /
+   auth chrome — SOURCES.md already flags Play-Online as a "production-concern surface,"
+   not layout law.
+2. **"🎲 Who goes first?" preamble modal** before the "Round N · Season" card — a small die
+   glyph + "You lead off Round 1!" + lore + Next. It *precedes* (does not replace) the
+   round card, so it leaves 07/08 FAITHFUL; it is a card-shaped modal, consistent with
+   I-51a.
+3. **"The books" P&L/Balance-Sheet panel** shown inline on the wide desktop (the "Books"
+   footer tab expanded) — the same Books feature the archived footer nav carries.
+
+Live v1 also **corroborates Finding 1**: the Fortune-column card and the drawn-card modal
+both render art at ~60–80% of card height — the "art dominance" the coded fortune-card
+(52%) fails to reach.
 
 ---
 
@@ -265,14 +262,13 @@ at 52%, only 2pp above the round-card's 50% despite v1 showing the fortune card'
 markedly *more* dominant than the round card's. The "art dominance" the child exists to
 encode (I-51b) is not realized. *No repair performed (refusal-not-repair).*
 
-**Finding 2 — MAJOR — Live source-fidelity (Step 1) unverifiable beyond the landing.**
-`boty-web.vercel.app` now gates all play behind a one-time email-code sign-in that is
-absent from the archived flow; no guest/local path is exposed. Landing verifies FAITHFUL
-live; screens 02–09 could only be checked against the attested archived sources + internal
-consistency (no FABRICATED indicators found). Completing the auth flow is account
-authentication, which I did not perform. This is (a) a coverage gap in this audit's live
-walk and (b) a live-product flow drift — though a production-concern/chrome surface, not a
-change to any coded layout child.
+**Finding 2 — MINOR (resolved) — live flow adds an auth gate + a round preamble modal.**
+`boty-web.vercel.app` now gates play behind a one-time email-code sign-in absent from the
+archived flow, and interposes a "🎲 Who goes first?" preamble modal before the "Round N ·
+Season" card. *Resolution:* the owner performed the sign-in and I completed the full live
+walk — **all nine screens verified FAITHFUL** (Step 1); the initial coverage gap is closed.
+Both additions are additive production-concern / preamble chrome, not changes to any coded
+layout child, and neither renders an archived screen STALE.
 
 **Finding 3 — MINOR — character-modal "Next ▶" not modeled by `boty:fortune-card`.** The
 child models the payout-foot (column) variant; the 09 character modal ends in a dismiss
@@ -283,21 +279,147 @@ counterpart.** They are carried BOARD_PARENT regions repositioned by the overrid
 unskinned bench they render as honest bracketed placeholders, asserting nothing false. Not
 a fabrication; noted for completeness.
 
+**Finding 5 — MAJOR — the Books footer view is uninstantiated in v2.** Live v1 exposes
+**four** footer views (`Table · Fortune · Your shop · Books`); v2 instantiates layout
+children for three (`town-table`, `fortune-card`, `shop-board`) plus the `round-card`
+modal, but has **no child and no bench composition for Books** — the per-player financial
+view (Profit & Loss + Balance Sheet). `grep` across `packs/boty/` and `utilization/bench/`
+finds **zero** books/ledger/P&L/balance region roles or panels; the only "books" hits are
+the engine-level ledger-reconciliation *test*. So the ledger *data* exists (M13 / the
+"books reconcile" invariant) but its *presentation view* does not. Root cause: **no Books
+screen was among the nine attested sources**, so the v1-extraction never measured it — a
+source-coverage gap, not a mis-extraction. Live-captured this session: P&L (Revenue · −COGS
+[COGS-labour] · Gross margin · −Overhead [Rent] · Net income · cash-vs-paper callout with
+"profit isn't cash…") and Balance Sheet (Assets [Cash] · Liabilities [none] · Equity
+[Owner's capital · Retained earnings] · Liabilities+equity · "the books always balance").
+Spec for the missing child in **Appendix A.2**.
+
+**Finding 6 — MINOR — `boty:town-table` omits the table-view art banner.** `shop-board`
+declares an `art-banner` add; `town-table` does not — yet live v1's table column carries a
+`Spring — Maple Hollow` establishing image above "The table". The banner is a live
+parameter with no town-table region.
+
+*(The live walk also surfaced additional modal surfaces — a "Who goes first?" round
+preamble, a rivals-shop carousel, a "Your cards" gallery, and Settings / How-to-play /
+Save-&-leave dialogs — none modeled as v2 children. These are I-51d chrome / production
+surfaces; inventoried with object specs in **Appendix A**.)*
+
 ---
 
 ## Overall verdict: **RETURN**
 
-Attestation (Step 0) passes cleanly and the increment is strong overall — three of four
-children conform, every declared `shadowed` record matches code + test + measured shadowing,
-the modal-as-card and deck-count/active-row/table-log grammar hold, and the bench realizes
-the anatomy live with 21/21 · 5/5 and correct D-1 unskinned frames. **But one measurement
-fails the charge's ±8pp conformance bar:** `boty:fortune-card`'s art region is coded at 52%
-against a measured v1 ~65–75% (Finding 1), contradicting the very "art dominance" claim
-(I-51b) the child is built to encode. Per the charge's refusal-not-repair doctrine ("if
-anything fails … conformance, RETURN with the finding named"), the increment is **RETURNED**
-on Finding 1. Finding 2 additionally leaves the live source-fidelity of screens 02–09
-unconfirmed this session (auth wall). Nothing in the repo was modified except this report.
+Attestation (Step 0) passes cleanly and the increment is strong overall — Step 1 now
+verifies **all nine archived screens FAITHFUL against live v1** (owner-authenticated walk),
+three of four children conform, every declared `shadowed` record matches code + test +
+measured shadowing, the modal-as-card and deck-count/active-row/table-log grammar hold, and
+the bench realizes the anatomy live with 21/21 · 5/5 and correct D-1 unskinned frames.
+**But one measurement fails the charge's ±8pp conformance bar:** `boty:fortune-card`'s art
+region is coded at 52% against a measured v1 ~65–75% — now corroborated live (Fortune-column
+card and drawn-card modal render art at ~60–80%) — contradicting the very "art dominance"
+claim (I-51b) the child is built to encode (Finding 1). Per the charge's refusal-not-repair
+doctrine ("if anything fails … conformance, RETURN with the finding named"), the increment
+is **RETURNED** on Finding 1 alone. Findings 2–6 are non-blocking (Finding 5, the
+uninstantiated Books view, is a coverage gap the build session should close — see Appendix
+A). Nothing in the repo was modified except this report.
 
 *Auditor: independent K7-style session, no builder context. Sources attested by SHA256;
 measurements are the auditor's own pixel readings of the attested JPEGs; live checks driven
 against real Chromium.*
+
+---
+
+## Appendix A — Live v1 surfaces as v2 child-object specs (for the build session)
+
+The v1-extraction (I-51) modelled **four** children off the **nine** archived screens. An
+owner-authenticated live walk this session surfaced the full running product, which carries
+more first-class surfaces than the nine stills captured. Per the request to organise every
+live-v1 component as a stricter-OOP v2 object (parameters + functions) so v2 can replicate
+v1 faithfully, this appendix inventories the live surfaces and specifies the missing ones.
+
+> **Role boundary (why this is a spec, not code).** This audit is refusal-not-repair and
+> "modify nothing but the report." Authoring these objects into `packs/boty/` or the
+> presentation template is a **build-session** action, and a *fresh* K7 must then verify
+> them — the builder never scores its own conformance. What follows is the auditor's
+> organised requirement, handed to the build session; it is not an implementation.
+
+### A.1 Surface inventory — live v1 → v2 object status
+
+| Live surface | Live role / anatomy | v2 object | Status |
+|---|---|---|---|
+| Header status strip | place · season · round · turn | bench chrome (I-51d) | furniture — not a child |
+| Header toolbar (×6) | view-rivals · open-hand · sound · settings · quit · rules | bench chrome | furniture; open the modals below |
+| Alert banner | "Your turn…" / "waiting on…" | bench chrome | furniture |
+| Presence | "Who's connected" dots | bench chrome | furniture |
+| Footer nav (×4) | Table · Fortune · Your shop · Books | bench chrome | furniture — **declares 4 views** |
+| **Table view** | art banner + standings + Table log | `boty:town-table` | ✅ (banner missing — **F6**) |
+| **Fortune view** | deck ("N left") + drawn card | `deck` region + `boty:fortune-card` | ✅ |
+| **Shop view** | art→identity→counters→building→crew→equip→jobs→AR→AP→actions | `boty:shop-board` | ✅ |
+| **Books view** | P&L + Balance Sheet | — | ❌ **F5** |
+| Round interstitial | "Round N · Season" art card | `boty:round-card` | ✅ (art % — **F1**) |
+| Who-goes-first preamble | die glyph + lead-off + lore + Next | — | ❌ new (precedes round-card) |
+| Drawn / character card | art-dominant card modal | `boty:fortune-card` | ✅ |
+| Rivals-shop carousel | paged compact shop summaries (◀▶) | — | ❌ (compact `shop-board`) |
+| "Your cards" gallery | mini-card grid + category filters | — | ❌ (reuses `fortune-card` tiles) |
+| Settings modal | audio · card-anim · confirm-end · $/W unit · rivals-popup · feedback · delete-account | — | ❌ production/form surface |
+| How-to-play modal | scrollable rules doc | — | ❌ doc surface |
+| Save-&-leave confirm | "stand-in covers your seat… Resume" dialog | — | ❌ dialog surface |
+
+**Coverage:** v2 instantiates 4 children covering 3 of 4 footer views + the round modal;
+**≥6 live surfaces are unmodelled**, the load-bearing one being the **Books** view (F5).
+
+### A.2 `boty:books` — the missing view, specified as a v2 child object (F5)
+
+*Template fit first:* v2's parent kinds are `card | board | table` (`layout.ts`). A
+per-player financial **report panel** fits none. Two lawful routes for the build session —
+(a) add a `PANEL_PARENT` (`kind:'panel'`) to the presentation package (platform tier; a
+content pack importing it downward is HK-6-clean), or (b) fold it onto `BOARD_PARENT` and
+override/suppress. Route (a) is cleaner; record the choice on the drift ledger, don't pick
+by momentum (ODG discipline).
+
+```
+Object  boty:books   (kind: panel — pending A.2 route; player-scoped, lineage ['template:panel'])
+Parameters (roled regions; VALUES come from the projection — project() is the sole read, K7-v1x D3):
+  title            "The books · {seat}"
+  statement-tabs   { 'pnl' | 'balance' }            ← presentation state, not game state
+  ── P&L fill ──
+  revenue          gold money
+  cogs             + breakdown lines (e.g. "COGS — labour")
+  gross-margin     subtotal  ≡ revenue − cogs
+  overhead         + breakdown lines (e.g. "Rent")
+  net-income       total     ≡ gross-margin − overhead   (negative → red: the one danger accent)
+  cash-callout     { net-income-on-paper, cash-in-bank, teaching: "profit isn't cash…" }
+  ── Balance-Sheet fill ──
+  assets           + lines (Cash …)
+  liabilities      + lines (or "none")
+  equity           + lines (Owner's capital, Retained earnings ≡ net-income)
+  liabilities+equity  total
+  reconciliation   "Assets X = Liabilities Y + Equity Z. The books always balance."
+Functions:
+  selectStatement(mode)     pure presentation-state switch (no game write)
+  render(projection, seat)  fills regions from the SeatProjector — owns no math
+Invariants (ENGINE-side; the view only projects them — already covered by M13 Ledger /
+  the "books reconcile" test): gross-margin ≡ revenue−cogs · net-income ≡ gross-margin−overhead
+  · assets ≡ liabilities+equity.
+Grammar (skin-token candidates, recorded not painted — D-1): money gold · negative total red
+  · muted sublines · bold section headers.
+```
+Geometry (region x/y/w/h) must be **measured off a Books screenshot** the same way the four
+children were — which requires the owner to add a Books source screen to
+`governance/audits/sources/` (none exists yet; that absence is the root cause of F5).
+
+### A.3 The other unmodelled surfaces (thumbnail specs)
+
+- **`boty:round-preamble`** (sibling of `round-card`): card modal · params
+  `{leadOffSeat, lore, action}` · fn `dismiss()` → reveals `round-card`. Callout derives
+  from truth (K7-v1x D2).
+- **rivals-shop carousel**: compact `shop-board` reuse · params `{seats[], index}` · fns
+  `prev() / next() / close()`.
+- **"Your cards" gallery**: grid of `fortune-card` tiles · params
+  `{cards[], filters:{tradespeople,equipment,jobs,persistent,playable,global}}` · fns
+  `toggleFilter(kind)`, `open(cardId)` → pops `fortune-card`.
+- **Settings / How-to-play / Save-&-leave**: utilization-tier **chrome** surfaces (form /
+  document / dialog), not layout children — objectify in the bench/product shell, not the
+  pack. (Settings notably carries `SHOW AMOUNTS IN $ / Work-units [$50 per W]` and
+  "Animate my cards on open → the on-card buttons are gone, so the art shows uncluttered" —
+  the latter corroborates F1/F3: with animation on, v1's card art is *even more* dominant.)
+

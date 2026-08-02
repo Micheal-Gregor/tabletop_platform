@@ -423,3 +423,16 @@ registers all four dispositions. F2 registered (live-product drift + coverage ga
 authenticated re-walk = owner-optional); F3/F4 registered as correct-by-design.
 Awaiting external re-verify of the recoded child (charge: re-measure fortune-card only
 + confirm no other diff). Suite green post-closure; V-9 re-derived; packages/ untouched.
+
+**AUDIT-EXT-5 updated report archived (2026-08-01).** The auditor's full report now
+includes the owner-authenticated live walk: **all nine archived screens verified FAITHFUL
+against live v1** (F2 closed — the coverage gap is gone), live v1 corroborates F1 (card
+art ~60–80% live), and two additive non-regressions recorded (auth gate; a "Who goes
+first?" preamble modal preceding the round card). The report formalizes **F5 (MAJOR:
+Books view uninstantiated — root cause: no Books screen among the nine sources)** and
+**F6 (MINOR: town-table lacks the art banner)** with child-object specs in its Appendix A
+— both already accepted on the I-54 docket via the companion V2-LIVE-OBJECT-INVENTORY.
+Note: the updated report's RETURN verdict was measured at HEAD 62e7066, BEFORE the F1
+closure (d7e50bc, art 66% + band-pinned test); the external re-verify of that closure
+remains OUTSTANDING — its charge (addendum to Report-5) is already issued. The prior
+archived report copy remains in git history at d7e50bc (supersession on the record).
