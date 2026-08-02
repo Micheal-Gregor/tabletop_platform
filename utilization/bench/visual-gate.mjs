@@ -229,6 +229,41 @@ check('VG7d/3d-camera-consumes-presets', moved7 && pure7 && lawful7,
   moved7 ? `seat-0 (${cam.p1.x.toFixed(1)},${cam.p1.y.toFixed(1)},${cam.p1.z.toFixed(1)}) ≡ law (${want.x.toFixed(1)},${want.y.toFixed(1)},${want.z.toFixed(1)}) · moved vs table · pure` : 'CAMERA NEVER MOVED between presets');
 await page.screenshot({ path: '/tmp/vg-3d.png' });
 
+// ── VG8 — GAME3D, THE A1 STAGE (I-62d: coverage lands WITH the increment, kill-first).
+await page.goto('http://localhost:4174/game3d.html');
+await page.waitForFunction(() => window.__GAME3D__ && window.__GAME3D__.ready(), null, { timeout: 30000 });
+// VG8a: mesh regions ≡ the def-derived expectation
+const rc8 = await page.evaluate(() => ({ got: window.__GAME3D__.regionCount(), want: window.__GAME3D__.expectedFromDefs() }));
+check('VG8a/3d-stage-regions-vs-law', rc8.got === rc8.want && rc8.want > 0, `${rc8.got} quads ≡ ${rc8.want} from defs`);
+// VG8b: the standings panel stamp ≡ an expectation the GATE derives from the projection
+// surface (a hardcoded or stale panel diverges and fails — the asked-text stamp class, I-62b)
+const st8 = await page.evaluate(() => ({ stamp: window.__GAME3D__.stamped('standings'), v: window.__GAME3D__.viewData() }));
+const wantLines = ['THE TABLE', ...[...st8.v.seats].sort((a, b) => b.cash - a.cash).map((s) => `${s.id === st8.v.active ? '★ ' : ''}${s.id}  $${s.cash}`)];
+check('VG8b/3d-standings-stamp-vs-projection', JSON.stringify(st8.stamp) === JSON.stringify(wantLines), `stamp [${(st8.stamp ?? []).join(' | ')}] vs law [${wantLines.join(' | ')}]`);
+// VG8c: the GLIDE obeys the preset law AT REST — seat-0 (every axis differs from default),
+// provable-move vs table, purity on re-glide (I-62c; the dead-camera class stays dead)
+const glide = async (name) => {
+  await page.evaluate((n) => window.__GAME3D__.glideTo(n), name);
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 });
+  return page.evaluate(() => window.__GAME3D__.cameraPos());
+};
+const g1 = await glide('seat-0');
+const gt = await glide('table');
+const g2 = await glide('seat-0');
+const pd8 = await page.evaluate(() => window.__GAME3D__.presetData('seat-0'));
+const d8 = 1900 / pd8.zoom;
+const want8 = { x: pd8.cx - 800, y: d8 * 0.72, z: pd8.cy - 500 + d8 * 0.7 };
+const near = (a, b) => Math.abs(a - b) < 0.2; // glide rest epsilon (0.05 distance snap)
+const moved8 = !(near(g1.x, gt.x) && near(g1.y, gt.y) && near(g1.z, gt.z));
+const pure8 = near(g1.x, g2.x) && near(g1.y, g2.y) && near(g1.z, g2.z);
+const lawful8 = near(g1.x, want8.x) && near(g1.y, want8.y) && near(g1.z, want8.z);
+check('VG8c/3d-stage-glide-law', moved8 && pure8 && lawful8,
+  moved8 ? `seat-0 rest (${g1.x.toFixed(1)},${g1.y.toFixed(1)},${g1.z.toFixed(1)}) ≡ law (${want8.x.toFixed(1)},${want8.y.toFixed(1)},${want8.z.toFixed(1)}) · moved · pure` : 'CAMERA NEVER MOVED');
+// VG8d: the header chrome speaks the projection (round + active seat)
+const hdr8 = await page.evaluate(() => ({ txt: document.getElementById('hdr').textContent, v: window.__GAME3D__.viewData() }));
+check('VG8d/3d-chrome-vs-projection', hdr8.txt.includes(`round ${hdr8.v.round}`) && hdr8.txt.includes(`${hdr8.v.active}'s turn`), hdr8.txt.slice(0, 90));
+await page.screenshot({ path: '/tmp/vg-3d-stage.png' });
+
 await browser.close();
 server.close();
 

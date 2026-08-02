@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 const HERE = dirname(fileURLToPath(import.meta.url));
 await build({
-  entryPoints: ['src/main.ts', 'src/target-verify.ts', 'src/showcase.ts', 'src/game.ts', 'src/spike3d.ts'].map((p) => join(HERE, p)),
+  entryPoints: ['src/main.ts', 'src/target-verify.ts', 'src/showcase.ts', 'src/game.ts', 'src/spike3d.ts', 'src/game3d.ts'].map((p) => join(HERE, p)),
   bundle: true,
   format: 'esm',
   outdir: join(HERE, 'dist'),

@@ -51,7 +51,7 @@ keep running; nothing certified is abandoned.
 
 | # | Object (v2 def) | 3D form | Animations (flourish presets) | Interactions (verbs via emit) | Status |
 |---|---|---|---|---|---|
-| A1 | The stage: table (boty:town-table) + camera + lighting-free ground | table plane flat, region quads, world scale | camera glides between presets | preset buttons · wheel dolly · click-to-focus | ⬜ spike partial — promote to the playable game shell |
+| A1 | The stage: table (boty:town-table) + camera + lighting-free ground | table plane flat, region quads, world scale | camera glides between presets | preset buttons · wheel dolly · click-to-focus | 🔶 BUILT (game3d.html, I-62, VG8a–d kill-first) — awaiting the owner's playtest verdict |
 | A2 | Deck + draw | card-back stack w/ count | draw arc: top card lifts → flies to focus → FLIP under HK-11 | click deck → draw verb → drawn card modal-in-3D | ⬜ |
 | A3 | Fortune/character card (boty:fortune-card) | front/back card mesh (spike-proven) | flip · zoom-to-camera (modal-as-card in 3D, I-51a) | click to zoom/dismiss | ⬜ spike partial |
 | A4 | Round preamble + round card (boty:round-preamble/round-card) | sequenced zoomed cards | deal-in → flip → advance | click advances the queue (I-55a sequence) | ⬜ |
@@ -74,4 +74,5 @@ each object ("really perform for the players" is the owner's acceptance bar).
 
 | Increment | Commit | K7 | Owner verdict |
 |---|---|---|---|
-| Spike (feasibility exhibit) | 6294d06 | binds to the adoption commit's round | ruled: adopt (2026-08-02) |
+| Spike (feasibility exhibit) | 6294d06 | k7-pass-3d-adoption | ruled: adopt (2026-08-02) |
+| A1 the stage (game3d shell) | (this commit) | K7 pending this round | awaiting owner playtest |
