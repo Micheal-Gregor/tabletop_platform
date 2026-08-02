@@ -352,6 +352,131 @@ if (await waitRest('VG8f/read-board-face-on')) {
 await page.screenshot({ path: '/tmp/vg-3d-read.png' });
 await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
 await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {}); // K7-A1b D5: screenshot at rest
+
+// VG8g — THE SIX-SEAT STAGE (I-65, owner-ruled 2026-08-02; kill-first): six boards
+// two-sided, far seats approached from THEIR side, the glide ORBITS around the table
+// (never over/through), backs are shop-graphic only (no data), far boards read face-on.
+{
+  // six seat groups exist
+  const keys = await page.evaluate(() => window.__GAME3D__.seatGroupKeys());
+  const six = JSON.stringify(keys) === JSON.stringify(['seat-0', 'seat-1', 'seat-2', 'seat-3', 'seat-4', 'seat-5']);
+  // far-seat approach law (I-65b; the VG8c exactness discipline): seat-4 from the FAR side
+  await page.evaluate(() => window.__GAME3D__.glideTo('seat-4'));
+  let lawful4 = false, restOk = true;
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { restOk = false; }
+  if (restOk) {
+    const g4 = await page.evaluate(() => window.__GAME3D__.cameraPos());
+    const p4 = await page.evaluate(() => window.__GAME3D__.presetData('seat-4'));
+    const d4 = 1900 / p4.zoom;
+    const want4 = { x: p4.cx - 800, y: d4 * 0.72, z: p4.cy - 500 - d4 * 0.7 };
+    lawful4 = Math.abs(g4.x - want4.x) < 1e-9 && Math.abs(g4.y - want4.y) < 1e-9 && Math.abs(g4.z - want4.z) < 1e-9;
+  }
+  check('VG8g/six-seats-far-approach', six && restOk && lawful4,
+    `six:${six} · far-law:${lawful4}${restOk ? '' : ' · GLIDE TIMEOUT'}`);
+
+  // ORBITAL GLIDE (I-65d): seat-1 → seat-4 crosses sides; the camera's horizontal
+  // radius about the table center must NEVER collapse (a straight line cuts across).
+  await page.evaluate(() => window.__GAME3D__.glideTo('seat-1'));
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { /* named below */ }
+  const r0 = await page.evaluate(() => { const p = window.__GAME3D__.cameraPos(); return Math.hypot(p.x, p.z); });
+  await page.evaluate(() => window.__GAME3D__.glideTo('seat-4'));
+  let minR = Infinity, orbitRest = false;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 60000) {
+    const s = await page.evaluate(() => ({ p: window.__GAME3D__.cameraPos(), g: window.__GAME3D__.gliding() }));
+    minR = Math.min(minR, Math.hypot(s.p.x, s.p.z));
+    if (!s.g) { orbitRest = true; break; }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  const r1 = await page.evaluate(() => { const p = window.__GAME3D__.cameraPos(); return Math.hypot(p.x, p.z); });
+  const orbital = orbitRest && minR >= 0.7 * Math.min(r0, r1);
+  check('VG8g/orbital-glide-around', orbital,
+    orbitRest ? `minR ${minR.toFixed(0)} vs wall ${(0.7 * Math.min(r0, r1)).toFixed(0)} (r0 ${r0.toFixed(0)} r1 ${r1.toFixed(0)})` : 'orbit glide never rested (timeout)');
+
+  // BACKS ARE SHOP-GRAPHIC ONLY (I-65c): every seat board — front carries the data
+  // ($), the back carries the shop identity and NO data. Contrast pair per board.
+  const stamps = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.boardStamps(i)));
+  const backsOk = stamps.every((st, i) =>
+    st && st.front && st.back
+    && st.front.some((l) => l.includes('$'))
+    && !st.back.some((l) => l.includes('$'))
+    && st.back.length === 2 && st.back[1] === '[shop art]');
+  check('VG8g/backs-shop-graphic-only', backsOk,
+    stamps.map((st, i) => `${i}:${st && st.back ? (st.back.some((l) => l.includes('$')) ? 'LEAK' : 'ok') : 'MISSING'}`).join(' '));
+
+  // far board read: face-on along the FAR normal (0, sin.25, −cos.25) + full pose law
+  await page.evaluate(() => window.__GAME3D__.toggleRead('seat-4'));
+  if (await waitRest('VG8g/read-far-board-face-on')) {
+    const f = await page.evaluate(() => ({
+      pos: window.__GAME3D__.cameraPos(), look: window.__GAME3D__.lookAtPoint(),
+      corners: window.__GAME3D__.cornersNdc(), cam: window.__GAME3D__.camName(),
+      center: window.__GAME3D__.focusBoxCenter(),
+    }));
+    const dirF = { x: f.look.x - f.pos.x, y: f.look.y - f.pos.y, z: f.look.z - f.pos.z };
+    const lenF = Math.hypot(dirF.x, dirF.y, dirF.z);
+    const nF = { x: 0, y: Math.sin(0.25), z: -Math.cos(0.25) }; // the near normal flipped π about Y
+    const dotF = (dirF.x * nF.x + dirF.y * nF.y + dirF.z * nF.z) / lenF;
+    const faceOnF = Math.abs(dotF + 1) < 1e-6;
+    const fitF = f.corners && f.corners.every((c) => Math.abs(c.x) <= 1 && Math.abs(c.y) <= 1);
+    const framedF = f.corners && Math.max(...f.corners.map((c) => Math.max(Math.abs(c.x), Math.abs(c.y)))) >= 0.5;
+    const cNdcF = await page.evaluate((c) => window.__GAME3D__.ndcOf(c.x, c.y, c.z), f.center);
+    const centeredF = Math.abs(cNdcF.x) < 1e-6 && Math.abs(cNdcF.y) < 1e-6;
+    const oNdcF = await page.evaluate((c) => window.__GAME3D__.ndcOf(c.x, c.y + 200, c.z), f.center);
+    const orientedF = oNdcF.y - cNdcF.y > 0 && Math.abs(oNdcF.x - cNdcF.x) < 1e-6;
+    check('VG8g/read-far-board-face-on', f.cam === 'seat-4:read' && faceOnF && centeredF && orientedF && fitF && framedF,
+      `dot ${dotF.toFixed(6)} (want −1) · centered:${centeredF} oriented:${orientedF} fit:${fitF} framed:${framedF}`);
+  }
+  await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+}
+
+// VG8h — THE BOUNDED ZOOM CONTINUUM (I-64, the owner's amended ruling; kill-first;
+// REAL wheel input per the VG8e discipline): zoom-in past 100% enters the focus's
+// read view ORGANICALLY; zoom-out lands at TABLE READ; both walls hold.
+{
+  const stgBox = await page.locator('#stage canvas').boundingBox();
+  await page.mouse.move(stgBox.x + stgBox.width / 2, stgBox.y + stgBox.height / 2);
+  await page.evaluate(() => window.__GAME3D__.glideTo('seat-1'));
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  // wheel IN → organic read entry on the focused seat (no toggle call anywhere here)
+  let entered = false;
+  for (let i = 0; i < 40 && !entered; i++) {
+    await page.mouse.wheel(0, -240);
+    entered = await page.evaluate(() => window.__GAME3D__.zoomState().mode === 'read');
+  }
+  const zIn = await page.evaluate(() => window.__GAME3D__.zoomState());
+  const organicIn = entered && zIn.focus === 'seat-1';
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const inName = await page.evaluate(() => window.__GAME3D__.camName());
+  // wheel OUT from seat read → TABLE read (the owner's amendment: the out endpoint),
+  // DIRECTLY — the mode never drops back to scene on the way ("easily move from seat
+  // read view to table read view")
+  let atTable = false, everScene = false;
+  for (let i = 0; i < 40 && !atTable; i++) {
+    await page.mouse.wheel(0, 240);
+    const z = await page.evaluate(() => window.__GAME3D__.zoomState());
+    if (z.mode === 'scene') everScene = true;
+    atTable = z.mode === 'read' && z.focus === 'table';
+  }
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const outName = await page.evaluate(() => window.__GAME3D__.camName());
+  const ovh = await page.evaluate(() => ({ pos: window.__GAME3D__.cameraPos(), look: window.__GAME3D__.lookAtPoint() }));
+  const outOverhead = Math.abs(ovh.pos.x - ovh.look.x) < 1e-6 && Math.abs(ovh.pos.z - ovh.look.z) < 1e-6 && ovh.pos.y > ovh.look.y;
+  check('VG8h/wheel-continuum-endpoints', organicIn && inName === 'seat-1:read' && atTable && !everScene && outName === 'table:read' && outOverhead,
+    `organic-in:${organicIn} (${inName}) · out-to-table:${atTable} direct:${!everScene} (${outName}) · overhead:${outOverhead}`);
+  // the WALLS: table read's far wall (fit) and the resolution floor (IN_FLOOR × fit)
+  const fitT = await page.evaluate(() => window.__GAME3D__.readFit('table'));
+  for (let i = 0; i < 8; i++) await page.mouse.wheel(0, 240);
+  const distFar = await page.evaluate(() => window.__GAME3D__.zoomState().dist);
+  const farWall = distFar <= fitT * 1.001;
+  for (let i = 0; i < 60; i++) await page.mouse.wheel(0, -240);
+  const zFloor = await page.evaluate(() => window.__GAME3D__.zoomState());
+  const floorWall = zFloor.mode === 'read' && zFloor.focus === 'table' && zFloor.dist >= zFloor.inFloor * fitT * 0.999;
+  check('VG8h/wheel-continuum-walls', farWall && floorWall,
+    `far-wall:${farWall} (${distFar.toFixed(0)} vs fit ${fitT.toFixed(0)}) · floor:${floorWall} (${zFloor.dist.toFixed(0)} vs ${(zFloor.inFloor * fitT).toFixed(0)})`);
+  await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+}
 await page.screenshot({ path: '/tmp/vg-3d-stage.png' });
 
 await browser.close();

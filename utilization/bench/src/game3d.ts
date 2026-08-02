@@ -9,19 +9,19 @@ import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { LayoutDef, SeatView } from '@tabletop/presentation';
 import { focusPresets, project } from '@tabletop/presentation';
-import { BOTY_PACK, BOTY_REF, botyGenesis, wireBoty, SHOP_BOARD, TOWN_TABLE } from '../../../packs/boty/src/index.js';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, SHOP_BOARD, TOWN_TABLE } from '../../../packs/boty/src/index.js';
 
 const WORLD = { w: 1600, h: 1000 };
-const SEATS = BOTY_PACK.seats.map((s) => s.id);
+const SEATS = BOTY_PACK6.seats.map((s) => s.id);
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 const presets = focusPresets(SEATS.length, WORLD);
 
-// ── the engine, through the same doors as the SVG bench (I-62a) ──
+// ── the engine, through the same doors as the SVG bench (I-62a); the 6-up exhibit variant (I-65e) ──
 const wire = () => (c: EngineCore) => wireBoty(new RuleRegistry() as RegistryT)(c);
-const controller = LockstepController.host(BOTY_REF, BOTY_PACK.seats, 'maple-hollow', botyGenesis, wire());
+const controller = LockstepController.host(BOTY6_REF, BOTY_PACK6.seats, 'maple-hollow', botyGenesis6, wire());
 for (const s of SEATS) controller.join('bench-3d', s);
 const viewSeat = SEATS[0]!;
-const projectNow = (): SeatView => project(rebuild(controller.row(), botyGenesis, wire()).getState(), viewSeat);
+const projectNow = (): SeatView => project(rebuild(controller.row(), botyGenesis6, wire()).getState(), viewSeat);
 
 // ── mesh builders (defs are the SOLE geometry source — the I-60a charter carries) ──
 /** A multi-line panel texture; the mesh STAMPS the lines it was ASKED to draw (I-62b). */
@@ -88,7 +88,9 @@ function buildScene(): void {
   table.userData['focus'] = 'table';
   focusGroups['table'] = table;
   scene.add(table);
-  // shop boards standing at the edges — click-to-focus targets
+  // shop boards standing at the edges — click-to-focus targets. TWO-SIDED (I-65):
+  // seats 0-2 near row (+z, the certified A1 placement), seats 3+ far row (−z),
+  // each board rotated to face ITS OWN player beyond its table edge.
   SEATS.forEach((s, i) => {
     const seat = v.seats.find((x) => x.id === s)!;
     const b = layoutFace(SHOP_BOARD, 0xffffff, {
@@ -96,28 +98,46 @@ function buildScene(): void {
       counters: [`$${seat.cash} · ♥${seat.favor}`],
     });
     b.scale.set(2.6, 2.6, 1);
-    b.position.set((i - 1) * 420, 130, 420);
-    b.rotation.x = -0.25;
+    const far = i >= 3;
+    b.position.set(((i % 3) - 1) * 420, 130, far ? -420 : 420);
+    if (far) {
+      // the near-board pose flipped π about world Y: face −z, tilt back toward the far player
+      b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));
+    } else {
+      b.rotation.x = -0.25;
+    }
+    // the BACK of a seat screen shows ONLY the shop graphic (I-65c) — which shop, no data
+    const back = panel(['[shop art]'], 100, 100, s);
+    back.rotation.y = Math.PI;
+    back.position.z = -0.2;
+    back.userData['back'] = s; // never a region — the redaction-consistent shop face
+    b.add(back);
     b.userData['seatIdx'] = i;
     focusGroups[`seat-${i}`] = b;
     scene.add(b);
   });
   // chrome (I-51d)
   document.getElementById('hdr')!.textContent =
-    `Maple Hollow · ${SEASONS[(v.turn.round - 1) % 4]} · round ${v.turn.round} / ${BOTY_PACK.maxRounds} · ▶ ${active}'s turn · viewing as ${viewSeat}`;
+    `Maple Hollow · ${SEASONS[(v.turn.round - 1) % 4]} · round ${v.turn.round} / ${BOTY_PACK6.maxRounds} · ▶ ${active}'s turn · viewing as ${viewSeat}`;
 }
 buildScene();
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
+// SIDE-AWARE (I-65b): a SEAT preset is approached from that seat's own side of the
+// table (far row: −z); non-seat presets keep the canonical near-side approach — the
+// certified A1 law is the near-side special case, not superseded.
 const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } => {
   const p = presets[name]!;
   const look = new THREE.Vector3(p.cx - WORLD.w / 2, 0, p.cy - WORLD.h / 2);
   const d = 1900 / p.zoom;
-  return { pos: new THREE.Vector3(look.x, d * 0.72, look.z + d * 0.7), look };
+  const side = name.startsWith('seat-') && p.cy < WORLD.h / 2 ? -1 : 1;
+  return { pos: new THREE.Vector3(look.x, d * 0.72, look.z + side * d * 0.7), look };
 };
 let target = mapPreset('overview');
 let currentLook = target.look.clone();
 let currentName = 'overview';
+let lastFocus = 'table'; // the wheel's in-bound target (I-64e) — what the player last looked at
 camera.position.copy(target.pos);
 camera.lookAt(currentLook);
 
@@ -125,6 +145,7 @@ function glideTo(name: string): void {
   if (!presets[name]) throw new Error(`glideTo refused: unknown preset "${name}" (have: ${Object.keys(presets).join(', ')})`);
   target = mapPreset(name);
   currentName = name;
+  if (name.startsWith('seat-') || name === 'table') lastFocus = name;
   mode = 'scene';
   camera.up.set(0, 1, 0);
   const mb = document.getElementById('mode-btn');
@@ -176,6 +197,7 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
 
 function readView(focus?: string): void {
   readFocus = focus ?? (currentName.startsWith('seat-') ? currentName : 'table');
+  lastFocus = readFocus;
   const m = mapRead(readFocus);
   camera.up.copy(m.up);
   target = { pos: m.pos, look: m.look };
@@ -214,14 +236,38 @@ function panBy(dx: number, dy: number): void {
 
 function status(msg: string): void { document.getElementById('status')!.textContent = msg; }
 
-// wheel dolly = 'custom' camera, outside the preset law by declaration (I-62c)
-document.getElementById('stage')!.addEventListener('wheel', (ev) => {
-  ev.preventDefault();
-  const dir = new THREE.Vector3().subVectors(camera.position, currentLook).multiplyScalar(ev.deltaY < 0 ? 0.9 : 1.12);
+// ── THE BOUNDED ZOOM CONTINUUM (I-64): the wheel is walled at both ends by READ
+// poses. Zoom-in past the focus's fit → its read view, ORGANICALLY; zoom-out past
+// the wall → the TABLE read view (the owner's amended endpoint: seat read → wheel
+// out → table read). IN_FLOOR/OUT_FACTOR are realization tuning (I-48b), not law.
+const IN_FLOOR = 0.3;
+const OUT_FACTOR = 1.15;
+const readFitDist = (focus: string): number => { const m = mapRead(focus); return m.pos.distanceTo(m.look); };
+const ovPose = mapPreset('overview');
+const OVERVIEW_DIST = ovPose.pos.distanceTo(ovPose.look);
+function dollyTo(dist: number): void {
+  const dir = new THREE.Vector3().subVectors(camera.position, currentLook).normalize().multiplyScalar(dist);
   camera.position.copy(currentLook.clone().add(dir));
   target = { pos: camera.position.clone(), look: currentLook.clone() };
   currentName = 'custom';
   status('camera → custom (dolly)');
+}
+document.getElementById('stage')!.addEventListener('wheel', (ev) => {
+  ev.preventDefault();
+  const zoomIn = ev.deltaY < 0;
+  const dist = camera.position.distanceTo(currentLook);
+  const next = dist * (zoomIn ? 0.9 : 1.12);
+  if (mode === 'read') {
+    const fitD = readFitDist(readFocus);
+    if (zoomIn) { dollyTo(Math.max(next, IN_FLOOR * fitD)); return; } // the resolution floor (I-64d)
+    if (next < fitD) { dollyTo(next); return; } // stepping back out toward the fit pose
+    if (readFocus !== 'table' && dist >= fitD * 0.999) { readView('table'); return; } // AT the wall, out again → table read (I-64a)
+    dollyTo(fitD); // stop at the wall first; table read's far wall is final (I-64c)
+    return;
+  }
+  if (zoomIn && next <= readFitDist(lastFocus)) { readView(lastFocus); return; } // organic read entry (I-64b)
+  if (!zoomIn && next >= OUT_FACTOR * OVERVIEW_DIST) { readView('table'); return; } // the scene's far wall (I-64c)
+  dollyTo(next);
 }, { passive: false });
 
 // pointer: in READ mode a drag PANS (scroll); a plain click in scene mode raycasts
@@ -261,7 +307,26 @@ document.getElementById('bar')!.onclick = (ev) => {
 function tick(): void {
   requestAnimationFrame(tick);
   if (gliding()) {
-    camera.position.lerp(target.pos, 0.1);
+    // ORBITAL GLIDE (I-65d): the camera moves AROUND the table — azimuth about the
+    // world center by the SHORTEST ARC, radius and height lerped; the look lerps
+    // linearly. Crossing sides is the owner's "smooth rotation 180 degrees around
+    // the table" — never over or through it. Near the axis (r small: overhead read
+    // poses) azimuth is noise — those transitions fall back to the straight lerp.
+    const rc = Math.hypot(camera.position.x, camera.position.z);
+    const rt = Math.hypot(target.pos.x, target.pos.z);
+    if (rc > 80 && rt > 80) {
+      const tc = Math.atan2(camera.position.z, camera.position.x);
+      const tt = Math.atan2(target.pos.z, target.pos.x);
+      let dth = tt - tc;
+      if (dth > Math.PI) dth -= 2 * Math.PI;
+      if (dth < -Math.PI) dth += 2 * Math.PI;
+      const th = tc + dth * 0.1;
+      const r = rc + (rt - rc) * 0.1;
+      const y = camera.position.y + (target.pos.y - camera.position.y) * 0.1;
+      camera.position.set(r * Math.cos(th), y, r * Math.sin(th));
+    } else {
+      camera.position.lerp(target.pos, 0.1);
+    }
     currentLook.lerp(target.look, 0.1);
     if (!gliding()) { camera.position.copy(target.pos); currentLook.copy(target.look); }
   }
@@ -328,6 +393,26 @@ function tick(): void {
     return box.containsPoint(currentLook);
   },
   panProbe: (dx: number, dy: number) => panBy(dx, dy),
+  /** I-64's continuum surfaces: where the wheel stands relative to its walls */
+  zoomState: () => ({
+    mode, focus: readFocus, lastFocus,
+    dist: camera.position.distanceTo(currentLook),
+    inFloor: IN_FLOOR, outFactor: OUT_FACTOR, overviewDist: OVERVIEW_DIST,
+  }),
+  readFit: (f: string) => readFitDist(f),
+  /** I-65c's contrast surface: seat board i's front data stamp vs its back stamp */
+  boardStamps: (i: number) => {
+    const grp = focusGroups[`seat-${i}`];
+    if (!grp) return null;
+    let front: readonly string[] | null = null;
+    let back: readonly string[] | null = null;
+    grp.traverse((o: THREE.Object3D) => {
+      if (o.userData?.['region'] === 'counters' && o.userData?.['renderedLines']) front = o.userData['renderedLines'] as string[];
+      if (o.userData?.['back'] && o.userData?.['renderedLines']) back = o.userData['renderedLines'] as string[];
+    });
+    return { front, back };
+  },
+  seatGroupKeys: () => Object.keys(focusGroups).filter((k) => k.startsWith('seat-')).sort(),
   /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
   boardScreenXY: (i: number) => {
     let hit: THREE.Object3D | null = null;

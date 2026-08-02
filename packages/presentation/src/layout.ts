@@ -243,15 +243,21 @@ export function shadow(cx: number, cy: number, rx: number): string {
 /**
  * Focus presets derived from a seat count: 'table' centers the shared zone; seat i
  * focuses that player's board anchor around the bottom/edges.
+ * TWO-SIDED LAW (I-65a, ADDITIVE): seatCount ≤ 3 output is UNCHANGED (the certified
+ * behavior is the near-row special case). For seatCount > 3, seats 0-2 hold the near
+ * row (cy 0.82) and seats 3+ take the FAR row (cy 0.18), each row spread by the same
+ * formula over its own count — seat 3 sits opposite seat 0 (owner-ruled 2026-08-02).
  */
 export function focusPresets(seatCount: number, world: World): Readonly<Record<string, Camera>> {
   const presets: Record<string, Camera> = {
     table: { cx: world.w / 2, cy: world.h * 0.42, zoom: 1.6 },
     overview: { cx: world.w / 2, cy: world.h / 2, zoom: 1 },
   };
+  const near = Math.min(seatCount, 3);
   for (let i = 0; i < seatCount; i++) {
-    const t = seatCount === 1 ? 0.5 : i / (seatCount - 1);
-    presets[`seat-${i}`] = { cx: world.w * (0.2 + 0.6 * t), cy: world.h * 0.82, zoom: 2.2 };
+    const row = i < near ? { idx: i, count: seatCount <= 3 ? seatCount : near, cy: 0.82 } : { idx: i - near, count: seatCount - near, cy: 0.18 };
+    const t = row.count === 1 ? 0.5 : row.idx / (row.count - 1);
+    presets[`seat-${i}`] = { cx: world.w * (0.2 + 0.6 * t), cy: world.h * row.cy, zoom: 2.2 };
   }
   return Object.freeze(presets);
 }

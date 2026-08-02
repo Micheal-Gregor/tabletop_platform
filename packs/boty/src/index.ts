@@ -8,7 +8,7 @@ import { validateContribution, wireLibrary, wirePack, wireRules } from '@tableto
 import { buildGlobal, buildJob, buildRouted, buildRouting } from '@tabletop/patterns';
 import { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
 
-export { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
+export { BOTY_PACK, BOTY_REF, botyGenesis, BOTY_PACK6, BOTY6_REF, botyGenesis6 } from './pack.js';
 export {
   BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, CARD_KINDS,
   FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE,

@@ -73,3 +73,51 @@ export const botyGenesis: Genesis = () =>
     ventures: [], debts: [], receivables: [], timedEffects: [],
     ledger: { loaded: true, entries: [] },
   }) as JsonObject;
+
+// ── THE 6-UP EXHIBIT VARIANT (I-65e; owner-ruled 2026-08-02: "BOTY has up to 6 players") ──
+// A SEPARATE variant for the 3D bench: the certified 3-seat slice above is untouched.
+// The three far-side shops are DRAFT content pending the owner's naming ruling —
+// renaming is a data edit, not a supersession. Their decks reuse EXISTING fx-less
+// cards only: content adds NO law, and the new seats carry no EFX until the owner
+// authors their cards.
+export const BOTY6_REF: PackRef = { id: 'boty', version: '0.1.0', hash: 'boty-6up-1' };
+
+const DRAFT_SHOPS = [
+  { id: 'sal', trade: 'carpenter' }, // DRAFT — Sal's Lumber
+  { id: 'faye', trade: 'painter' }, // DRAFT — Faye's Paint
+  { id: 'russ', trade: 'roofer' }, // DRAFT — Russ's Roofing
+] as const;
+
+export const BOTY_PACK6: ContentPack = {
+  ...BOTY_PACK,
+  seats: [...BOTY_PACK.seats, ...DRAFT_SHOPS.map((s) => ({ id: s.id }))],
+  decks: {
+    ...BOTY_PACK.decks,
+    sal: { cards: ['job-posting', 'gc-flavor'] },
+    faye: { cards: ['job-posting', 'gc-flavor'] },
+    russ: { cards: ['job-posting', 'gc-flavor'] },
+  },
+};
+
+export const botyGenesis6: Genesis = (packRef, seats, seed) => {
+  const g = botyGenesis(packRef, seats, seed) as Record<string, unknown>;
+  return {
+    ...g,
+    seats: [
+      ...(g['seats'] as unknown[]),
+      ...DRAFT_SHOPS.map((s) => ({ id: s.id, trade: s.trade, cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false })),
+    ],
+    decks: {
+      ...(g['decks'] as Record<string, unknown>),
+      sal: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
+      faye: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
+      russ: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
+    },
+    crew: [
+      ...(g['crew'] as unknown[]),
+      { id: 'crew-sal', outfit: 'sal' },
+      { id: 'crew-faye', outfit: 'faye' },
+      { id: 'crew-russ', outfit: 'russ' },
+    ],
+  } as JsonObject;
+};
