@@ -154,13 +154,15 @@ describe('GBC-60 · the parity children (I-55): exact shadowing, redaction-suppr
     expect(EQUIPMENT_CARD.regions.some((r) => r.id === 'title')).toBe(true); // inherited untouched
   });
 
-  it('GBC-62 · boty:books is a THIN panel child (v1\'s Books IS the generic panel); the callout deferral holds', () => {
+  it('GBC-62 · boty:books: the panel child with the measured cash-callout (I-56b DISCHARGED via source 18)', () => {
     expect(BOOKS_PANEL.kind).toBe('panel');
     expect(BOOKS_PANEL.lineage).toEqual(['template:panel']);
-    expect(BOOKS_PANEL.shadowed).toEqual({ overridden: [], added: [], suppressed: [] });
-    expect(BOOKS_PANEL.regions.map((r) => r.role)).toEqual(['title', 'mode-tabs', 'line-items', 'total', 'footnote']);
-    // I-56b deferral: the P&L callout region is ABSENT until source 18 is measured — never guessed
-    expect(BOOKS_PANEL.regions.some((r) => r.id === 'callout')).toBe(false);
+    expect(BOOKS_PANEL.shadowed).toEqual({ overridden: [], added: ['callout'], suppressed: [] });
+    expect(BOOKS_PANEL.regions.map((r) => r.role)).toEqual(['title', 'mode-tabs', 'line-items', 'total', 'footnote', 'cash-callout']);
+    // source-18 measured geometry: below the total row, ~76–99% of panel height
+    const callout = BOOKS_PANEL.regions.find((r) => r.id === 'callout')!;
+    expect(callout.y).toBeGreaterThanOrEqual(74);
+    expect(callout.y + callout.h).toBeLessThanOrEqual(100);
     // the tab switch is FILLS, not layout: one child renders both statements a11y-clean
     const pnl = renderLayout(BOOKS_PANEL, 'The books · moe (P&L)', { title: 'The books · moe', tabs: 'P&L | Balance', total: 'Net income', footnote: 'profit isn\'t cash' });
     const bal = renderLayout(BOOKS_PANEL, 'The books · moe (Balance)', { title: 'The books · moe', tabs: 'P&L | Balance', total: 'Liabilities + equity', footnote: 'The books always balance.' });

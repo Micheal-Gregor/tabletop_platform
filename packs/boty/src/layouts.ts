@@ -213,13 +213,17 @@ export const EQUIPMENT_CARD: LayoutDef = extendLayout(CARD_PARENT, EQUIPMENT_OVE
 
 /**
  * The Books panel (EXT-5 F5 closure, I-56b): v1's Books IS the generic report panel —
- * a THIN child of PANEL_PARENT measured off source 10. The tab switch is ui-state
+ * a child of PANEL_PARENT measured off sources 10 + 18. The tab switch is ui-state
  * (same child, different fills); the financial invariants are engine law (M13), the
- * panel only projects them. The P&L cash-vs-paper CALLOUT region lands when source 18
- * (the P&L tab capture) is measured — ABSENT until then, deferral on I-56b.
+ * panel only projects them. The cash-vs-paper CALLOUT (source 18, measured ~76–99% of
+ * panel height below the total row) is the one BOTY add — the I-56b deferral is
+ * DISCHARGED; on the Balance tab the region simply goes unfilled (fills, not layout).
  */
 export const BOOKS_OVERLAY: LayoutOverlay = {
   id: 'boty:books',
+  add: [
+    { id: 'callout', role: 'cash-callout', x: 4, y: 76, w: 92, h: 22, z: 1 }, // net-income-on-paper vs cash-in-bank + teaching line
+  ],
 };
 export const BOOKS_PANEL: LayoutDef = extendLayout(PANEL_PARENT, BOOKS_OVERLAY);
 
