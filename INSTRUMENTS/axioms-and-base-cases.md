@@ -403,6 +403,13 @@ titled); a separate labels channel is Phase-5 adaptation work.
   set (tradespeople · equipment · jobs · persistent · playable · global); it enters no
   engine door and defines no behavior — it labels gallery filters, nothing else. *(I-55,
   tier law)*
+- **GBC-63 —** the visual gate (I-57): in real Chromium, (a) every rendered region rect
+  EQUALS its LayoutDef and every def region is PRESENT — a moved rect or a dropped
+  region fails the gate with the layout and region NAMED; (b) the canonical scenes
+  re-derive to their pinned SVG hashes every run (computed pins, the vector discipline
+  at the bench tier); (c) the same camera yields byte-equal viewBoxes; (d) every
+  rendered region carries its <title> (a11y floor, in-DOM). A gate that cannot fail
+  verifies nothing — each assertion must be mutation-killable. *(I-57, GX-39 family)*
 - **GBC-62 —** the PANEL kind (I-56): `PANEL_PARENT` validates and joins the parent
   vocabulary (five parents); its regions are the generic report anatomy (title ·
   mode-tabs · line-items · total · footnote) measured off source 10; `boty:books`

@@ -506,12 +506,22 @@ function wireUi(): void {
   $('seat').onchange = () => { if (table) { table.viewSeat = ($('seat') as HTMLSelectElement).value; draw(); } };
 }
 
+/** The gate's law surface (I-57a): every def the bench renders, queryable by id. */
+const ALL_LAYOUT_DEFS: readonly LayoutDef[] = Object.freeze([
+  ...([FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE, ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, BOOKS_PANEL] as const),
+  CARD_PARENT, CARD_BACK_PARENT,
+]);
+
 (window as unknown as Record<string, unknown>)['__GAME__'] = {
   rowHash: () => table?.controller.stateHash() ?? null,
   moveCount: () => table?.controller.row().moves.length ?? null,
   poppedLayout: () => popped?.layout.id ?? null,
   dismiss: () => { popQueue.length = 0; popped = null; drawPopped(); },
   advance: () => popNext(),
+  layoutById: (id: string) => ALL_LAYOUT_DEFS.find((l) => l.id === id) ?? null,
+  setCamera: (k: string) => { camera = presets[k] ?? camera; draw(); },
+  viewBox: () => document.querySelector('#stage svg')?.getAttribute('viewBox') ?? null,
+  openBooks: () => popBooks(),
 };
 wireUi();
 boot();
