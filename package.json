@@ -8,7 +8,9 @@
     "test": "vitest run",
     "check:tiers": "node tools/check-tiers.mjs",
     "build": "tsc -b packages/engine packages/presentation packages/patterns && tsc -p packs/boty/tsconfig.json",
-    "ci": "npm run check:tiers && npm run build && npm run test"
+    "ci": "npm run check:tiers && npm run build && npm run test",
+    "gate:visual": "node utilization/bench/build.mjs && node utilization/bench/visual-gate.mjs",
+    "gate:target": "node utilization/bench/build.mjs && node utilization/bench/run-target-check.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",

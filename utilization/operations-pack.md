@@ -18,6 +18,12 @@ not incidents); listenerFaults() is the fan-out health surface; the in-target ba
 (`run-target-check.mjs`, BATTERY 21/21 · DRILLS 5/5) is the deployment health check —
 run it after EVERY rebuild and before distributing a bundle.
 
+**The visual gate is part of the health check (K7-vg D2):** `npm run gate:target` AND
+`npm run gate:visual` (rebuild + in-Chromium: DOM-vs-law, computed scene pins, camera
+purity, a11y floor) — a green build that skipped the visual gate is NOT green. The
+gate's own aliveness is proven only by K7 mutation rounds (the M-E self-verification
+boundary, on the record at I-57): the comparator cannot test itself.
+
 **Upgrade path (PR-6):** change = a new commit + rebuild (supersession); rollback = a
 further commit restoring prior content (superseding back). NEVER rewrite history; saved
 rows carry packRef — a pack-version supersession makes old rows refuse loudly at resume

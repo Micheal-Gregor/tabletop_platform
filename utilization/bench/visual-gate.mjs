@@ -94,20 +94,27 @@ if (DISCHARGE) {
 } else {
   const bad = Object.entries(derived).filter(([k, v]) => pins[k] !== v);
   const missing = Object.keys(derived).filter((k) => !(k in pins));
-  check('VG2/pins-rederive', bad.length === 0 && missing.length === 0,
-    bad.length || missing.length ? `MISMATCH: ${bad.map(([k]) => k).join(',')} missing: ${missing.join(',')}` : `${Object.keys(derived).length}/3 pins re-derived byte-equal`);
+  const orphaned = Object.keys(pins).filter((k) => !(k in derived)); // K7-vg D4: a stale pin rides no more
+  check('VG2/pins-rederive', bad.length === 0 && missing.length === 0 && orphaned.length === 0,
+    bad.length || missing.length || orphaned.length
+      ? `MISMATCH: ${bad.map(([k]) => k).join(',')} missing: ${missing.join(',')} orphaned: ${orphaned.join(',')}`
+      : `${Object.keys(derived).length}/${Object.keys(pins).length} pins re-derived byte-equal, none orphaned`);
 }
 
-// VG4 — camera purity in-DOM: same camera → byte-equal viewBox (GX-39 family)
+// VG4 — camera purity in-DOM (GX-39 family), K7-vg D1 closure: the camera must
+// PROVABLY MOVE (table ≠ overview — a dead setCamera can no longer compare a viewBox
+// to itself) and then re-derive byte-equal on the same preset.
 await page.goto('http://localhost:4174/game.html');
 await page.waitForFunction(() => window.__GAME__ && window.__GAME__.rowHash() !== null);
 await page.evaluate(() => window.__GAME__.dismiss());
+const vbOverview = await page.evaluate(() => { window.__GAME__.setCamera('overview'); return window.__GAME__.viewBox(); });
 await page.evaluate(() => window.__GAME__.setCamera('table'));
 const vb1 = await page.evaluate(() => window.__GAME__.viewBox());
 await page.evaluate(() => window.__GAME__.setCamera('overview'));
 await page.evaluate(() => window.__GAME__.setCamera('table'));
 const vb2 = await page.evaluate(() => window.__GAME__.viewBox());
-check('VG4/camera-purity', vb1 !== null && vb1 === vb2, `${vb1} ≡ ${vb2}`);
+const moved = vb1 !== null && vbOverview !== null && vb1 !== vbOverview;
+check('VG4/camera-purity', moved && vb1 === vb2, moved ? `moved ${vbOverview} → ${vb1}; re-derived ≡` : `CAMERA NEVER MOVED (${vbOverview} = ${vb1})`);
 
 // VG5 — a11y floor in-DOM: every rendered region carries its <title>
 const vg5 = await page.evaluate(() => {

@@ -519,7 +519,11 @@ const ALL_LAYOUT_DEFS: readonly LayoutDef[] = Object.freeze([
   dismiss: () => { popQueue.length = 0; popped = null; drawPopped(); },
   advance: () => popNext(),
   layoutById: (id: string) => ALL_LAYOUT_DEFS.find((l) => l.id === id) ?? null,
-  setCamera: (k: string) => { camera = presets[k] ?? camera; draw(); },
+  setCamera: (k: string) => { // K7-vg D1 root cause: an unknown preset REFUSES loudly, never silently no-ops
+    const p = presets[k];
+    if (!p) throw new Error(`setCamera refused: unknown preset "${k}" (have: ${Object.keys(presets).join(', ')})`);
+    camera = p; draw();
+  },
   viewBox: () => document.querySelector('#stage svg')?.getAttribute('viewBox') ?? null,
   openBooks: () => popBooks(),
 };

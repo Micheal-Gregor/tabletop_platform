@@ -159,9 +159,11 @@ describe('GBC-60 · the parity children (I-55): exact shadowing, redaction-suppr
     expect(BOOKS_PANEL.lineage).toEqual(['template:panel']);
     expect(BOOKS_PANEL.shadowed).toEqual({ overridden: [], added: ['callout'], suppressed: [] });
     expect(BOOKS_PANEL.regions.map((r) => r.role)).toEqual(['title', 'mode-tabs', 'line-items', 'total', 'footnote', 'cash-callout']);
-    // source-18 measured geometry: below the total row, ~76–99% of panel height
+    // source-18 measured geometry: the panel's FOOT band, ~76–99% of panel height
+    // (bottom edge floored per K7-vg obs 6 — a shrinking callout can no longer pass)
     const callout = BOOKS_PANEL.regions.find((r) => r.id === 'callout')!;
     expect(callout.y).toBeGreaterThanOrEqual(74);
+    expect(callout.y + callout.h).toBeGreaterThanOrEqual(95);
     expect(callout.y + callout.h).toBeLessThanOrEqual(100);
     // the tab switch is FILLS, not layout: one child renders both statements a11y-clean
     const pnl = renderLayout(BOOKS_PANEL, 'The books · moe (P&L)', { title: 'The books · moe', tabs: 'P&L | Balance', total: 'Net income', footnote: 'profit isn\'t cash' });
