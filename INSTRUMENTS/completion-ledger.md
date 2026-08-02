@@ -505,3 +505,20 @@ to REGISTER triggers, never commit messages (the slice-ordering mutant waits on 
 first >3-card deck, with the M-AR precedent). Final: suite 279/279 · VISUAL GATE 11/11
 · BATTERY 21/21 · DRILLS 11/11 · vectors 10/10 · packages/+packs/ untouched all round.
 Arc step 4 (the 3D spike as a gated ODG-p1 supersession proposal) may open.
+
+**K7-3d (arc step 4: the 3D spike + ODG-p1 adoption, 2026-08-02): RETURN ×2 → PASS.**
+The realization supersession executed on the owner's ruling ("We adapt 3d now"): dual
+realization (3D = build target, SVG = certified reference), the compression-surviving
+roadmap at governance/3D-ROADMAP.md, the corpus deferred to Phase C. The spike proved
+the charter — 65 region quads hand-re-derived from the defs by the reviewer, the
+camera consuming the same focusPresets data digit-for-digit, headless WebGL 2.0
+working, and the HK-11 theater law live in 3D. The K7 rounds bit hard and correctly:
+round 1 caught ZERO committed coverage (below the showcase precedent) and a
+tautological HK-11 (instance discarded, displayed asserted); round 2 caught the
+DEAD-CAMERA class RECURRING in 3D (table's cx ≡ world center masked a no-op camera —
+the K7-vg D1 lesson had not carried) and the MIRROR class (fill vs stamp divergence).
+All killed kill-first: VG7a–d now hold geometry-vs-law, the honest flip, the COMMITTED
+forced-mismatch drill (truth wins live), and the seat-0 provable-move camera; timeout
+paths fail named. Strike 9 recorded (proposal present-tense "drives it"). Final: suite
+279/279 · VISUAL GATE 15/15 ×2 · BATTERY 21/21 · DRILLS 11/11 · vectors 10/10.
+**PHASE A OPENS** at governance/3D-ROADMAP.md row A1.
