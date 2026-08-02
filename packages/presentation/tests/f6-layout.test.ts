@@ -15,9 +15,20 @@ import {
 } from '../src/index.js';
 
 describe('GBC-55 · the extension door: shadowing is DECLARED, breakage refuses named (I-50)', () => {
-  it('every parent validates; the vocabulary is four', () => {
+  it('every parent validates; the vocabulary is five (panel joined at I-56, additive)', () => {
     for (const p of PARENT_LAYOUTS) expect(() => validateLayout(p)).not.toThrow();
-    expect(PARENT_LAYOUTS.map((p) => p.id)).toEqual(['template:card', 'template:card-back', 'template:board', 'template:table']);
+    expect(PARENT_LAYOUTS.map((p) => p.id)).toEqual(['template:card', 'template:card-back', 'template:board', 'template:table', 'template:panel']);
+    expect(PARENT_LAYOUTS.map((p) => p.kind)).toEqual(['card', 'card', 'board', 'table', 'panel']);
+  });
+
+  it('GBC-62: the panel parent is the generic report anatomy; a thin child inherits it whole', () => {
+    const panel = PARENT_LAYOUTS.find((p) => p.id === 'template:panel')!;
+    expect(panel.regions.map((r) => r.role)).toEqual(['title', 'mode-tabs', 'line-items', 'total', 'footnote']);
+    const thin = extendLayout(panel, { id: 'x:books' });
+    expect(thin.kind).toBe('panel'); // kind carries through the door
+    expect(thin.lineage).toEqual(['template:panel']);
+    expect(thin.regions).toEqual(panel.regions); // inherited whole
+    expect(thin.shadowed).toEqual({ overridden: [], added: [], suppressed: [] });
   });
 
   it('a lawful child: override + add + suppress, all QUERYABLE; lineage intact', () => {

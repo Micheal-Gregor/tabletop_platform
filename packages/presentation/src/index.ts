@@ -13,7 +13,7 @@ export { displayClock, Timeline } from './clock.js';
 export type { DisplayClock } from './clock.js';
 export {
   LayoutRefusal, validateLayout, extendLayout, renderLayout,
-  CARD_PARENT, CARD_BACK_PARENT, BOARD_PARENT, TABLE_PARENT, PARENT_LAYOUTS,
+  CARD_PARENT, CARD_BACK_PARENT, BOARD_PARENT, TABLE_PARENT, PANEL_PARENT, PARENT_LAYOUTS,
   cameraViewBox, focusPresets, shadow, TABLE_TILT,
 } from './layout.js';
 export type { Region, LayoutDef, LayoutOverlay, Camera, World } from './layout.js';

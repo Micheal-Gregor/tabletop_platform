@@ -111,6 +111,15 @@ await page.click('[data-chip="jobs"]');
 await page.click('[data-chip="global"]'); // no 'glo' in the id → dropped
 const note2 = await page.evaluate(() => document.querySelector('.gal-note').textContent);
 drill('GD4/gallery-filter-rule-live', /1 of 1/.test(note0) && /1 of 1.*filtered/.test(note1) && /0 of 1.*filtered/.test(note2), `${note0} → ${note1} → ${note2}`);
+// GD5: the Books panel (I-56) — gate-visible from birth (the K7-parity lesson); the
+// displayed balance identity must HOLD numerically, projected not invented
+await page.click('[data-nav="close"]');
+await page.click('#books');
+const bl = await page.evaluate(() => window.__GAME__.poppedLayout());
+const bookTxt = await page.evaluate(() => document.getElementById('popped').textContent);
+const idm = bookTxt.match(/Assets \$(-?\d+) = Liabilities \$(-?\d+) \+ Equity \$(-?\d+)/);
+const identityHolds = idm && Number(idm[1]) === Number(idm[2]) + Number(idm[3]);
+drill('GD5/books-panel-identity', bl === 'boty:books' && /always balance/.test(bookTxt) && !!identityHolds, `${bl} · ${idm ? idm[0] : 'NO IDENTITY LINE'}`);
 await page.evaluate(() => localStorage.clear());
 
 await browser.close();

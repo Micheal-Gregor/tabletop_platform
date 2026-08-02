@@ -12,7 +12,7 @@ import {
   validateLayout,
 } from '@tabletop/presentation';
 import {
-  BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, CARD_KINDS,
+  BOOKS_PANEL, BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, CARD_KINDS,
   EQUIPMENT_CARD, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE,
   SHOP_BOARD, TOWN_TABLE, TRADESPERSON_CARD,
 } from '../src/index.js';
@@ -22,6 +22,7 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     expect(BOTY_LAYOUTS.map((l) => l.id)).toEqual([
       'boty:fortune-card', 'boty:round-card', 'boty:shop-board', 'boty:town-table',
       'boty:round-preamble', 'boty:rival-summary', 'boty:job-card', 'boty:tradesperson-card', 'boty:equipment-card',
+      'boty:books',
     ]);
     for (const l of BOTY_LAYOUTS) {
       expect(() => validateLayout(l)).not.toThrow();
@@ -151,6 +152,22 @@ describe('GBC-60 · the parity children (I-55): exact shadowing, redaction-suppr
       suppressed: ['modifiers'],
     });
     expect(EQUIPMENT_CARD.regions.some((r) => r.id === 'title')).toBe(true); // inherited untouched
+  });
+
+  it('GBC-62 · boty:books is a THIN panel child (v1\'s Books IS the generic panel); the callout deferral holds', () => {
+    expect(BOOKS_PANEL.kind).toBe('panel');
+    expect(BOOKS_PANEL.lineage).toEqual(['template:panel']);
+    expect(BOOKS_PANEL.shadowed).toEqual({ overridden: [], added: [], suppressed: [] });
+    expect(BOOKS_PANEL.regions.map((r) => r.role)).toEqual(['title', 'mode-tabs', 'line-items', 'total', 'footnote']);
+    // I-56b deferral: the P&L callout region is ABSENT until source 18 is measured — never guessed
+    expect(BOOKS_PANEL.regions.some((r) => r.id === 'callout')).toBe(false);
+    // the tab switch is FILLS, not layout: one child renders both statements a11y-clean
+    const pnl = renderLayout(BOOKS_PANEL, 'The books · moe (P&L)', { title: 'The books · moe', tabs: 'P&L | Balance', total: 'Net income', footnote: 'profit isn\'t cash' });
+    const bal = renderLayout(BOOKS_PANEL, 'The books · moe (Balance)', { title: 'The books · moe', tabs: 'P&L | Balance', total: 'Liabilities + equity', footnote: 'The books always balance.' });
+    expect(a11yAudit(pnl)).toBe(0);
+    expect(a11yAudit(bal)).toBe(0);
+    expect(pnl).toContain('data-layout="boty:books"');
+    expect(bal).toContain('data-layout="boty:books"');
   });
 
   it('every parity child renders a11y-clean', () => {

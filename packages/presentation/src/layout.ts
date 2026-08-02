@@ -29,7 +29,7 @@ export interface Region {
 
 export interface LayoutDef {
   readonly id: string;
-  readonly kind: 'card' | 'board' | 'table';
+  readonly kind: 'card' | 'board' | 'table' | 'panel';
   /** outline polygon in unit space; absent = the full unit rect */
   readonly shape?: readonly (readonly [number, number])[];
   readonly regions: readonly Region[];
@@ -164,7 +164,27 @@ export const TABLE_PARENT: LayoutDef = Object.freeze({
   shadowed: { overridden: [], added: [], suppressed: [] },
 });
 
-export const PARENT_LAYOUTS: readonly LayoutDef[] = Object.freeze([CARD_PARENT, CARD_BACK_PARENT, BOARD_PARENT, TABLE_PARENT]);
+/**
+ * The parent REPORT PANEL (I-56a, owner-approved 2026-08-01): a per-player report
+ * surface — title · mode tabs · line-item body · total row · footnote. Measured off
+ * the owner's Books capture (source 10). A financial statement is not honestly a
+ * card, board, or table; the vocabulary says what things ARE.
+ */
+export const PANEL_PARENT: LayoutDef = Object.freeze({
+  id: 'template:panel',
+  kind: 'panel',
+  regions: [
+    { id: 'title', role: 'title', x: 4, y: 4, w: 60, h: 8 },
+    { id: 'tabs', role: 'mode-tabs', x: 4, y: 15, w: 92, h: 9 },
+    { id: 'body', role: 'line-items', x: 4, y: 28, w: 92, h: 50 },
+    { id: 'total', role: 'total', x: 4, y: 80, w: 92, h: 8 },
+    { id: 'footnote', role: 'footnote', x: 4, y: 90, w: 92, h: 7 },
+  ],
+  lineage: [],
+  shadowed: { overridden: [], added: [], suppressed: [] },
+});
+
+export const PARENT_LAYOUTS: readonly LayoutDef[] = Object.freeze([CARD_PARENT, CARD_BACK_PARENT, BOARD_PARENT, TABLE_PARENT, PANEL_PARENT]);
 
 // ── Rendering (unskinned frames — D-1: space and volume before paint) ──
 

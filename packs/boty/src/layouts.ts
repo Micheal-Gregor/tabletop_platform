@@ -13,7 +13,7 @@
  *       into v1's vertical anatomy, six declared adds;
  *   (d) the table gains standings + log — v1's "The table" panel as declared adds.
  */
-import { BOARD_PARENT, CARD_PARENT, TABLE_PARENT, extendLayout } from '@tabletop/presentation';
+import { BOARD_PARENT, CARD_PARENT, PANEL_PARENT, TABLE_PARENT, extendLayout } from '@tabletop/presentation';
 import type { LayoutDef, LayoutOverlay } from '@tabletop/presentation';
 
 /**
@@ -211,12 +211,25 @@ export const EQUIPMENT_OVERLAY: LayoutOverlay = {
 };
 export const EQUIPMENT_CARD: LayoutDef = extendLayout(CARD_PARENT, EQUIPMENT_OVERLAY);
 
+/**
+ * The Books panel (EXT-5 F5 closure, I-56b): v1's Books IS the generic report panel —
+ * a THIN child of PANEL_PARENT measured off source 10. The tab switch is ui-state
+ * (same child, different fills); the financial invariants are engine law (M13), the
+ * panel only projects them. The P&L cash-vs-paper CALLOUT region lands when source 18
+ * (the P&L tab capture) is measured — ABSENT until then, deferral on I-56b.
+ */
+export const BOOKS_OVERLAY: LayoutOverlay = {
+  id: 'boty:books',
+};
+export const BOOKS_PANEL: LayoutDef = extendLayout(PANEL_PARENT, BOOKS_OVERLAY);
+
 /** The gallery filter vocabulary — content-tier DATA, no engine door (GBC-61). */
 export const CARD_KINDS = Object.freeze(['tradespeople', 'equipment', 'jobs', 'persistent', 'playable', 'global'] as const);
 
 export const BOTY_LAYOUTS: readonly LayoutDef[] = Object.freeze([
   FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE,
   ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, TRADESPERSON_CARD, EQUIPMENT_CARD,
+  BOOKS_PANEL,
 ]);
 
 /** (parent, overlay, child) triples — the construction-falsifiability fixture (K7-v1x D5). */
@@ -230,4 +243,5 @@ export const BOTY_LAYOUT_DERIVATIONS = Object.freeze([
   { parent: CARD_PARENT, overlay: JOB_OVERLAY, child: JOB_CARD },
   { parent: CARD_PARENT, overlay: TRADESPERSON_OVERLAY, child: TRADESPERSON_CARD },
   { parent: CARD_PARENT, overlay: EQUIPMENT_OVERLAY, child: EQUIPMENT_CARD },
+  { parent: PANEL_PARENT, overlay: BOOKS_OVERLAY, child: BOOKS_PANEL },
 ] as const);

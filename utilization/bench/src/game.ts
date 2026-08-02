@@ -20,7 +20,7 @@ import {
 } from '@tabletop/presentation';
 import {
   BOTY_PACK, BOTY_REF, botyGenesis, botyGcContract, botyJob, botyRecession, botySubcontract, wireBoty,
-  CARD_KINDS, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE, SHOP_BOARD, TOWN_TABLE,
+  BOOKS_PANEL, CARD_KINDS, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE, SHOP_BOARD, TOWN_TABLE,
 } from '../../../packs/boty/src/index.js';
 import { autosave, clearAutosave, exportEnvelope, importEnvelope, loadAutosave, PersistHalt } from './persist.js';
 
@@ -279,6 +279,34 @@ function popRivals(): void {
   drawPopped();
 }
 
+/**
+ * The Books panel (I-56d): Balance-sheet numbers are REAL from the projection — cash,
+ * AR, AP, and the equity identity the reckoning already proves. P&L rows are visibly
+ * BRACKETED (the slice tracks no revenue/COGS breakdown — mechanics-increment concept).
+ */
+function popBooks(): void {
+  if (!table) return;
+  const view = project(stateOf(table), table.viewSeat);
+  const seat = table.viewSeat;
+  const cash = view.seats.find((s) => s.id === seat)!.cash;
+  const ar = view.receivables.filter((r) => r.holder === seat).reduce((a, b) => a + b.amount, 0);
+  const ap = view.debts.filter((d) => d.debtor === seat).reduce((a, b) => a + b.amount, 0);
+  const assets = cash + ar;
+  const equity = assets - ap;
+  popped = {
+    layout: BOOKS_PANEL,
+    label: `The books · ${seat}`,
+    content: {
+      title: `The books · ${seat}`,
+      tabs: 'Balance Sheet · [P&L — next increment]',
+      body: `Assets $${assets} (cash $${cash} · AR $${ar}) | Liabilities $${ap} | Equity $${equity}`,
+      total: `Liabilities + equity $${ap + equity}`,
+      footnote: `Assets $${assets} = Liabilities $${ap} + Equity $${equity}. The books always balance.`,
+    },
+  };
+  drawPopped();
+}
+
 /** Gallery filter chips — the CARD_KINDS vocabulary as data (GBC-61); rule: substring match on card id. */
 function chipsHtml(): string {
   return CARD_KINDS.map((k) =>
@@ -442,6 +470,7 @@ function wireUi(): void {
     popNext(); // plain card: advance the queue (preamble → round card → done)
   })());
   $('rivals').onclick = guarded(() => { rivalIdx = 0; popRivals(); });
+  $('books').onclick = guarded(() => popBooks());
   $('gallery').onclick = guarded(() => { popped = { layout: FORTUNE_CARD, label: 'your cards', content: {}, nav: 'gallery' }; drawPopped(); });
   $('cam-bar').innerHTML = Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('');
   $('cam-bar').onclick = (ev) => { const k = (ev.target as HTMLElement).dataset['cam']; if (k) { camera = presets[k]!; draw(); } };

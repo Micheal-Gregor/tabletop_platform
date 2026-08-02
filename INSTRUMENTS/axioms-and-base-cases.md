@@ -403,3 +403,11 @@ titled); a separate labels channel is Phase-5 adaptation work.
   set (tradespeople · equipment · jobs · persistent · playable · global); it enters no
   engine door and defines no behavior — it labels gallery filters, nothing else. *(I-55,
   tier law)*
+- **GBC-62 —** the PANEL kind (I-56): `PANEL_PARENT` validates and joins the parent
+  vocabulary (five parents); its regions are the generic report anatomy (title ·
+  mode-tabs · line-items · total · footnote) measured off source 10; `boty:books`
+  builds through the door as a thin child (lineage ['template:panel']); the kind union
+  admits 'panel' and REFUSES nothing that previously validated (no existing layout's
+  behavior changes — additive supersession); renderLayout produces an a11y-clean panel
+  frame. The statement-tab switch is pure ui-state: same child + different FILLS, zero
+  state bytes touched. *(I-50, I-56)*
