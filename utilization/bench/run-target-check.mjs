@@ -120,6 +120,18 @@ const bookTxt = await page.evaluate(() => document.getElementById('popped').text
 const idm = bookTxt.match(/Assets \$(-?\d+) = Liabilities \$(-?\d+) \+ Equity \$(-?\d+)/);
 const identityHolds = idm && Number(idm[1]) === Number(idm[2]) + Number(idm[3]);
 drill('GD5/books-panel-identity', bl === 'boty:books' && /always balance/.test(bookTxt) && !!identityHolds, `${bl} · ${idm ? idm[0] : 'NO IDENTITY LINE'}`);
+// GD5b (K7-books D3): re-check the identity at a NON-DEGENERATE state — after a
+// cash-moving action, at least one component must be non-zero and the identity must
+// still hold (kills sign/filter mutants a zero state masks)
+await page.evaluate(() => window.__GAME__.dismiss()); // books is a plain modal — no nav chrome
+await page.click('#upkeep'); // overhead charge moves cash
+await page.click('#books');
+const bookTxt2 = await page.evaluate(() => document.getElementById('popped').textContent);
+const idm2 = bookTxt2.match(/Assets \$(-?\d+) = Liabilities \$(-?\d+) \+ Equity \$(-?\d+)/);
+const holds2 = idm2 && Number(idm2[1]) === Number(idm2[2]) + Number(idm2[3]);
+const nonZero = idm2 && (Number(idm2[1]) !== 0 || Number(idm2[2]) !== 0 || Number(idm2[3]) !== 0);
+drill('GD5b/books-identity-nonzero-state', !!holds2 && !!nonZero, idm2 ? idm2[0] : 'NO IDENTITY LINE');
+await page.evaluate(() => window.__GAME__.dismiss());
 await page.evaluate(() => localStorage.clear());
 
 await browser.close();
