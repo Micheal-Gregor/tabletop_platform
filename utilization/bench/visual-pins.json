@@ -1,5 +1,9 @@
 {
-  "scene:fresh-overview": "0d6c002913f3f45473a375c739d6c4fdc7395c175d5abba098aaa07883c869e8",
+  "scene:fresh-overview": "c44c4d85befeaa272fc6dcdb0ad89f96d2c5d45765591f81acd7cabac5a946e1",
   "modal:books-fresh": "e615ec7de9b15129413438bf732ae8af97f69fd3850773448a383eecdbdc5871",
+  "modal:preamble-fresh": "2bc307f9a362daae3d5888187069cf18f4d729a2f6dd0a36c35eb79a5d06cc60",
+  "modal:round-card-fresh": "e54c0c992f9e0c573c9d997ff5f623d600e371a404bb23d8870ef20951ba4c51",
+  "modal:rivals-fresh": "04aff33c70b3ad2e8f1e6c09e84bbab833d176f77a8b353fab679a1e96b38950",
+  "modal:fortune-first-draw": "6e4b36a6ef4671df22544449f103b9ff8ad683371e5b899b9e3e3799dd8a7739",
   "scene:showcase": "22bed71d4dbdf9b84aca8cd8bba4aa4ec0b50fa2647d3c80727d4a0c104e8d76"
 }

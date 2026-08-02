@@ -403,6 +403,13 @@ titled); a separate labels channel is Phase-5 adaptation work.
   set (tradespeople · equipment · jobs · persistent · playable · global); it enters no
   engine door and defines no behavior — it labels gallery filters, nothing else. *(I-55,
   tier law)*
+- **GBC-64 —** maturity coverage (I-59): ALL FIVE popped children (books · preamble ·
+  round-card · rival-summary · fortune) are DOM-vs-law checked, pinned, and title-
+  checked IN-MODAL by the gate (the I-57 candidates discharged — GBC-63's coverage
+  qualification tightens to: showcase = pin only, everything popped = full gate);
+  the crew rack renders the LIVE tradesperson child (its regions obey the same law);
+  the hand fan shows own-cards ONLY on the viewing seat's board (redaction-honest —
+  a rival board never renders another seat's ownDiscard). *(I-57, I-59)*
 - **GBC-63 —** the visual gate (I-57): in real Chromium, WITHIN THE CANONICAL SCENES
   (game stage + books modal — scope per K7-vg D3; reworded per K7-vg D5, strike 4: the
   EXACT coverage is — showcase pin-covered; books modal DOM-vs-law + pinned; the four

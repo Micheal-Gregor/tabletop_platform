@@ -20,7 +20,7 @@ import {
 } from '@tabletop/presentation';
 import {
   BOTY_PACK, BOTY_REF, botyGenesis, botyGcContract, botyJob, botyRecession, botySubcontract, wireBoty,
-  BOOKS_PANEL, CARD_KINDS, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE, SHOP_BOARD, TOWN_TABLE,
+  BOOKS_PANEL, CARD_KINDS, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE, SHOP_BOARD, TOWN_TABLE, TRADESPERSON_CARD,
 } from '../../../packs/boty/src/index.js';
 import { autosave, clearAutosave, exportEnvelope, importEnvelope, loadAutosave, PersistHalt } from './persist.js';
 
@@ -118,9 +118,11 @@ function tableGroup(view: SeatView): string {
   // THE DECK — a clickable stack that ALWAYS shows its count (v1: "59 left")
   const deck = `<g data-act="draw" class="hot"><title>${esc(activeSeat)}'s deck — ${deckCount} left. Click to draw.</title>${shadow(deckR.x * T + 40, deckR.y * T + 130, 46)}${[2, 1, 0].map((i) => at(deckR.x * T + i * 3, deckR.y * T - i * 3, 0.75, renderLayout(CARD_BACK_PARENT, `deck (${deckCount} left)`, { emblem: `${deckCount} left` }))).join('')}<text x="${deckR.x * T + 6}" y="${deckR.y * T + 96}" class="head">${deckCount} left</text></g>`;
   // the discard — last card played, face up
+  // v1's fortune deck discards FORTUNE cards (sources 05/09) — the JOB_CARD fill was
+  // a v1-extraction-era approximation, superseded (I-59c)
   const topId = view.decks[activeSeat]?.discardTop;
   const discard = topId
-    ? miniCard(discR.x * T, discR.y * T, 0.75, JOB_CARD, `discard top: ${topId}`, { title: topId, deadline: '', payout: '' })
+    ? miniCard(discR.x * T, discR.y * T, 0.75, FORTUNE_CARD, `discard top: ${topId}`, { title: topId })
     : `<g><title>discard — empty</title><rect x="${discR.x * T}" y="${discR.y * T}" width="72" height="100" rx="6" class="ghost"/></g>`;
   // PROMPT CARDS — open windows as physical decisions
   const prompts = view.windows.filter((w) => w.status === 'open').map((w, i) => {
@@ -155,10 +157,13 @@ function tableGroup(view: SeatView): string {
   const tail = moves.slice(-5);
   const log = `<g><title>table log — last ${tail.length} of ${moves.length} moves</title><rect x="${lgR.x * T}" y="${lgR.y * T}" width="${lgR.w * T}" height="${lgR.h * T}" rx="8" class="panel"/><text x="${lgR.x * T + 10}" y="${lgR.y * T + 20}" class="head">TABLE LOG</text>${tail.map((m, mi) =>
     `<text x="${lgR.x * T + 10}" y="${lgR.y * T + 38 + mi * 16}" class="sub">${esc(m.seat)} · ${esc(m.type)}</text>`).join('')}</g>`;
+  // DICE — a labeled placeholder frame: the slice has no die verb, nothing false (I-59e)
+  const diceR = rg(TOWN_TABLE, 'dice');
+  const dice = `<g><title>dice — no die verb in the BOTY slice (placeholder)</title><rect x="${diceR.x * T}" y="${diceR.y * T}" width="${diceR.w * T}" height="${diceR.h * T}" rx="10" class="region"/><text x="${diceR.x * T + 10}" y="${diceR.y * T + 28}" class="sub">[dice ⚂ — no die verb in the slice]</text></g>`;
   // ART BANNER — the establishing shot (EXT-5 F6), placeholder-framed per D-1
   const abR = rg(TOWN_TABLE, 'art-banner');
   const banner = `<g><title>town art — ${seasonOf(view.turn.round)}, Maple Hollow</title><rect x="${abR.x * T}" y="${abR.y * T}" width="${abR.w * T}" height="${abR.h * T}" rx="6" class="region"/><text x="${abR.x * T + 8}" y="${abR.y * T + 25}" class="sub">[art: ${seasonOf(view.turn.round)} — Maple Hollow]</text></g>`;
-  return `<g transform="translate(240 130) ${TABLE_TILT}"><g><title>the shared table</title><rect x="-30" y="-20" width="1120" height="700" rx="40" class="felt"/></g>${banner}${deck}${discard}${prompts}${ventures}${standings}${log}</g>`;
+  return `<g transform="translate(240 130) ${TABLE_TILT}"><g><title>the shared table</title><rect x="-30" y="-20" width="1120" height="700" rx="40" class="felt"/></g>${banner}${deck}${discard}${dice}${prompts}${ventures}${standings}${log}</g>`;
 }
 
 function boardGroup(view: SeatView, seat: string, i: number): string {
@@ -173,13 +178,15 @@ function boardGroup(view: SeatView, seat: string, i: number): string {
   const arR = rg(SHOP_BOARD, 'ar');
   const apR = rg(SHOP_BOARD, 'ap');
   const actR = rg(SHOP_BOARD, 'actions');
-  // crew tokens — the TRADESPEOPLE rack: click to select; click again (assigned) to WORK
+  // THE TRADESPEOPLE RACK (I-59a): each crew member IS the promoted tradesperson child,
+  // live at token scale, with REAL status fills; selection/busy = frame outlines.
   const crewState = state['crew'] as readonly { id: string; outfit: string; assignedTo?: { venture: string } }[];
   const mine = crewState.filter((c) => c.outfit === seat);
   const crew = mine.map((c, ci) => {
     const sel = selectedCrew === c.id;
     const busy = c.assignedTo !== undefined;
-    return `<g data-crew="${esc(c.id)}" class="hot"><title>${esc(c.id)}${busy ? ` — working ${esc(c.assignedTo!.venture)} (click to WORK)` : sel ? ' — selected (click a portion to assign)' : ' — click to select'}</title><circle cx="${crewR.x + 8 + ci * 14}" cy="${crewR.y + 14}" r="6" class="${busy ? 'tok-busy' : sel ? 'tok-sel' : 'tok'}"/></g>`;
+    const statusTxt = busy ? `working ${c.assignedTo!.venture}` : sel ? 'SELECTED' : 'idle';
+    return `<g data-crew="${esc(c.id)}" class="hot ${busy ? 'crew-busy' : sel ? 'crew-sel' : ''}"><title>${esc(c.id)} — ${esc(statusTxt)}${busy ? ' (click to WORK)' : sel ? ' (click a portion to assign)' : ' (click to select)'}</title><g transform="translate(${crewR.x + 1 + ci * 15} ${crewR.y + 1}) scale(0.23)">${renderLayout(TRADESPERSON_CARD, `${c.id} (${statusTxt})`, { title: c.id, status: statusTxt })}</g></g>`;
   }).join('');
   // AR / AP — v1's twin panels, filled from the PROJECTION (the sole read — K7-v1x D3)
   const recv = view.receivables.filter((r) => r.holder === seat);
@@ -191,15 +198,20 @@ function boardGroup(view: SeatView, seat: string, i: number): string {
   const actions = active
     ? `<g data-act="end-turn" class="hot"><title>End turn — ${esc(seat)}</title><rect x="${actR.x + 1}" y="${actR.y + 1}" width="${actR.w - 2}" height="${actR.h - 2}" rx="2" class="act-strip"/><text x="${actR.x + 4}" y="${actR.y + 6.5}" class="fine">End turn ▶</text></g>`
     : '';
-  const jobsN = mine.filter((c) => c.assignedTo !== undefined).length;
+  // REDACTION-HONEST HAND (I-59d): the viewing seat fans its own last draws; a rival
+  // board shows only the PUBLIC discard top — more redaction never less.
   const handTop = view.decks[seat]?.discardTop;
-  const hand = handTop ? at(handR.x + 2, handR.y + 1, 0.3, renderLayout(CARD_PARENT, `${seat}'s last draw: ${handTop}`, { title: handTop })) : '';
+  const handCards = seat === table!.viewSeat ? view.ownDiscard.slice(-3) : handTop ? [handTop] : [];
+  const hand = handCards.map((id, i) =>
+    `<g transform="translate(${handR.x + 2 + i * 10} ${handR.y + 1 + Math.abs(i - (handCards.length - 1) / 2)}) scale(0.27) rotate(${(i - (handCards.length - 1) / 2) * 6} 50 100)">${renderLayout(CARD_PARENT, `${seat}'s ${seat === table!.viewSeat ? `hand card ${i + 1}` : 'public top'}: ${id}`, { title: id })}</g>`).join('');
+  // REAL JOBS ROWS (I-59b): per-assignment crew ⇒ venture, from the registered read
+  const assignments = mine.filter((c) => c.assignedTo !== undefined).map((c) => `${c.id} ⇒ ${c.assignedTo!.venture}`);
   const inner = renderLayout(SHOP_BOARD, `${seat}'s shop${active ? ' — TO ACT' : ''}`, {
     'art-banner': `${seat}'s shop`,
     identity: `${seat}${active ? ' ★' : ''} · [trade]`,
     counters: `$${s.cash} · ♥${s.favor}`,
     'building-tier': `[building · tier — · next increment] · ${mine.length} crew`,
-    'jobs-list': jobsN ? `${jobsN} job(s) crewed` : 'no jobs in queue',
+    'jobs-list': assignments.length ? assignments.join(' · ') : 'no jobs in queue',
     ar: 'AR — owed to you',
     ap: 'AP — you owe',
     actions: active ? '' : '—',
@@ -337,7 +349,7 @@ function draw(): void {
   const scene = tableGroup(view) + SEATS.map((s, i) => boardGroup(view, s, i)).join('');
   $('stage').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${cameraViewBox(camera, WORLD)}" width="1240" height="720">
   <title>BOTY — the table</title>
-  <style>.frame{fill:#fbfaf7;stroke:#444;stroke-width:1.2}.region{fill:#fff;stroke:#bbb;stroke-dasharray:3 2}.region-label{font:7px system-ui;fill:#777}.felt{fill:#eef3ee;stroke:#9ab29a}.shadow{fill:rgba(0,0,0,.15)}.hot{cursor:pointer}.prompt{fill:#fff8e6;stroke:#c90}.opt{fill:#fff;stroke:#888}.dim{font:8px system-ui;fill:#999}.ghost{fill:none;stroke:#ccc;stroke-dasharray:4 3}.tok{fill:#dde6f5;stroke:#456}.tok-sel{fill:#ffd76e;stroke:#a70}.tok-busy{fill:#c9e6c9;stroke:#472}.slot{fill:#fff;stroke:#888}.panel{fill:#fff;stroke:#999}.head{font:11px system-ui;fill:#333;font-weight:600}.row{fill:#fafafa;stroke:#ddd}.row-active{fill:#fff8e0;stroke:#a70;stroke-width:1.6}.row-name{font:10px system-ui;fill:#222;font-weight:600}.cash{font:10px system-ui;fill:#8a6d00;font-weight:700}.sub{font:8px system-ui;fill:#888}.fine{font:3.4px system-ui;fill:#555}.act-strip{fill:#eaf5ea;stroke:#472}.active-board .frame{stroke:#a70;stroke-width:2.4}text{font:9px system-ui}</style>
+  <style>.frame{fill:#fbfaf7;stroke:#444;stroke-width:1.2}.region{fill:#fff;stroke:#bbb;stroke-dasharray:3 2}.region-label{font:7px system-ui;fill:#777}.felt{fill:#eef3ee;stroke:#9ab29a}.shadow{fill:rgba(0,0,0,.15)}.hot{cursor:pointer}.prompt{fill:#fff8e6;stroke:#c90}.opt{fill:#fff;stroke:#888}.dim{font:8px system-ui;fill:#999}.ghost{fill:none;stroke:#ccc;stroke-dasharray:4 3}.crew-sel .frame{stroke:#a70;stroke-width:4}.crew-busy .frame{stroke:#472;stroke-width:4}.slot{fill:#fff;stroke:#888}.panel{fill:#fff;stroke:#999}.head{font:11px system-ui;fill:#333;font-weight:600}.row{fill:#fafafa;stroke:#ddd}.row-active{fill:#fff8e0;stroke:#a70;stroke-width:1.6}.row-name{font:10px system-ui;fill:#222;font-weight:600}.cash{font:10px system-ui;fill:#8a6d00;font-weight:700}.sub{font:8px system-ui;fill:#888}.fine{font:3.4px system-ui;fill:#555}.act-strip{fill:#eaf5ea;stroke:#472}.active-board .frame{stroke:#a70;stroke-width:2.4}text{font:9px system-ui}</style>
   ${scene}</svg>`;
   // CHROME (bench furniture, I-51d): header · alert banner · footer already in the page
   $('hdr-place').textContent = 'Maple Hollow';
@@ -508,7 +520,7 @@ function wireUi(): void {
 
 /** The gate's law surface (I-57a): every def the bench renders, queryable by id. */
 const ALL_LAYOUT_DEFS: readonly LayoutDef[] = Object.freeze([
-  ...([FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE, ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, BOOKS_PANEL] as const),
+  ...([FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE, ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, BOOKS_PANEL, TRADESPERSON_CARD] as const),
   CARD_PARENT, CARD_BACK_PARENT,
 ]);
 
@@ -526,6 +538,8 @@ const ALL_LAYOUT_DEFS: readonly LayoutDef[] = Object.freeze([
   },
   viewBox: () => document.querySelector('#stage svg')?.getAttribute('viewBox') ?? null,
   openBooks: () => popBooks(),
+  openPreamble: () => { if (!table) return; const v = project(stateOf(table), table.viewSeat); popRound(v.turn.round, v.seats[v.turn.seatIdx]!.id); drawPopped(); },
+  openRivals: () => { rivalIdx = 0; popRivals(); },
 };
 wireUi();
 boot();

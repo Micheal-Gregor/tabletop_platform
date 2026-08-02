@@ -74,13 +74,36 @@ await page.screenshot({ path: '/tmp/vg-scene.png' });
 const pins = existsSync(PIN_FILE) ? JSON.parse(readFileSync(PIN_FILE, 'utf8')) : {};
 const derived = {};
 derived['scene:fresh-overview'] = sha(await page.evaluate(() => document.getElementById('stage').innerHTML));
-// the books modal at the fresh state (deterministic zero balance)
+
+/** VG3 per modal (I-59g/GBC-64): pin + DOM-vs-law + in-modal titles, all five popped children. */
+const modalCheck = async (key) => {
+  derived[key] = sha(await page.evaluate(() => document.getElementById('popped').innerHTML));
+  const bad = await domVsLaw('#popped');
+  const untitled = await page.evaluate(() =>
+    [...document.querySelectorAll('#popped [data-layout] > g[data-region]')].filter((g) => !g.querySelector('title')).map((g) => g.getAttribute('data-region')));
+  check(`VG3/${key}`, bad.length === 0 && untitled.length === 0,
+    [...bad, ...untitled.map((u) => `untitled:${u}`)].slice(0, 4).join(' | ') || 'dom ≡ law · titled');
+};
+// books at the fresh state (deterministic zero balance)
 await page.evaluate(() => window.__GAME__.openBooks());
-derived['modal:books-fresh'] = sha(await page.evaluate(() => document.getElementById('popped').innerHTML));
-// VG3 — the popped panel against the law
-const vg3 = await domVsLaw('#popped');
-check('VG3/modal-dom-vs-law', vg3.length === 0, vg3.slice(0, 4).join(' | ') || 'popped ≡ law');
+await modalCheck('modal:books-fresh');
 await page.screenshot({ path: '/tmp/vg-books.png' });
+await page.evaluate(() => window.__GAME__.dismiss());
+// the preamble → round-card sequence (no state change)
+await page.evaluate(() => window.__GAME__.openPreamble());
+await modalCheck('modal:preamble-fresh');
+await page.evaluate(() => window.__GAME__.advance());
+await modalCheck('modal:round-card-fresh');
+await page.evaluate(() => window.__GAME__.dismiss());
+// the rivals carousel at page 1 (no state change)
+await page.evaluate(() => window.__GAME__.openRivals());
+await modalCheck('modal:rivals-fresh');
+await page.evaluate(() => window.__GAME__.dismiss());
+// the drawn fortune card — the ONE state-moving canonical step (seeded → deterministic
+// first card); runs AFTER the scene pin so scene:fresh-overview stays pre-draw
+await page.evaluate(() => { document.querySelector('[data-act="draw"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+await modalCheck('modal:fortune-first-draw');
+await page.screenshot({ path: '/tmp/vg-fortune.png' });
 await page.evaluate(() => window.__GAME__.dismiss());
 // the static showcase
 await page.goto('http://localhost:4174/showcase.html');
