@@ -554,13 +554,24 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     const cN = await page.evaluate((c) => window.__GAME3D__.ndcOf(c.x, c.y, c.z), rr.center);
     const centeredR = Math.abs(cN.x) < 1e-6 && Math.abs(cN.y) < 1e-6;
     const overheadR = Math.abs(rr.pos.x - rr.look.x) < 1e-6 && Math.abs(rr.pos.z - rr.look.z) < 1e-6 && rr.pos.y > rr.look.y;
+    // K7-A1d D1: region-read zoom-in is DISABLED too (I-66c holds on EVERY read leg)
+    for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -240);
+    const rIn = await page.evaluate(() => ({ p: window.__GAME3D__.cameraPos(), cam: window.__GAME3D__.camName() }));
+    const inDisabledR = rIn.cam === 'table:deck:read'
+      && Math.abs(rIn.p.x - rr.pos.x) < 1e-9 && Math.abs(rIn.p.y - rr.pos.y) < 1e-9 && Math.abs(rIn.p.z - rr.pos.z) < 1e-9;
+    // K7-A1d D2: region pan CLAMPS WITHIN THE REGION (a huge drag cannot leave its box)
+    const qR1 = await page.evaluate(() => window.__GAME3D__.quat());
+    await page.evaluate(() => { window.__GAME3D__.panProbe(4000, 2500); });
+    const rPan = await page.evaluate(() => ({ q: window.__GAME3D__.quat(), inside: window.__GAME3D__.lookInsideFocusBox(), look: window.__GAME3D__.lookAtPoint() }));
+    const qStableR = ['x', 'y', 'z', 'w'].every((k) => Math.abs(qR1[k] - rPan.q[k]) < 1e-9);
+    const panClampedR = rPan.inside === true && qStableR;
     // wheel out → the region's scene = the table preset (anchor still the region)
     await page.mouse.wheel(0, 240);
     const rs = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), z: window.__GAME3D__.zoomState() }));
     const outToTableScene = rs.z.mode === 'scene' && rs.cam === 'table' && rs.z.lastFocus === 'table:deck';
     await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-    regionOk = anch === 'table:deck' && inRegionRead && rr.cam === 'table:deck:read' && fitR && framedR && centeredR && overheadR && outToTableScene;
-    detail = `click-anchored:${anch === 'table:deck'} (${anch}) · region-read:${inRegionRead} (${rr.cam}) · fit:${fitR} framed:${framedR} centered:${centeredR} overhead:${overheadR} · out-to-table-scene:${outToTableScene}`;
+    regionOk = anch === 'table:deck' && inRegionRead && rr.cam === 'table:deck:read' && fitR && framedR && centeredR && overheadR && inDisabledR && panClampedR && outToTableScene;
+    detail = `click-anchored:${anch === 'table:deck'} (${anch}) · region-read:${inRegionRead} (${rr.cam}) · fit:${fitR} framed:${framedR} centered:${centeredR} overhead:${overheadR} · in-disabled:${inDisabledR} · pan-clamped:${panClampedR} · out-to-table-scene:${outToTableScene}`;
   }
   check('VG8i/table-region-anchor-read', regionOk, detail);
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));

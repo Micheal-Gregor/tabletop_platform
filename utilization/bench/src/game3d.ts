@@ -222,7 +222,7 @@ function readView(focus?: string, reanchor = true): void {
   panned = false; // fit is the pure rest state — re-toggle RESETS pan (I-63c)
   currentName = `${readFocus}:read`;
   document.getElementById('mode-btn')!.textContent = '🎲 scene view';
-  status(`read view: ${readFocus === 'table' || readFocus.startsWith('table:') ? 'flat overhead' : `face-on to ${readFocus}`} — drag to scroll, wheel out for scene view`);
+  status(`read view: ${readFocus === 'table' || readFocus.startsWith('table:') ? 'flat overhead' : `face-on to ${readFocus}`} — drag to scroll, ${readFocus === 'table' ? 'wheel in for overview' : 'wheel out for scene view'}`);
 }
 function sceneView(): void {
   mode = 'scene';
@@ -422,12 +422,11 @@ function tick(): void {
     return box.containsPoint(currentLook);
   },
   panProbe: (dx: number, dy: number) => panBy(dx, dy),
-  /** I-64's continuum surfaces: where the wheel stands relative to its walls */
+  /** I-66's ladder surfaces: where the wheel stands on the ladder */
   zoomState: () => ({
     mode, focus: readFocus, lastFocus,
     dist: camera.position.distanceTo(currentLook), overviewDist: OVERVIEW_DIST,
   }),
-  readFit: (f: string) => readFitDist(f),
   /** I-65c's contrast surface: seat board i's front data stamp vs its back stamp */
   boardStamps: (i: number) => {
     const grp = focusGroups[`seat-${i}`];
