@@ -409,8 +409,11 @@ titled); a separate labels channel is Phase-5 adaptation work.
   (the I-57 candidates discharged; showcase = pin only); the crew rack renders the
   LIVE tradesperson child (its regions obey the same law — proven by the M-B kill);
   the hand fan shows own-cards ONLY on the viewing seat's board, and this redaction
-  law is ASSERTED post-draw by VG6 (K7-v7 D1: a rival board rendering another seat's
-  ownDiscard FAILS the gate by name, not by pin coincidence). *(I-57, I-59)*
+  law is ASSERTED post-draw by VG6 in DATA-TRUE form (K7-v7 D1-R, superseding the
+  label-deep first form that M-A survived — I-58 strike 7): the ids extracted from
+  each board's rendered cards must EQUAL the projection's truth surface (own board ≡
+  newest-three ownDiscard; each rival ≡ [public top] or ZERO cards) — a leaked
+  ownDiscard fails by VALUE, whatever its label says. *(I-57, I-59)*
 - **GBC-63 —** the visual gate (I-57): in real Chromium, WITHIN THE CANONICAL SCENES
   (game stage + books modal — scope per K7-vg D3; reworded per K7-vg D5, strike 4: the
   EXACT coverage is — showcase pin-covered; books modal DOM-vs-law + pinned; the four

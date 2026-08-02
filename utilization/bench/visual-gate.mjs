@@ -105,28 +105,31 @@ await page.evaluate(() => { document.querySelector('[data-act="draw"]').dispatch
 await modalCheck('modal:fortune-first-draw');
 await page.screenshot({ path: '/tmp/vg-fortune.png' });
 await page.evaluate(() => window.__GAME__.dismiss());
-// VG6 — THE REDACTION LAW IN-DOM (K7-v7 D1 closure): post-draw, hand-fan cards exist
-// ONLY under the viewing seat's board; every rival board carries at most ONE card and
-// it must be the PUBLIC top. A leaked ownDiscard now FAILS the gate by assertion.
+// VG6 — THE REDACTION LAW, DATA-TRUE (K7-v7 D1-R closure: the first form was
+// label-deep — it tested the renderer's ternary against itself and M-A survived).
+// Now: the ids EXTRACTED FROM THE RENDERED CARDS must equal the PROJECTION's truth —
+// own board ≡ newest-three ownDiscard; every rival ≡ [public top] or [] (zero cards
+// when a rival has no discard). A leaked ownDiscard fails by value, whatever its label.
 const vg6 = await page.evaluate(() => {
   const bad = [];
-  // BOARDS only — the standings rows share data-focus (click-to-focus) but hold no shop-board
+  const truth = window.__GAME__.handTruth();
+  if (!truth) return ['no truth surface'];
+  const seatOrder = Object.keys(truth.tops); // SEATS order = board data-focus index order
   const boards = [...document.querySelectorAll('#stage [data-focus^="seat-"]')].filter((b) => b.querySelector('[data-layout="boty:shop-board"]'));
-  if (boards.length !== 3) bad.push(`expected 3 boards, found ${boards.length}`);
+  if (boards.length !== seatOrder.length) bad.push(`expected ${seatOrder.length} boards, found ${boards.length}`);
+  let ownChecked = false;
   for (const b of boards) {
-    const idx = Number(b.getAttribute('data-focus').slice(5));
-    const fan = [...b.querySelectorAll('[data-layout="template:card"]')];
-    const own = idx === 0; // canonical state views seat-0
-    if (own && fan.length < 1) bad.push(`viewing board fans ${fan.length} cards (expected ≥1 post-draw)`);
-    if (!own && fan.length > 1) bad.push(`rival board ${idx}: ${fan.length} cards (max 1 public top)`);
-    if (!own) for (const f of fan) {
-      const t = f.querySelector('title')?.textContent ?? '';
-      if (!/public top/.test(t)) bad.push(`rival board ${idx} card is not the public top: "${t.slice(0, 40)}"`);
-    }
+    const seat = seatOrder[Number(b.getAttribute('data-focus').slice(5))];
+    const ids = [...b.querySelectorAll('[data-layout="template:card"]')].map((f) => f.querySelector('[data-region="title"] text')?.textContent ?? '?');
+    const want = seat === truth.viewSeat ? truth.own : truth.tops[seat] ? [truth.tops[seat]] : [];
+    if (seat === truth.viewSeat) ownChecked = true;
+    if (JSON.stringify(ids) !== JSON.stringify(want)) bad.push(`board ${seat}: fan [${ids.join(',')}] ≠ projection truth [${want.join(',')}]`);
   }
+  if (!ownChecked) bad.push('viewing board never checked');
+  if (truth.own.length < 1) bad.push('canonical state should be post-draw (own hand empty)');
   return bad;
 });
-check('VG6/redaction-in-dom', vg6.length === 0, vg6.slice(0, 3).join(' | ') || 'own fan only on the viewing board; rivals ≤ 1 public top');
+check('VG6/redaction-data-true', vg6.length === 0, vg6.slice(0, 3).join(' | ') || 'every fan ≡ projection truth (own: newest-3 · rivals: public top or none)');
 // the cards gallery joins the gate (K7-v7 D3 closure: EVERYTHING popped is now covered)
 await page.click('#gallery');
 await modalCheck('modal:gallery-first-draw');

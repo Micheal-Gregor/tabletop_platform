@@ -542,6 +542,16 @@ const ALL_LAYOUT_DEFS: readonly LayoutDef[] = Object.freeze([
   openBooks: () => popBooks(),
   openPreamble: () => { if (!table) return; const v = project(stateOf(table), table.viewSeat); popRound(v.turn.round, v.seats[v.turn.seatIdx]!.id); drawPopped(); },
   openRivals: () => { rivalIdx = 0; popRivals(); },
+  /** VG6's TRUTH surface (K7-v7 D1-R): what each board is ALLOWED to fan, straight
+   *  from the projection — own board: the newest three of ownDiscard; every rival:
+   *  the public discard top or nothing. Public + own-view data only. */
+  handTruth: () => {
+    if (!table) return null;
+    const v = project(stateOf(table), table.viewSeat);
+    const tops: Record<string, string | null> = {};
+    for (const s of SEATS) tops[s] = v.decks[s]?.discardTop ?? null;
+    return { viewSeat: table.viewSeat, own: v.ownDiscard.slice(0, 3), tops };
+  },
 };
 wireUi();
 boot();
