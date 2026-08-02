@@ -308,6 +308,19 @@ function tick(): void {
   },
   quat: () => ({ x: camera.quaternion.x, y: camera.quaternion.y, z: camera.quaternion.z, w: camera.quaternion.w }),
   lookAtPoint: () => ({ x: currentLook.x, y: currentLook.y, z: currentLook.z }),
+  /** the current read object's bbox center — K7-A1b D2's centering surface */
+  focusBoxCenter: () => {
+    const grp = focusGroups[readFocus];
+    if (!grp) return null;
+    const c = new THREE.Box3().setFromObject(grp).getCenter(new THREE.Vector3());
+    return { x: c.x, y: c.y, z: c.z };
+  },
+  /** an arbitrary world point in NDC — K7-A1b D2's orientation/centering probe */
+  ndcOf: (x: number, y: number, z: number) => {
+    camera.updateMatrixWorld();
+    const v = new THREE.Vector3(x, y, z).project(camera);
+    return { x: v.x, y: v.y };
+  },
   lookInsideFocusBox: () => {
     const grp = focusGroups[readFocus];
     if (!grp) return false;
