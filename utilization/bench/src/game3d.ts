@@ -141,11 +141,12 @@ let lastFocus = 'table'; // the wheel's in-bound target (I-64e) — what the pla
 camera.position.copy(target.pos);
 camera.lookAt(currentLook);
 
-function glideTo(name: string): void {
+function glideTo(name: string, reanchor = true): void {
   if (!presets[name]) throw new Error(`glideTo refused: unknown preset "${name}" (have: ${Object.keys(presets).join(', ')})`);
   target = mapPreset(name);
   currentName = name;
-  if (name.startsWith('seat-') || name === 'table') lastFocus = name;
+  // a USER choice re-anchors (I-66a); a LADDER move (reanchor=false) preserves the anchor
+  if (reanchor && (name.startsWith('seat-') || name === 'table')) lastFocus = name;
   mode = 'scene';
   camera.up.set(0, 1, 0);
   const mb = document.getElementById('mode-btn');
@@ -179,25 +180,41 @@ function fitAlong(box: THREE.Box3, look: THREE.Vector3, n: THREE.Vector3, upv: T
   return d * 1.06;
 }
 
-/** The read mapping: table = straight overhead; a board = face-on along its normal. */
+/** Focus resolution (I-66e): a focus names a GROUP ('table', 'seat-i') or a TABLE
+ *  REGION ('table:<region>' — the region quad inside the table group). */
+function focusObject(focus: string): THREE.Object3D | null {
+  if (focusGroups[focus]) return focusGroups[focus]!;
+  if (focus.startsWith('table:')) {
+    const rid = focus.slice('table:'.length);
+    let hit: THREE.Object3D | null = null;
+    focusGroups['table']?.traverse((o: THREE.Object3D) => { if (o.userData?.['region'] === rid) hit = o; });
+    return hit;
+  }
+  return null;
+}
+
+/** The read mapping: table + its regions = straight overhead; a board = face-on along its normal. */
 function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: THREE.Vector3 } {
-  const grp = focusGroups[focus];
-  if (!grp) throw new Error(`read refused: unknown focus "${focus}" (have: ${Object.keys(focusGroups).join(', ')})`);
-  const box = new THREE.Box3().setFromObject(grp);
+  const obj = focusObject(focus);
+  if (!obj) throw new Error(`read refused: unknown focus "${focus}" (have: ${Object.keys(focusGroups).join(', ')} + table:<region>)`);
+  const box = new THREE.Box3().setFromObject(obj);
   const c = box.getCenter(new THREE.Vector3());
-  if (focus === 'table') {
+  if (focus === 'table' || focus.startsWith('table:')) {
     const n = new THREE.Vector3(0, 1, 0);
     const up = new THREE.Vector3(0, 0, -1);
     return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up))), look: c, up };
   }
-  const n = new THREE.Vector3(0, 0, 1).applyQuaternion(grp.quaternion).normalize(); // the board's outward normal (90° to its face)
+  const n = new THREE.Vector3(0, 0, 1).applyQuaternion((obj as THREE.Group).quaternion).normalize(); // the board's outward normal (90° to its face)
   const up = new THREE.Vector3(0, 1, 0);
   return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up))), look: c, up };
 }
 
-function readView(focus?: string): void {
-  readFocus = focus ?? (currentName.startsWith('seat-') ? currentName : 'table');
-  lastFocus = readFocus;
+/** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */
+const anchorPreset = (f: string): string => (presets[f] ? f : f.startsWith('table:') ? 'table' : 'overview');
+
+function readView(focus?: string, reanchor = true): void {
+  readFocus = focus ?? lastFocus; // the ANCHOR is the default read target (I-66a; supersedes the I-63g1 camera-based default)
+  if (reanchor) lastFocus = readFocus;
   const m = mapRead(readFocus);
   camera.up.copy(m.up);
   target = { pos: m.pos, look: m.look };
@@ -205,12 +222,12 @@ function readView(focus?: string): void {
   panned = false; // fit is the pure rest state — re-toggle RESETS pan (I-63c)
   currentName = `${readFocus}:read`;
   document.getElementById('mode-btn')!.textContent = '🎲 scene view';
-  status(`read view: ${readFocus === 'table' ? 'flat overhead' : `face-on to ${readFocus}`} — drag to scroll, wheel to zoom`);
+  status(`read view: ${readFocus === 'table' || readFocus.startsWith('table:') ? 'flat overhead' : `face-on to ${readFocus}`} — drag to scroll, wheel out for scene view`);
 }
 function sceneView(): void {
   mode = 'scene';
   camera.up.set(0, 1, 0);
-  glideTo(readFocus in presets ? readFocus : 'overview');
+  glideTo(anchorPreset(readFocus), false); // a ladder move — the anchor survives (I-66a)
 }
 
 // pan-scroll (I-63c): drag in read mode translates in the view plane; the LOOK stays
@@ -224,7 +241,7 @@ function panBy(dx: number, dy: number): void {
   const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0).multiplyScalar(-dx * scale);
   const upv = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1).multiplyScalar(dy * scale);
   const delta = right.add(upv);
-  const box = new THREE.Box3().setFromObject(focusGroups[readFocus]!);
+  const box = new THREE.Box3().setFromObject(focusObject(readFocus)!);
   const tryLook = currentLook.clone().add(delta);
   box.clampPoint(tryLook, tryLook); // the clamp law
   const applied = tryLook.clone().sub(currentLook);
@@ -236,12 +253,10 @@ function panBy(dx: number, dy: number): void {
 
 function status(msg: string): void { document.getElementById('status')!.textContent = msg; }
 
-// ── THE BOUNDED ZOOM CONTINUUM (I-64): the wheel is walled at both ends by READ
-// poses. Zoom-in past the focus's fit → its read view, ORGANICALLY; zoom-out past
-// the wall → the TABLE read view (the owner's amended endpoint: seat read → wheel
-// out → table read). IN_FLOOR/OUT_FACTOR are realization tuning (I-48b), not law.
-const IN_FLOOR = 0.3;
-const OUT_FACTOR = 1.15;
+// ── THE ZOOM LADDER (I-66b; the owner's exact walk is the law): one wheel axis,
+// four rungs — anchor-READ ↔ anchor-SCENE ↔ OVERVIEW ↔ TABLE-READ. In read view
+// zoom-in is DISABLED (I-66c: read = fit pose + pan only) and zoom-out steps to the
+// anchor's scene. The anchor survives every ladder move; only clicks re-anchor.
 const readFitDist = (focus: string): number => { const m = mapRead(focus); return m.pos.distanceTo(m.look); };
 const ovPose = mapPreset('overview');
 const OVERVIEW_DIST = ovPose.pos.distanceTo(ovPose.look);
@@ -255,18 +270,25 @@ function dollyTo(dist: number): void {
 document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   const zoomIn = ev.deltaY < 0;
-  const dist = camera.position.distanceTo(currentLook);
-  const next = dist * (zoomIn ? 0.9 : 1.12);
   if (mode === 'read') {
-    const fitD = readFitDist(readFocus);
-    if (zoomIn) { dollyTo(Math.max(next, IN_FLOOR * fitD)); return; } // the resolution floor (I-64d)
-    if (next < fitD) { dollyTo(next); return; } // stepping back out toward the fit pose
-    if (readFocus !== 'table' && dist >= fitD * 0.999) { readView('table'); return; } // AT the wall, out again → table read (I-64a)
-    dollyTo(fitD); // stop at the wall first; table read's far wall is final (I-64c)
+    if (zoomIn) {
+      if (readFocus === 'table') glideTo('overview', false); // table read is the far rung: in → overview
+      return; // anchor read: zoom-in DISABLED (I-66c)
+    }
+    if (readFocus === 'table') return; // the far terminal: out is a no-op
+    sceneView(); // anchor read → the anchor's SCENE view (I-66b)
     return;
   }
-  if (zoomIn && next <= readFitDist(lastFocus)) { readView(lastFocus); return; } // organic read entry (I-64b)
-  if (!zoomIn && next >= OUT_FACTOR * OVERVIEW_DIST) { readView('table'); return; } // the scene's far wall (I-64c)
+  const dist = camera.position.distanceTo(currentLook);
+  const next = dist * (zoomIn ? 0.9 : 1.12);
+  if (zoomIn) {
+    if (currentName === 'overview') { glideTo(anchorPreset(lastFocus), false); return; } // overview → anchor scene
+    if (next <= readFitDist(lastFocus)) { readView(lastFocus); return; } // organic read entry (I-64b carries)
+    dollyTo(next);
+    return;
+  }
+  if (currentName === 'overview') { readView('table', false); return; } // overview → TABLE READ (the far rung)
+  if (next >= OVERVIEW_DIST) { glideTo('overview', false); return; } // scene out → overview
   dollyTo(next);
 }, { passive: false });
 
@@ -287,9 +309,16 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);
   for (const hit of ray.intersectObjects(scene.children, true)) {
     let o: THREE.Object3D | null = hit.object;
+    let region: string | null = null;
     while (o) {
+      if (typeof o.userData['region'] === 'string' && !region) region = o.userData['region'] as string;
       if (typeof o.userData['seatIdx'] === 'number') { glideTo(`seat-${o.userData['seatIdx']}`); return; }
-      if (o.userData['focus'] === 'table') { glideTo('table'); return; }
+      if (o.userData['focus'] === 'table') {
+        glideTo('table');
+        // a TABLE REGION click anchors that region (I-66d): zoom-in reads THAT section
+        if (region) { lastFocus = `table:${region}`; status(`anchored: ${region} — zoom in for its read view`); }
+        return;
+      }
       o = o.parent;
     }
   }
@@ -359,7 +388,7 @@ function tick(): void {
   toggleRead: (focus?: string) => (mode === 'read' ? sceneView() : readView(focus)),
   /** the current read object's bbox corners in NDC — VG8f's no-crop property surface */
   cornersNdc: () => {
-    const grp = focusGroups[readFocus];
+    const grp = focusObject(readFocus);
     if (!grp) return null;
     const box = new THREE.Box3().setFromObject(grp);
     camera.updateMatrixWorld();
@@ -375,7 +404,7 @@ function tick(): void {
   lookAtPoint: () => ({ x: currentLook.x, y: currentLook.y, z: currentLook.z }),
   /** the current read object's bbox center — K7-A1b D2's centering surface */
   focusBoxCenter: () => {
-    const grp = focusGroups[readFocus];
+    const grp = focusObject(readFocus);
     if (!grp) return null;
     const c = new THREE.Box3().setFromObject(grp).getCenter(new THREE.Vector3());
     return { x: c.x, y: c.y, z: c.z };
@@ -387,7 +416,7 @@ function tick(): void {
     return { x: v.x, y: v.y };
   },
   lookInsideFocusBox: () => {
-    const grp = focusGroups[readFocus];
+    const grp = focusObject(readFocus);
     if (!grp) return false;
     const box = new THREE.Box3().setFromObject(grp).expandByScalar(1);
     return box.containsPoint(currentLook);
@@ -396,8 +425,7 @@ function tick(): void {
   /** I-64's continuum surfaces: where the wheel stands relative to its walls */
   zoomState: () => ({
     mode, focus: readFocus, lastFocus,
-    dist: camera.position.distanceTo(currentLook),
-    inFloor: IN_FLOOR, outFactor: OUT_FACTOR, overviewDist: OVERVIEW_DIST,
+    dist: camera.position.distanceTo(currentLook), overviewDist: OVERVIEW_DIST,
   }),
   readFit: (f: string) => readFitDist(f),
   /** I-65c's contrast surface: seat board i's front data stamp vs its back stamp */
@@ -428,6 +456,16 @@ function tick(): void {
     const fn = new THREE.Vector3(0, 0, 1).applyQuaternion(fq);
     const bn = new THREE.Vector3(0, 0, 1).applyQuaternion(bq);
     return fn.dot(bn);
+  },
+  /** VG8i's input-drive helper: a table region's center projected to canvas pixels. */
+  regionScreenXY: (rid: string) => {
+    const o = focusObject(`table:${rid}`);
+    if (!o) return null;
+    const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
+    camera.updateMatrixWorld();
+    const v = c.project(camera);
+    const r = renderer.domElement.getBoundingClientRect();
+    return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   },
   /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
   boardScreenXY: (i: number) => {

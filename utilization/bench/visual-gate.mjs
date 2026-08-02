@@ -460,65 +460,110 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
 }
 
-// VG8h — THE BOUNDED ZOOM CONTINUUM (I-64, the owner's amended ruling; kill-first;
-// REAL wheel input per the VG8e discipline): zoom-in past 100% enters the focus's
-// read view ORGANICALLY; zoom-out lands at TABLE READ; both walls hold.
+// VG8h — THE ZOOM LADDER (I-66, the owner's exact A1c-playtest walk IS the law;
+// REAL wheel input): anchor-READ ↔ anchor-SCENE ↔ OVERVIEW ↔ TABLE-READ, read
+// zoom-in DISABLED, the anchor surviving the whole walk. Superseded checks
+// (A1c continuum endpoints/walls) replaced by this walk on the record (I-64 strikes).
 {
   const stgBox = await page.locator('#stage canvas').boundingBox();
   await page.mouse.move(stgBox.x + stgBox.width / 2, stgBox.y + stgBox.height / 2);
-  await page.evaluate(() => window.__GAME3D__.glideTo('seat-1'));
+  await page.click('[data-cam="seat-0"]'); // the owner's walk starts: seat-0 scene (a real re-anchoring click)
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-  // wheel IN → organic read entry on the focused seat (no toggle call anywhere here)
+  await page.mouse.move(stgBox.x + stgBox.width / 2, stgBox.y + stgBox.height / 2); // wheel targets the canvas, not the bar
+  // rung 1→0: wheel-in → seat-0 READ, organically
   let entered = false;
   for (let i = 0; i < 40 && !entered; i++) {
     await page.mouse.wheel(0, -240);
     entered = await page.evaluate(() => window.__GAME3D__.zoomState().mode === 'read');
   }
   const zIn = await page.evaluate(() => window.__GAME3D__.zoomState());
-  const organicIn = entered && zIn.focus === 'seat-1';
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
   const inName = await page.evaluate(() => window.__GAME3D__.camName());
-  // wheel OUT from seat read → TABLE read (the owner's amendment: the out endpoint),
-  // DIRECTLY — the mode never drops back to scene on the way ("easily move from seat
-  // read view to table read view")
-  let atTable = false, everScene = false;
-  for (let i = 0; i < 40 && !atTable; i++) {
+  const organicIn = entered && zIn.focus === 'seat-0' && inName === 'seat-0:read';
+  // I-66c: read zoom-in is DISABLED — three more in-notches move NOTHING
+  const posBefore = await page.evaluate(() => window.__GAME3D__.cameraPos());
+  for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -240);
+  const posAfter = await page.evaluate(() => ({ p: window.__GAME3D__.cameraPos(), z: window.__GAME3D__.zoomState() }));
+  const inDisabled = posAfter.z.mode === 'read' && posAfter.z.focus === 'seat-0'
+    && Math.abs(posAfter.p.x - posBefore.x) < 1e-9 && Math.abs(posAfter.p.y - posBefore.y) < 1e-9 && Math.abs(posAfter.p.z - posBefore.z) < 1e-9;
+  // rung 0→1: wheel-out ONCE → the ANCHOR'S scene view (never a table-read hop)
+  await page.mouse.wheel(0, 240);
+  const backScene = await page.evaluate(() => ({ z: window.__GAME3D__.zoomState(), cam: window.__GAME3D__.camName() }));
+  const outToAnchorScene = backScene.z.mode === 'scene' && backScene.cam === 'seat-0';
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  // rung 1→2: wheel-out until OVERVIEW
+  let atOverview = false;
+  for (let i = 0; i < 40 && !atOverview; i++) {
     await page.mouse.wheel(0, 240);
-    const z = await page.evaluate(() => window.__GAME3D__.zoomState());
-    if (z.mode === 'scene') everScene = true;
-    atTable = z.mode === 'read' && z.focus === 'table';
+    atOverview = await page.evaluate(() => window.__GAME3D__.camName() === 'overview');
   }
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-  const outName = await page.evaluate(() => window.__GAME3D__.camName());
-  const ovh = await page.evaluate(() => ({ pos: window.__GAME3D__.cameraPos(), look: window.__GAME3D__.lookAtPoint() }));
-  const outOverhead = Math.abs(ovh.pos.x - ovh.look.x) < 1e-6 && Math.abs(ovh.pos.z - ovh.look.z) < 1e-6 && ovh.pos.y > ovh.look.y;
-  check('VG8h/wheel-continuum-endpoints', organicIn && inName === 'seat-1:read' && atTable && !everScene && outName === 'table:read' && outOverhead,
-    `organic-in:${organicIn} (${inName}) · out-to-table:${atTable} direct:${!everScene} (${outName}) · overhead:${outOverhead}`);
-  // the WALLS: table read's far wall (fit) and the resolution floor (IN_FLOOR × fit)
-  const fitT = await page.evaluate(() => window.__GAME3D__.readFit('table'));
-  for (let i = 0; i < 8; i++) await page.mouse.wheel(0, 240);
-  const distFar = await page.evaluate(() => window.__GAME3D__.zoomState().dist);
-  const farWall = distFar <= fitT * 1.001;
-  for (let i = 0; i < 60; i++) await page.mouse.wheel(0, -240);
-  const zFloor = await page.evaluate(() => window.__GAME3D__.zoomState());
-  const floorWall = zFloor.mode === 'read' && zFloor.focus === 'table' && zFloor.dist >= zFloor.inFloor * fitT * 0.999;
-  check('VG8h/wheel-continuum-walls', farWall && floorWall,
-    `far-wall:${farWall} (${distFar.toFixed(0)} vs fit ${fitT.toFixed(0)}) · floor:${floorWall} (${zFloor.dist.toFixed(0)} vs ${(zFloor.inFloor * fitT).toFixed(0)})`);
-  // K7-A1c D1: the SCENE far wall — wheel-out from a scene pose must also land at
-  // TABLE READ (I-64c's second wall; "both walls exist and both transitions fire")
-  await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
+  // rung 2→3: one more out-notch at overview → TABLE READ; then out is a NO-OP terminal
+  await page.mouse.wheel(0, 240);
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const tr = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), z: window.__GAME3D__.zoomState(), pos: window.__GAME3D__.cameraPos(), look: window.__GAME3D__.lookAtPoint() }));
+  const atTableRead = tr.z.mode === 'read' && tr.z.focus === 'table' && tr.cam === 'table:read'
+    && Math.abs(tr.pos.x - tr.look.x) < 1e-6 && Math.abs(tr.pos.z - tr.look.z) < 1e-6 && tr.pos.y > tr.look.y;
+  const anchorHeld1 = tr.z.lastFocus === 'seat-0'; // the anchor SURVIVED the out-walk
+  for (let i = 0; i < 3; i++) await page.mouse.wheel(0, 240);
+  const trStill = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), p: window.__GAME3D__.cameraPos() }));
+  const farTerminal = trStill.cam === 'table:read'
+    && Math.abs(trStill.p.x - tr.pos.x) < 1e-9 && Math.abs(trStill.p.y - tr.pos.y) < 1e-9 && Math.abs(trStill.p.z - tr.pos.z) < 1e-9;
+  check('VG8h/ladder-out', organicIn && inDisabled && outToAnchorScene && atOverview && atTableRead && anchorHeld1 && farTerminal,
+    `organic-in:${organicIn} (${inName}) · in-disabled:${inDisabled} · out-to-anchor-scene:${outToAnchorScene} (${backScene.cam}) · overview:${atOverview} · table-read:${atTableRead} · anchor-held:${anchorHeld1} · far-terminal:${farTerminal}`);
+  // the walk back IN: table read → overview → the ANCHOR's scene (seat-0)
+  await page.mouse.wheel(0, -240);
+  const backOv = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), z: window.__GAME3D__.zoomState() }));
+  const inToOverview = backOv.z.mode === 'scene' && backOv.cam === 'overview';
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  await page.mouse.wheel(0, -240);
+  const backAnchor = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), z: window.__GAME3D__.zoomState() }));
+  const inToAnchor = backAnchor.z.mode === 'scene' && backAnchor.cam === 'seat-0';
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  check('VG8h/ladder-back', inToOverview && inToAnchor,
+    `table-read-in-to-overview:${inToOverview} (${backOv.cam}) · overview-in-to-anchor:${inToAnchor} (${backAnchor.cam})`);
+}
+
+// VG8i — TABLE REGIONS ARE ANCHORS (I-66d; real click + real wheel): click the deck
+// region → anchored table:deck; zoom in → THAT REGION's overhead read, fit+centered;
+// zoom out → the region's scene = the TABLE preset.
+{
+  await page.click('[data-cam="table"]');
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const stgBox2 = await page.locator('#stage canvas').boundingBox();
+  await page.mouse.move(stgBox2.x + stgBox2.width / 2, stgBox2.y + stgBox2.height / 2);
+  const rxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+  let regionOk = false, detail = 'NO-REGION-XY';
+  if (rxy) {
+    await page.mouse.click(rxy.x, rxy.y);
+    await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+    const anch = await page.evaluate(() => window.__GAME3D__.zoomState().lastFocus);
+    // wheel in → the region's read
+    let inRegionRead = false;
+    for (let i = 0; i < 40 && !inRegionRead; i++) {
+      await page.mouse.wheel(0, -240);
+      inRegionRead = await page.evaluate(() => { const z = window.__GAME3D__.zoomState(); return z.mode === 'read' && z.focus === 'table:deck'; });
+    }
+    await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+    const rr = await page.evaluate(() => ({
+      cam: window.__GAME3D__.camName(), corners: window.__GAME3D__.cornersNdc(), center: window.__GAME3D__.focusBoxCenter(),
+      pos: window.__GAME3D__.cameraPos(), look: window.__GAME3D__.lookAtPoint(),
+    }));
+    const fitR = rr.corners && rr.corners.every((c) => Math.abs(c.x) <= 1 && Math.abs(c.y) <= 1);
+    const framedR = rr.corners && Math.max(...rr.corners.map((c) => Math.max(Math.abs(c.x), Math.abs(c.y)))) >= 0.5;
+    const cN = await page.evaluate((c) => window.__GAME3D__.ndcOf(c.x, c.y, c.z), rr.center);
+    const centeredR = Math.abs(cN.x) < 1e-6 && Math.abs(cN.y) < 1e-6;
+    const overheadR = Math.abs(rr.pos.x - rr.look.x) < 1e-6 && Math.abs(rr.pos.z - rr.look.z) < 1e-6 && rr.pos.y > rr.look.y;
+    // wheel out → the region's scene = the table preset (anchor still the region)
+    await page.mouse.wheel(0, 240);
+    const rs = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), z: window.__GAME3D__.zoomState() }));
+    const outToTableScene = rs.z.mode === 'scene' && rs.cam === 'table' && rs.z.lastFocus === 'table:deck';
+    await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+    regionOk = anch === 'table:deck' && inRegionRead && rr.cam === 'table:deck:read' && fitR && framedR && centeredR && overheadR && outToTableScene;
+    detail = `click-anchored:${anch === 'table:deck'} (${anch}) · region-read:${inRegionRead} (${rr.cam}) · fit:${fitR} framed:${framedR} centered:${centeredR} overhead:${overheadR} · out-to-table-scene:${outToTableScene}`;
+  }
+  check('VG8i/table-region-anchor-read', regionOk, detail);
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
-  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-  let sceneWall = false;
-  for (let i = 0; i < 40 && !sceneWall; i++) {
-    await page.mouse.wheel(0, 240);
-    sceneWall = await page.evaluate(() => { const z = window.__GAME3D__.zoomState(); return z.mode === 'read' && z.focus === 'table'; });
-  }
-  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-  const sceneWallName = await page.evaluate(() => window.__GAME3D__.camName());
-  check('VG8h/wheel-scene-far-wall', sceneWall && sceneWallName === 'table:read',
-    `scene-out-to-table:${sceneWall} (${sceneWallName})`);
-  await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
 }
 await page.screenshot({ path: '/tmp/vg-3d-stage.png' });
