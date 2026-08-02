@@ -436,3 +436,19 @@ Note: the updated report's RETURN verdict was measured at HEAD 62e7066, BEFORE t
 closure (d7e50bc, art 66% + band-pinned test); the external re-verify of that closure
 remains OUTSTANDING — its charge (addendum to Report-5) is already issued. The prior
 archived report copy remains in git history at d7e50bc (supersession on the record).
+
+**K7-parity (v1-parity layouts + bench v6, 2026-08-01): RETURN → PASS.** The five parity
+children (round-preamble · rival-summary · promoted job-card · tradesperson-card ·
+equipment-card) + town-table art-banner (EXT-5 F6) + CARD_KINDS vocabulary, all through
+the door, mutation-hardened (M-A/B/C/D/E killed by named tests). Round 1 RETURN on 7
+defects — 2 blocking were FALSE INSTRUMENT CLAIMS (I-55d asserted regions the code never
+carried → superseded on the record with last-review/training/J1–J6 rung DEFERRED, never
+dropped; GBC-60's "one job-card definition" falsified by a stale showcase twin → showcase
+now imports the pack's child). The MAJOR finding mattered most: the whole bench v6
+surface was invisible to every automated gate — closed with the GD drills in
+run-target-check (game.html now gate-visible; the reviewer's M-F mutant — hardcoded
+round-callout — re-run live post-closure and KILLED by GD2). Re-verify PASS, all dims
+≥ 8; obs 1/2 folded same-day (PR-6→GD rename; GD4 exercises the filter rule against a
+real drawn card: kept by 'jobs', dropped by 'global'). Suite 277/277 · BATTERY 21/21 ·
+DRILLS 9/9 · vectors 9/9 · packages/ untouched. Books increment remains BLOCKED on the
+owner's Books source screen (PANEL_PARENT approved, deferred to that increment).

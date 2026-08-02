@@ -67,8 +67,9 @@ const tamperTxt = await page.textContent('#halt');
 drill('PR5/tampered-row-flagged', /HALT|Divergence|lineage/.test(tamperTxt), tamperTxt.slice(0, 90));
 await page.evaluate(() => localStorage.clear());
 
-// ── PR-6: the SPATIAL GAME drills (game.html — K7-parity D3 closure: the v6 surface
-// is now gate-visible; M-F-class hardcoding of the round callout MUST fail here) ──
+// ── GD (game drills; renamed from PR-6 per K7-parity re-verify obs 1 — the PR-6 label
+// belongs to the operations-pack upgrade drill): the SPATIAL GAME surface, gate-visible
+// (K7-parity D3 closure); M-F-class hardcoding of the round callout MUST fail here ──
 await page.goto('http://localhost:4173/game.html');
 await page.waitForFunction(() => window.__GAME__ && window.__GAME__.rowHash() !== null);
 // PR-6a: v1's modal sequence — preamble FIRST, then the round card, then clear (I-55a)
@@ -77,7 +78,7 @@ await page.evaluate(() => window.__GAME__.advance());
 seq.push(await page.evaluate(() => window.__GAME__.poppedLayout()));
 await page.evaluate(() => window.__GAME__.advance());
 seq.push(await page.evaluate(() => window.__GAME__.poppedLayout()));
-drill('PR6/preamble-then-round-card', seq[0] === 'boty:round-preamble' && seq[1] === 'boty:round-card' && seq[2] === null, seq.join(' → '));
+drill('GD1/preamble-then-round-card', seq[0] === 'boty:round-preamble' && seq[1] === 'boty:round-card' && seq[2] === null, seq.join(' → '));
 // PR-6b: D2 law in-target — end a turn, reload mid-round: the callout must name the
 // PROJECTED leader (≠ seat-0), never a hardcoded constant
 await page.evaluate(() => { document.querySelector('[data-act="end-turn"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
@@ -86,7 +87,7 @@ await page.waitForFunction(() => window.__GAME__ && window.__GAME__.poppedLayout
 const preambleTxt = await page.evaluate(() => document.getElementById('popped').textContent);
 const hdrTurn = await page.textContent('#hdr-turn');
 const leader = hdrTurn.replace(/[▶'s turn\s]/g, '').trim() || hdrTurn;
-drill('PR6/callout-derives-from-projection', /pete/.test(preambleTxt) && /pete/.test(hdrTurn) && !/moe leads/.test(preambleTxt), `hdr="${hdrTurn}" preamble="${preambleTxt.slice(0, 60)}" (${leader})`);
+drill('GD2/callout-derives-from-projection', /pete/.test(preambleTxt) && /pete/.test(hdrTurn) && !/moe leads/.test(preambleTxt), `hdr="${hdrTurn}" preamble="${preambleTxt.slice(0, 60)}" (${leader})`);
 // PR-6c: rivals carousel opens the rival-summary child and pages
 await page.evaluate(() => window.__GAME__.dismiss());
 await page.click('#rivals');
@@ -94,13 +95,22 @@ const rl = await page.evaluate(() => window.__GAME__.poppedLayout());
 await page.click('[data-nav="next"]');
 const idx = await page.evaluate(() => document.querySelector('.pop-nav span').textContent);
 await page.click('[data-nav="close"]');
-drill('PR6/rivals-carousel-pages', rl === 'boty:rival-summary' && /2 \/ 3/.test(idx), `${rl} · ${idx}`);
-// PR-6d: gallery renders and a filter chip toggles the filtered note (CARD_KINDS as data)
+drill('GD3/rivals-carousel-pages', rl === 'boty:rival-summary' && /2 \/ 3/.test(idx), `${rl} · ${idx}`);
+// GD4: gallery + the filter RULE exercised against a REAL card (K7-parity re-verify
+// obs 2): fresh game (viewing seat = active seat, so the draw lands in OWN discard),
+// draw, then a matching chip keeps the card and a non-matching one drops it
+await page.click('#new-game');
+await page.evaluate(() => window.__GAME__.dismiss());
+await page.evaluate(() => { document.querySelector('[data-act="draw"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+await page.evaluate(() => window.__GAME__.dismiss());
 await page.click('#gallery');
 const note0 = await page.evaluate(() => document.querySelector('.gal-note').textContent);
-await page.click('[data-chip="jobs"]');
+await page.click('[data-chip="jobs"]'); // drawn card id contains 'job' → kept
 const note1 = await page.evaluate(() => document.querySelector('.gal-note').textContent);
-drill('PR6/gallery-filter-chips', /card\(s\)/.test(note0) && /\(filtered\)/.test(note1), `${note0} → ${note1}`);
+await page.click('[data-chip="jobs"]');
+await page.click('[data-chip="global"]'); // no 'glo' in the id → dropped
+const note2 = await page.evaluate(() => document.querySelector('.gal-note').textContent);
+drill('GD4/gallery-filter-rule-live', /1 of 1/.test(note0) && /1 of 1.*filtered/.test(note1) && /0 of 1.*filtered/.test(note2), `${note0} → ${note1} → ${note2}`);
 await page.evaluate(() => localStorage.clear());
 
 await browser.close();
