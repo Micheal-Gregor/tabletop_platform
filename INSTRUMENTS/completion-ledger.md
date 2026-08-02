@@ -487,3 +487,21 @@ re-checked by the same round: source-18 measurement verified by the reviewer's o
 vision (deltas ≤1.7pp), RD-1 bound PASS. Suite 279/279 · VISUAL GATE 5/5 · BATTERY
 21/21 · DRILLS 11/11 · packages/ untouched. Next-touch candidates: domVsLaw+pins for
 the four uncovered modals; VG5 to #popped.
+
+**K7-v7 (arc step 3: bench maturity to v1 parity, 2026-08-02): RETURN ×3 → PASS.**
+Structure without paint: the crew rack renders the promoted tradesperson child LIVE at
+token scale (proven law-walked by the M-B kill), real jobs rows, fortune discard,
+redaction-honest hand fan, dice placeholder; the gate grew to 11 checks and 8 pins —
+all five modals + the gallery DOM-vs-law'd, pinned, title-checked. THE ROUND'S LESSON,
+in three returns: (1) a guard is not a guard until its mutant dies — VG6's first form
+was label-deep and the reviewer's data-only leak mutant sailed through a green gate;
+rebuilt DATA-TRUE (rendered ids vs the projection's handTruth surface) and the kill was
+run BEFORE the claim was written (the kill-first corrective, now standing). (2) the
+I-58 wording pattern struck FOUR more times this round (strikes 5–8: "last three"
+selecting the oldest, "everything popped" with the gallery uncovered, "fails by name"
+unproven, "both fail by value" overclaiming the ordering leg) — ORDER words joined the
+grep-falsify checklist and kill-first-then-claim is law. (3) recorded survivors bind
+to REGISTER triggers, never commit messages (the slice-ordering mutant waits on the
+first >3-card deck, with the M-AR precedent). Final: suite 279/279 · VISUAL GATE 11/11
+· BATTERY 21/21 · DRILLS 11/11 · vectors 10/10 · packages/+packs/ untouched all round.
+Arc step 4 (the 3D spike as a gated ODG-p1 supersession proposal) may open.
