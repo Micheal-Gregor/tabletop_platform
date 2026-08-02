@@ -409,6 +409,9 @@ function fresh(): Table {
   for (const s of SEATS) controller.join(CLIENT, s);
   selectedCrew = null;
   popped = null;
+  popQueue.length = 0;
+  rivalIdx = 0;
+  galleryFilters.clear();
   lastRound = null;
   return { controller, viewSeat: SEATS[0]! };
 }
@@ -420,7 +423,14 @@ function wireUi(): void {
     camera = { ...camera, zoom: Math.max(1, Math.min(6, camera.zoom * ((ev as WheelEvent).deltaY < 0 ? 1.15 : 0.87))) };
     draw();
   });
-  $('overlay').addEventListener('click', (ev) => {
+  // every interactive path runs the SAME classification law as act()/hit() (K7-parity D4)
+  const guarded = (fn: () => void) => (): void => {
+    try { fn(); } catch (e) {
+      if (e instanceof Error && /Refusal|Breach|Violation/.test(e.name)) status(`refused: ${e.message}`);
+      else halt(e);
+    }
+  };
+  $('overlay').addEventListener('click', (ev) => guarded(() => {
     const t = ev.target as HTMLElement;
     const nav = t.dataset['nav'];
     const chip = t.dataset['chip'];
@@ -430,9 +440,9 @@ function wireUi(): void {
     if (chip) { galleryFilters.has(chip) ? galleryFilters.delete(chip) : galleryFilters.add(chip); drawPopped(); return; }
     if (popped?.nav && $('popped').contains(t)) return; // interactive modal: inner clicks never dismiss
     popNext(); // plain card: advance the queue (preamble → round card → done)
-  });
-  $('rivals').onclick = () => { rivalIdx = 0; popRivals(); };
-  $('gallery').onclick = () => { popped = { layout: FORTUNE_CARD, label: 'your cards', content: {}, nav: 'gallery' }; drawPopped(); };
+  })());
+  $('rivals').onclick = guarded(() => { rivalIdx = 0; popRivals(); });
+  $('gallery').onclick = guarded(() => { popped = { layout: FORTUNE_CARD, label: 'your cards', content: {}, nav: 'gallery' }; drawPopped(); });
   $('cam-bar').innerHTML = Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('');
   $('cam-bar').onclick = (ev) => { const k = (ev.target as HTMLElement).dataset['cam']; if (k) { camera = presets[k]!; draw(); } };
   $('new-game').onclick = () => { table = fresh(); $('halt').style.display = 'none'; const v = project(stateOf(table!), table!.viewSeat); lastRound = v.turn.round; popRound(v.turn.round, v.seats[v.turn.seatIdx]!.id); draw(); };

@@ -18,20 +18,14 @@ import {
   TABLE_TILT,
 } from '@tabletop/presentation';
 import type { Camera, World } from '@tabletop/presentation';
+// ONE definition per child id (GBC-60; K7-parity closure): the showcase exhibits the
+// PACK's promoted job-card — never a bench-local twin under the same id.
+import { JOB_CARD as jobCard } from '../../../packs/boty/src/index.js';
 
 const WORLD: World = { w: 1600, h: 1000 };
 const SEATS = ['moe', 'pete', 'edie'];
 
-// ── the first children, built THROUGH the extension door (I-50) ──
-const jobCard = extendLayout(CARD_PARENT, {
-  id: 'boty:job-card',
-  override: [{ id: 'art', role: 'art', x: 6, y: 16, w: 60, h: 38 }],
-  add: [
-    { id: 'deadline', role: 'deadline-badge', x: 70, y: 16, w: 24, h: 16 },
-    { id: 'payout', role: 'payout-strip', x: 70, y: 36, w: 24, h: 18 },
-  ],
-  suppress: ['modifiers'],
-});
+// ── the five-sided child, built THROUGH the extension door (I-50) ──
 const pentagonShop = extendLayout(BOARD_PARENT, {
   id: 'boty:pentagon-shop',
   shape: [[50, 0], [100, 38], [82, 100], [18, 100], [0, 38]],

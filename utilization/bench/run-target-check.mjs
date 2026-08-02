@@ -67,6 +67,42 @@ const tamperTxt = await page.textContent('#halt');
 drill('PR5/tampered-row-flagged', /HALT|Divergence|lineage/.test(tamperTxt), tamperTxt.slice(0, 90));
 await page.evaluate(() => localStorage.clear());
 
+// ── PR-6: the SPATIAL GAME drills (game.html — K7-parity D3 closure: the v6 surface
+// is now gate-visible; M-F-class hardcoding of the round callout MUST fail here) ──
+await page.goto('http://localhost:4173/game.html');
+await page.waitForFunction(() => window.__GAME__ && window.__GAME__.rowHash() !== null);
+// PR-6a: v1's modal sequence — preamble FIRST, then the round card, then clear (I-55a)
+const seq = [await page.evaluate(() => window.__GAME__.poppedLayout())];
+await page.evaluate(() => window.__GAME__.advance());
+seq.push(await page.evaluate(() => window.__GAME__.poppedLayout()));
+await page.evaluate(() => window.__GAME__.advance());
+seq.push(await page.evaluate(() => window.__GAME__.poppedLayout()));
+drill('PR6/preamble-then-round-card', seq[0] === 'boty:round-preamble' && seq[1] === 'boty:round-card' && seq[2] === null, seq.join(' → '));
+// PR-6b: D2 law in-target — end a turn, reload mid-round: the callout must name the
+// PROJECTED leader (≠ seat-0), never a hardcoded constant
+await page.evaluate(() => { document.querySelector('[data-act="end-turn"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+await page.reload();
+await page.waitForFunction(() => window.__GAME__ && window.__GAME__.poppedLayout() !== null);
+const preambleTxt = await page.evaluate(() => document.getElementById('popped').textContent);
+const hdrTurn = await page.textContent('#hdr-turn');
+const leader = hdrTurn.replace(/[▶'s turn\s]/g, '').trim() || hdrTurn;
+drill('PR6/callout-derives-from-projection', /pete/.test(preambleTxt) && /pete/.test(hdrTurn) && !/moe leads/.test(preambleTxt), `hdr="${hdrTurn}" preamble="${preambleTxt.slice(0, 60)}" (${leader})`);
+// PR-6c: rivals carousel opens the rival-summary child and pages
+await page.evaluate(() => window.__GAME__.dismiss());
+await page.click('#rivals');
+const rl = await page.evaluate(() => window.__GAME__.poppedLayout());
+await page.click('[data-nav="next"]');
+const idx = await page.evaluate(() => document.querySelector('.pop-nav span').textContent);
+await page.click('[data-nav="close"]');
+drill('PR6/rivals-carousel-pages', rl === 'boty:rival-summary' && /2 \/ 3/.test(idx), `${rl} · ${idx}`);
+// PR-6d: gallery renders and a filter chip toggles the filtered note (CARD_KINDS as data)
+await page.click('#gallery');
+const note0 = await page.evaluate(() => document.querySelector('.gal-note').textContent);
+await page.click('[data-chip="jobs"]');
+const note1 = await page.evaluate(() => document.querySelector('.gal-note').textContent);
+drill('PR6/gallery-filter-chips', /card\(s\)/.test(note0) && /\(filtered\)/.test(note1), `${note0} → ${note1}`);
+await page.evaluate(() => localStorage.clear());
+
 await browser.close();
 server.close();
 

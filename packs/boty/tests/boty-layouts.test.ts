@@ -82,10 +82,11 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     // A hand-built literal cannot survive this WITH ANY OBSERVABLE DRIFT: the child on
     // the export surface must equal a LIVE re-run of the extension door (a byte-exact
     // value clone is the accepted equivalent-mutant boundary — K7-v1x re-verify).
-    expect(BOTY_LAYOUT_DERIVATIONS.length).toBe(BOTY_LAYOUTS.length);
+    // TWO-WAY coverage (K7-parity D6): the fixture's child ids ARE the export surface —
+    // a duplicated fixture entry can no longer mask a missing child.
+    expect(BOTY_LAYOUT_DERIVATIONS.map((d) => d.child.id)).toEqual(BOTY_LAYOUTS.map((l) => l.id));
     for (const { parent, overlay, child } of BOTY_LAYOUT_DERIVATIONS) {
       expect(extendLayout(parent, overlay)).toEqual(child);
-      expect(BOTY_LAYOUTS).toContain(child); // the fixture covers the whole export surface
     }
   });
 
