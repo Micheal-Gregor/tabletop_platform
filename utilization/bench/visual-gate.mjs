@@ -524,15 +524,16 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     `table-read-in-to-overview:${inToOverview} (${backOv.cam}) · overview-in-to-anchor:${inToAnchor} (${backAnchor.cam})`);
 }
 
-// VG8i — TABLE REGIONS ARE ANCHORS (I-66d; real click + real wheel): click the deck
-// region → anchored table:deck; zoom in → THAT REGION's overhead read, fit+centered;
-// zoom out → the region's scene = the TABLE preset.
+// VG8i — TABLE REGIONS ARE ANCHORS (I-66d; real click + real wheel): click the LOG
+// region → anchored table:log; zoom in → THAT REGION's overhead read, fit+centered;
+// zoom out → the region's scene = the TABLE preset. (The exemplar moved off the deck
+// at A2 — the deck click now carries the draw verb, I-67d.)
 {
   await page.click('[data-cam="table"]');
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
   const stgBox2 = await page.locator('#stage canvas').boundingBox();
   await page.mouse.move(stgBox2.x + stgBox2.width / 2, stgBox2.y + stgBox2.height / 2);
-  const rxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+  const rxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('log'));
   let regionOk = false, detail = 'NO-REGION-XY';
   if (rxy) {
     await page.mouse.click(rxy.x, rxy.y);
@@ -542,7 +543,7 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     let inRegionRead = false;
     for (let i = 0; i < 40 && !inRegionRead; i++) {
       await page.mouse.wheel(0, -240);
-      inRegionRead = await page.evaluate(() => { const z = window.__GAME3D__.zoomState(); return z.mode === 'read' && z.focus === 'table:deck'; });
+      inRegionRead = await page.evaluate(() => { const z = window.__GAME3D__.zoomState(); return z.mode === 'read' && z.focus === 'table:log'; });
     }
     await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
     const rr = await page.evaluate(() => ({
@@ -557,7 +558,7 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     // K7-A1d D1: region-read zoom-in is DISABLED too (I-66c holds on EVERY read leg)
     for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -240);
     const rIn = await page.evaluate(() => ({ p: window.__GAME3D__.cameraPos(), cam: window.__GAME3D__.camName() }));
-    const inDisabledR = rIn.cam === 'table:deck:read'
+    const inDisabledR = rIn.cam === 'table:log:read'
       && Math.abs(rIn.p.x - rr.pos.x) < 1e-9 && Math.abs(rIn.p.y - rr.pos.y) < 1e-9 && Math.abs(rIn.p.z - rr.pos.z) < 1e-9;
     // K7-A1d D2: region pan CLAMPS WITHIN THE REGION (a huge drag cannot leave its box)
     const qR1 = await page.evaluate(() => window.__GAME3D__.quat());
@@ -568,12 +569,116 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     // wheel out → the region's scene = the table preset (anchor still the region)
     await page.mouse.wheel(0, 240);
     const rs = await page.evaluate(() => ({ cam: window.__GAME3D__.camName(), z: window.__GAME3D__.zoomState() }));
-    const outToTableScene = rs.z.mode === 'scene' && rs.cam === 'table' && rs.z.lastFocus === 'table:deck';
+    const outToTableScene = rs.z.mode === 'scene' && rs.cam === 'table' && rs.z.lastFocus === 'table:log';
     await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-    regionOk = anch === 'table:deck' && inRegionRead && rr.cam === 'table:deck:read' && fitR && framedR && centeredR && overheadR && inDisabledR && panClampedR && outToTableScene;
-    detail = `click-anchored:${anch === 'table:deck'} (${anch}) · region-read:${inRegionRead} (${rr.cam}) · fit:${fitR} framed:${framedR} centered:${centeredR} overhead:${overheadR} · in-disabled:${inDisabledR} · pan-clamped:${panClampedR} · out-to-table-scene:${outToTableScene}`;
+    regionOk = anch === 'table:log' && inRegionRead && rr.cam === 'table:log:read' && fitR && framedR && centeredR && overheadR && inDisabledR && panClampedR && outToTableScene;
+    detail = `click-anchored:${anch === 'table:log'} (${anch}) · region-read:${inRegionRead} (${rr.cam}) · fit:${fitR} framed:${framedR} centered:${centeredR} overhead:${overheadR} · in-disabled:${inDisabledR} · pan-clamped:${panClampedR} · out-to-table-scene:${outToTableScene}`;
   }
   check('VG8i/table-region-anchor-read', regionOk, detail);
+  await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+}
+
+// VG8j — A2: DECK + DRAW + THE READING BOARD (I-67; kill-first). The I-62b and
+// I-63h standing obligations fire HERE — the first state-advancing increment.
+{
+  await page.evaluate(() => window.__GAME3D__.glideTo('table'));
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const stg3 = await page.locator('#stage canvas').boundingBox();
+  await page.mouse.move(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
+  const info = (rid) => page.evaluate((r) => window.__GAME3D__.stackInfo(r), rid);
+  const hashes = () => page.evaluate(() => ({ h: window.__GAME3D__.rowHash(), m: window.__GAME3D__.moveCount() }));
+
+  // COUNT-TRUE at genesis: the committed pack says moe's deck holds 3, discard 0 —
+  // the expectation is the PACK's, not the page's.
+  const d0 = await info('deck');
+  const c0 = await info('discard');
+  const hm0 = await hashes();
+  check('VG8j/stacks-count-true', d0 && c0 && d0.count === 3 && c0.count === 0,
+    `deck:${d0?.count} (want 3, the committed genesis) · discard:${c0?.count} (want 0)`);
+
+  // THE DRAW — a REAL click on the deck; the gate then WAITS ON STATE (drawPhase)
+  const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+  await page.mouse.click(dxy.x, dxy.y);
+  let flightDone = true;
+  try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
+  catch { flightDone = false; }
+  if (!flightDone) {
+    check('VG8j/draw-theater-hk11', false, 'draw flight never reached the reading board (timeout)');
+  } else {
+    const o1 = await page.evaluate(() => window.__GAME3D__.onionState());
+    const d1 = await info('deck');
+    const c1 = await info('discard');
+    const hm1 = await hashes();
+    // close: ANY click (consumed by the onion)
+    await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
+    const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase() }));
+    check('VG8j/draw-theater-hk11',
+      o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
+      && d1.count === 2 && c1.count === 1 && c1.topFace === 'job-posting'
+      && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
+      && closed.o === false && closed.p === 'idle',
+      `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false}`);
+
+    // FORCED MISMATCH (the VG7d committed-drill precedent): HK-11 flags, TRUTH WINS
+    await page.evaluate(() => window.__GAME3D__.forceFlipMismatch(true));
+    const dxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+    await page.mouse.click(dxy2.x, dxy2.y);
+    let f2 = true;
+    try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
+    catch { f2 = false; }
+    const o2 = f2 ? await page.evaluate(() => window.__GAME3D__.onionState()) : null;
+    await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
+    check('VG8j/forced-mismatch-truth-wins',
+      f2 && o2 && o2.verdict && o2.verdict.mismatch === true && o2.verdict.displayed === 'WRONG-CARD'
+      && o2.verdict.seeded === 'new-van' && o2.title === 'new-van',
+      f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins)` : 'second flight never landed (timeout)');
+
+    // FIDGET = PURE THEATER (I-67e): three discard clicks cycle loose → spread → NEAT
+    // EXACT; rowHash AND moveCount are invariant through every fidget click.
+    const hm2 = await hashes();
+    const p0 = (await info('discard')).top;
+    const states = [];
+    for (let i = 0; i < 3; i++) {
+      const rxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+      await page.mouse.click(rxy2.x, rxy2.y);
+      states.push(await info('discard'));
+    }
+    const hm3 = await hashes();
+    const posEq = (a, b) => a.length === b.length && a.every((v, i) => Math.abs(v.x - b[i].x) < 1e-9 && Math.abs(v.y - b[i].y) < 1e-9 && Math.abs(v.z - b[i].z) < 1e-9);
+    const moved1 = !posEq(states[0].top, p0);
+    const moved2 = !posEq(states[1].top, states[0].top);
+    const restored = posEq(states[2].top, p0) && states[2].fidget === 0;
+    const pure = hm3.h === hm2.h && hm3.m === hm2.m;
+    check('VG8j/fidget-pure-theater', moved1 && moved2 && restored && pure,
+      `peek-moved:${moved1} · spread-moved:${moved2} · neat-restored-exact:${restored} · rowHash+moves-invariant:${pure}`);
+
+    // END-TURN + the I-62b OBLIGATION: after real state change the frozen-panel class
+    // dies — standings (★ moves), chrome, log, and the deck (now PETE's, 2 by the pack)
+    await page.click('#end-btn');
+    const after = await page.evaluate(() => ({
+      v: window.__GAME3D__.viewData(),
+      standings: window.__GAME3D__.stamped('standings'),
+      log: window.__GAME3D__.stamped('log'),
+      hdr: document.getElementById('hdr').textContent,
+    }));
+    const ranked2 = [...after.v.seats].sort((a, b) => b.cash - a.cash);
+    const wantStandings = ['THE TABLE', ...ranked2.map((x) => `${x.id === after.v.active ? '★ ' : ''}${x.id}  $${x.cash}`)];
+    const standingsOk = JSON.stringify(after.standings) === JSON.stringify(wantStandings) && after.v.active === 'pete';
+    const hdrOk = after.hdr.includes(`${after.v.active}'s turn`);
+    const logOk = after.log && after.log.some((l) => l === 'moe · turn:end') && after.log.some((l) => l === 'moe · deck:draw'); // the engine's intent type names
+    const d2 = await info('deck');
+    const deckIsPetes = d2.count === 2; // the committed pack: pete's deck holds 2
+    // deck fidget when NOT the viewer's turn (I-67d): a deck click must NOT draw
+    const hm4 = await hashes();
+    const dxy3 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+    await page.mouse.click(dxy3.x, dxy3.y);
+    const dFid = await info('deck');
+    const hm5 = await hashes();
+    const fidgetNotDraw = dFid.fidget === 1 && hm5.h === hm4.h && hm5.m === hm4.m && dFid.count === 2;
+    check('VG8j/state-change-recheck', standingsOk && hdrOk && logOk && deckIsPetes && fidgetNotDraw,
+      `active:${after.v.active} · standings-rederived:${standingsOk} · hdr:${hdrOk} · log(end-turn+draw):${logOk} · deck-now-petes(2):${deckIsPetes} · deck-fidget-not-draw:${fidgetNotDraw}`);
+  }
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
 }

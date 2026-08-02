@@ -1,14 +1,15 @@
 /**
- * GAME3D — ROADMAP A1: THE STAGE (I-62). The playable 3D shell: the ENGINE-BOUND
- * table (projection-fed fills, stamped at draw), shop boards at the edges, and the
- * GLIDING camera on the same preset law — wheel dolly, click-to-focus. NO verbs at
- * A1; actions arrive at A2+. Unskinned (D-1). The spike stays a frozen exhibit.
+ * GAME3D — ROADMAP A1/A2: THE STAGE + DECK & DRAW (I-62..I-67). The playable 3D
+ * shell: the ENGINE-BOUND table (projection-fed fills, stamped at draw), COUNT-TRUE
+ * card stacks (the geometry IS the count, I-67a), the READING BOARD onion (I-67b),
+ * the draw verb under HK-11 theater (I-67c), pure-theater fidgets (I-67e), and the
+ * GLIDING camera on the ladder law. Unskinned (D-1). The spike stays frozen.
  */
 import * as THREE from 'three';
 import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { LayoutDef, SeatView } from '@tabletop/presentation';
-import { focusPresets, project } from '@tabletop/presentation';
+import { beginFlourish, completeFlourish, emit, focusPresets, project } from '@tabletop/presentation';
 import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, SHOP_BOARD, TOWN_TABLE } from '../../../packs/boty/src/index.js';
 
 const WORLD = { w: 1600, h: 1000 };
@@ -42,11 +43,12 @@ function panel(lines: readonly string[], w: number, h: number, head?: string): T
 }
 
 /** A layout as a face: region quads from the def, optional per-region line fills. */
-function layoutFace(def: LayoutDef, tint: number, fills: Readonly<Record<string, readonly string[]>> = {}): THREE.Group {
+function layoutFace(def: LayoutDef, tint: number, fills: Readonly<Record<string, readonly string[]>> = {}, skip: readonly string[] = []): THREE.Group {
   const grp = new THREE.Group();
   grp.add(new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ color: 0xfbfaf7 })));
   grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(100, 100)), new THREE.LineBasicMaterial({ color: 0x444444 })));
   for (const r of def.regions) {
+    if (skip.includes(r.id)) continue; // a richer object (a card STACK) stands in for the quad
     const fill = fills[r.id];
     const quad = fill
       ? panel(fill, r.w, r.h)
@@ -68,26 +70,114 @@ renderer.setSize(1240, 720);
 document.getElementById('stage')!.appendChild(renderer.domElement);
 
 const focusGroups: Record<string, THREE.Group> = {};
+const builtRoots: THREE.Object3D[] = [];
+
+// ── THE MANIFESTED BACKDROP (I-67h — the owner rules on the look): white underfoot
+// → pastel haze → a faint ink ring → off-white; a gradient disc, ZERO lights ──
+function manifestBackdrop(): void {
+  const c = document.createElement('canvas');
+  c.width = c.height = 1024;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(512, 512, 60, 512, 512, 512);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.45, '#f7f2f8'); // warm pastel haze
+  grad.addColorStop(0.62, '#eef4f5'); // cool pastel haze
+  grad.addColorStop(0.8, '#e4e3de'); // the light ink ring
+  grad.addColorStop(1, '#f4f3ee'); // off-white — the play area manifested
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 1024, 1024);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(2600, 64), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }));
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.y = -2;
+  disc.userData['backdrop'] = true;
+  scene.add(disc);
+  scene.background = new THREE.Color(0xf4f3ee);
+}
+manifestBackdrop();
+
+// ── COUNT-TRUE CARD STACKS (I-67a): one real mesh per card; shared back texture ──
+let cardBackTex: THREE.CanvasTexture | null = null;
+function cardBack(): THREE.CanvasTexture {
+  if (cardBackTex) return cardBackTex;
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 384;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#efe9dd'; g.fillRect(0, 0, 256, 384);
+  g.strokeStyle = '#8a7f6a'; g.lineWidth = 6; g.strokeRect(8, 8, 240, 368);
+  g.strokeStyle = '#ccc3b0'; g.lineWidth = 2;
+  for (let i = -384; i < 640; i += 26) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 384, 384); g.stroke();
+    g.beginPath(); g.moveTo(i + 384, 0); g.lineTo(i, 384); g.stroke();
+  }
+  cardBackTex = new THREE.CanvasTexture(c);
+  return cardBackTex;
+}
+
+// ── FIDGET (I-67e): PURE THEATER — seeded offsets, meshes only, never state ──
+const fidget: Record<string, number> = { deck: 0, discard: 0 };
+function lcg(seed: number): () => number {
+  let t = seed >>> 0;
+  return () => { t = (Math.imul(t, 1664525) + 1013904223) >>> 0; return t / 4294967296; };
+}
+
+/** A count-true stack at a table region. faces[0] = top of the pile (face-up); null faces = card backs. */
+function cardStack(r: { x: number; y: number; w: number; h: number }, rid: string, count: number, faces: readonly string[] | null): THREE.Group {
+  const grp = new THREE.Group();
+  grp.position.set(r.x + r.w / 2 - 50, 50 - (r.y + r.h / 2), 0.2);
+  grp.userData = { region: rid, role: rid, def: TOWN_TABLE.id };
+  // the footprint ghost: keeps the region clickable and boxed even at zero cards
+  const ghost = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.h), new THREE.MeshBasicMaterial({ color: 0xdfe7df, transparent: true, opacity: 0.5 }));
+  grp.add(ghost);
+  const state = fidget[rid] ?? 0;
+  const rnd = lcg(1069 * (state + 1) + (rid === 'deck' ? 7 : 131));
+  for (let i = 0; i < count; i++) {
+    const fromTop = count - 1 - i;
+    const face = faces ? faces[fromTop] ?? null : null;
+    const m = face
+      ? panel([face], 10, 16)
+      : new THREE.Mesh(new THREE.PlaneGeometry(10, 16), new THREE.MeshBasicMaterial({ map: cardBack() }));
+    // resting irregularity for every card; the FIDGET states move the TOP FIVE more
+    let amp = 0.18, rot = 0.02, dx = 0;
+    if (fromTop < 5 && state > 0) {
+      if (rid === 'deck') { amp = state === 1 ? 2.2 : 3.4; rot = state === 1 ? 0.14 : 0.22; } // loose pile → re-scatter
+      else { dx = (state === 1 ? 2.6 : 5.2) * (fromTop + 1); amp = 0.4; rot = state === 1 ? 0.06 : 0.1; } // peek → spread the last 5
+    }
+    m.position.set(dx + (rnd() - 0.5) * 2 * amp, (rnd() - 0.5) * 2 * amp, 0.06 + i * 0.12);
+    m.rotation.z = (rnd() - 0.5) * 2 * rot;
+    m.userData = { ...m.userData, card: true, idx: i };
+    grp.add(m);
+  }
+  return grp;
+}
+
 function buildScene(): void {
+  for (const o of builtRoots) scene.remove(o); // I-67g: rebuild from a fresh projection on every state change
+  builtRoots.length = 0;
   const v = projectNow();
   const active = v.seats[v.turn.seatIdx]!.id;
   const ranked = [...v.seats].sort((a, b) => b.cash - a.cash);
   const standings = ranked.map((s) => `${s.id === active ? '★ ' : ''}${s.id}  $${s.cash}`);
   const moves = controller.row().moves; // I-52-registered class (display-only)
   const log = moves.slice(-4).map((m) => `${m.seat} · ${m.type}`);
-  const deckCount = v.decks[active]?.drawCount ?? 0;
-  // the table: flat on the ground, fills stamped from the projection
+  const openWindows = v.windows.filter((w) => w.status === 'open').length;
+  // the table: flat on the ground, fills stamped from the projection; deck+discard
+  // regions are STACK OBJECTS, not quads (I-67a) — the geometry is the count
   const table = layoutFace(TOWN_TABLE, 0xeef3ee, {
     standings: ['THE TABLE', ...standings],
     log: ['TABLE LOG', ...(log.length ? log : ['(no moves yet)'])],
-    deck: [`deck`, `${deckCount} left`],
+    windows: ['windows', openWindows ? `${openWindows} open — prompts at A8` : 'none open'],
     'art-banner': [`[art: ${SEASONS[(v.turn.round - 1) % 4]} — Maple Hollow]`],
-  });
+  }, ['deck', 'discard']);
+  const deckR = TOWN_TABLE.regions.find((rg) => rg.id === 'deck')!;
+  const discR = TOWN_TABLE.regions.find((rg) => rg.id === 'discard')!;
+  table.add(cardStack(deckR, 'deck', v.decks[active]?.drawCount ?? 0, null));
+  table.add(cardStack(discR, 'discard', v.ownDiscard.length, v.ownDiscard)); // the VIEWER'S discard — redaction-honest (I-67a)
   table.rotation.x = -Math.PI / 2;
   table.scale.set(9, 7, 1);
   table.userData['focus'] = 'table';
   focusGroups['table'] = table;
   scene.add(table);
+  builtRoots.push(table);
   // shop boards standing at the edges — click-to-focus targets. TWO-SIDED (I-65):
   // seats 0-2 near row (+z, the certified A1 placement), seats 3+ far row (−z),
   // each board rotated to face ITS OWN player beyond its table edge.
@@ -116,6 +206,7 @@ function buildScene(): void {
     b.userData['seatIdx'] = i;
     focusGroups[`seat-${i}`] = b;
     scene.add(b);
+    builtRoots.push(b);
   });
   // chrome (I-51d)
   document.getElementById('hdr')!.textContent =
@@ -292,6 +383,78 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   dollyTo(next);
 }, { passive: false });
 
+// ── THE READING BOARD (I-67b): a camera-parented onion — dark translucent surround,
+// the card centered; ANY click closes it; the ladder runs unchanged beneath it ──
+scene.add(camera); // camera children render
+let onion: THREE.Group | null = null;
+let onionCard: THREE.Mesh | null = null;
+let onionVerdict: { mismatch: boolean; displayed: string; seeded: string } | null = null;
+function openOnion(title: string, lines: readonly string[]): void {
+  closeOnion();
+  onion = new THREE.Group();
+  const veil = new THREE.Mesh(new THREE.PlaneGeometry(420, 260), new THREE.MeshBasicMaterial({ color: 0x14181c, transparent: true, opacity: 0.55, depthTest: false }));
+  veil.renderOrder = 90;
+  onion.add(veil);
+  onionCard = panel(lines, 52, 78, title);
+  (onionCard.material as THREE.MeshBasicMaterial).depthTest = false;
+  onionCard.renderOrder = 91;
+  onionCard.position.z = 2;
+  onion.add(onionCard);
+  onion.position.z = -130;
+  camera.add(onion);
+}
+function closeOnion(): void {
+  if (onion) { camera.remove(onion); onion = null; onionCard = null; }
+}
+
+// ── DRAW THEATER (I-67c): the verb through the same doors; HK-11 at flight end ──
+const CLIENT3D = 'bench-3d';
+let drawPhase: 'idle' | 'flying' | 'reading' = 'idle';
+let flight: { mesh: THREE.Mesh; from: THREE.Vector3; t: number; inst: ReturnType<typeof beginFlourish>; seeded: string; flipped: boolean } | null = null;
+let forceMismatch = false; // the committed forced-mismatch drill (VG7d precedent) — one-shot
+
+function submitVerb(verb: string, args: Record<string, unknown>): boolean {
+  const v = projectNow();
+  const active = v.seats[v.turn.seatIdx]!.id;
+  try {
+    const res = controller.submit(CLIENT3D, emit(verb, active, args) as never);
+    if (typeof res === 'object' && res !== null && 'refused' in res) {
+      status(`refused [${(res as { rule: string }).rule}]: ${(res as { detail: string }).detail}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    if (e instanceof Error && /Refusal|Breach|Violation/.test(e.name)) { status(`refused: ${e.message}`); return false; }
+    throw e; // the unknown halts (the K7-v1x D8 classification law)
+  }
+}
+
+function doDraw(): void {
+  const before = projectNow();
+  const active = before.seats[before.turn.seatIdx]!.id;
+  if (!submitVerb('draw', { deck: active })) return;
+  const after = projectNow();
+  const seeded = after.decks[active]?.discardTop ?? '(none)';
+  const inst = beginFlourish('card-flip', seeded, '♪ card flip');
+  const deckObj = focusObject('table:deck');
+  const from = deckObj ? new THREE.Box3().setFromObject(deckObj).getCenter(new THREE.Vector3()) : new THREE.Vector3(0, 10, 0);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(52, 78), new THREE.MeshBasicMaterial({ map: cardBack() }));
+  m.position.copy(from);
+  m.rotation.x = -Math.PI / 2;
+  scene.add(m);
+  flight = { mesh: m, from, t: 0, inst, seeded, flipped: false };
+  drawPhase = 'flying';
+  buildScene(); // I-67a/g: the deck is already one card shorter — the geometry is the count
+  status(`${active} draws — ♪ card flip`);
+}
+
+function endTurn(): void {
+  if (!submitVerb('end-turn', {})) return;
+  buildScene();
+  const v = projectNow();
+  status(`turn passes — ▶ ${v.seats[v.turn.seatIdx]!.id}`);
+}
+
 // pointer: in READ mode a drag PANS (scroll); a plain click in scene mode raycasts
 // boards → their seat preset, the felt → table
 const ray = new THREE.Raycaster();
@@ -304,6 +467,7 @@ renderer.domElement.addEventListener('pointermove', (ev) => {
 });
 renderer.domElement.addEventListener('pointerup', (ev) => {
   const wasDrag = dragMoved; dragFrom = null; dragMoved = false;
+  if (onion) { closeOnion(); drawPhase = 'idle'; status('reading board closed'); return; } // I-67b: ANY click closes; consumed
   if (wasDrag || mode === 'read') return; // reads don't refocus on click; drags never do
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);
@@ -317,6 +481,15 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
         glideTo('table');
         // a TABLE REGION click anchors that region (I-66d): zoom-in reads THAT section
         if (region) { lastFocus = `table:${region}`; status(`anchored: ${region} — zoom in for its read view`); }
+        // I-67d: the deck click fires the draw on the VIEWER'S turn, else steps the
+        // deck fidget; discard clicks step its fidget always. Fidget = PURE THEATER.
+        if (region === 'deck') {
+          const v = projectNow();
+          if (v.seats[v.turn.seatIdx]!.id === viewSeat) { doDraw(); }
+          else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; buildScene(); status(`deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
+        } else if (region === 'discard') {
+          fidget['discard'] = ((fidget['discard'] ?? 0) + 1) % 3; buildScene(); status(`discard fidget → ${['neat', 'peek', 'spread five'][fidget['discard']]}`);
+        }
         return;
       }
       o = o.parent;
@@ -326,11 +499,13 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
 
 document.getElementById('bar')!.innerHTML =
   Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
-  `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>`;
+  `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
+  `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>`;
 document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { glideTo(t.dataset['cam']!); return; }
-  if (t.id === 'mode-btn') { mode === 'read' ? sceneView() : readView(); }
+  if (t.id === 'mode-btn') { mode === 'read' ? sceneView() : readView(); return; }
+  if (t.id === 'end-btn') endTurn();
 };
 
 function tick(): void {
@@ -360,6 +535,43 @@ function tick(): void {
     if (!gliding()) { camera.position.copy(target.pos); currentLook.copy(target.look); }
   }
   camera.lookAt(currentLook);
+  // the DRAW FLIGHT (I-67c): deck → camera, flipping at the midpoint; HK-11 at the end
+  if (flight) {
+    flight.t = Math.min(1, flight.t + 0.03);
+    const pT = flight.t;
+    const ease = pT * pT * (3 - 2 * pT);
+    const dest = camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(140));
+    flight.mesh.position.lerpVectors(flight.from, dest, ease);
+    const faceCam = camera.quaternion.clone();
+    const flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+    flight.mesh.quaternion.slerpQuaternions(flat, faceCam, ease);
+    flight.mesh.rotateY(Math.PI * (1 - ease)); // the flip on top of the turn-to-camera
+    if (pT >= 0.5 && !flight.flipped) {
+      flight.flipped = true; // the midpoint face-swap: the classic flip trick
+      const displayed = forceMismatch ? 'WRONG-CARD' : flight.seeded;
+      const face = panel([displayed], 52, 78);
+      (flight.mesh.material as THREE.Material).dispose();
+      flight.mesh.material = face.material;
+    }
+    if (pT >= 1) {
+      const displayed = forceMismatch ? 'WRONG-CARD' : flight.seeded;
+      const verdict = completeFlourish(flight.inst, displayed); // HK-11 — truth wins (R-20)
+      onionVerdict = { mismatch: verdict.mismatch !== null, displayed, seeded: flight.seeded };
+      const flavor = BOTY_PACK6.cards[flight.seeded]?.flavor ?? '';
+      openOnion(verdict.result, [
+        'Fortune',
+        ...(flavor ? [flavor] : []),
+        'the card takes effect',
+        'through the engine',
+        ...(verdict.mismatch ? ['⚑ mismatch — truth shown'] : []),
+      ]);
+      if (verdict.mismatch) status('⚑ theater mismatch — truth wins (R-20)');
+      scene.remove(flight.mesh);
+      flight = null;
+      forceMismatch = false; // the drill is one-shot
+      drawPhase = 'reading';
+    }
+  }
   renderer.render(scene, camera);
 }
 
@@ -440,6 +652,27 @@ function tick(): void {
     return { front, back };
   },
   seatGroupKeys: () => Object.keys(focusGroups).filter((k) => k.startsWith('seat-')).sort(),
+  /** I-67 surfaces: draw phase (gates WAIT ON STATE), the onion, the drill, the stacks */
+  drawPhase: () => drawPhase,
+  onionState: () => ({
+    open: onion !== null,
+    title: onionCard ? (onionCard.userData['renderedLines'] as string[])[0] ?? null : null,
+    verdict: onionVerdict,
+  }),
+  forceFlipMismatch: (v: boolean) => { forceMismatch = v; },
+  stackInfo: (rid: string) => {
+    const grp = focusObject(`table:${rid}`);
+    if (!grp) return null;
+    const cards: THREE.Object3D[] = [];
+    grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) cards.push(o); });
+    cards.sort((a, b) => (a.userData['idx'] as number) - (b.userData['idx'] as number));
+    return {
+      count: cards.length,
+      fidget: fidget[rid] ?? 0,
+      topFace: cards.length ? ((cards[cards.length - 1]!.userData['renderedLines'] as string[] | undefined)?.[0] ?? null) : null,
+      top: cards.slice(-5).map((o) => { const w = new THREE.Vector3(); o.getWorldPosition(w); return { x: w.x, y: w.y, z: w.z }; }),
+    };
+  },
   /** K7-A1c D2: the back face must FACE BACKWARD — world-normal dot vs the board front */
   backFacingDot: (i: number) => {
     const grp = focusGroups[`seat-${i}`];
