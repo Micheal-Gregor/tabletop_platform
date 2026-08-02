@@ -393,6 +393,31 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
   check('VG8g/orbital-glide-around', orbital,
     orbitRest ? `minR ${minR.toFixed(0)} vs wall ${(0.7 * Math.min(r0, r1)).toFixed(0)} (r0 ${r0.toFixed(0)} r1 ${r1.toFixed(0)})` : 'orbit glide never rested (timeout)');
 
+  // K7-A1c' D4: SHORTEST ARC has its own falsifier. seat-0 → seat-3 has a RAW arc of
+  // ~234.9° — the lawful glide sweeps the SHORT way (~125°); the long way is a gate-
+  // visible violation. Swept azimuth is accumulated from unwrapped samples.
+  await page.evaluate(() => window.__GAME3D__.glideTo('seat-0'));
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { /* named below */ }
+  let prevA = await page.evaluate(() => { const p = window.__GAME3D__.cameraPos(); return Math.atan2(p.z, p.x); });
+  await page.evaluate(() => window.__GAME3D__.glideTo('seat-3'));
+  let swept = 0, arcRest = false;
+  const ta = Date.now();
+  while (Date.now() - ta < 60000) {
+    const s = await page.evaluate(() => ({ p: window.__GAME3D__.cameraPos(), g: window.__GAME3D__.gliding() }));
+    const a = Math.atan2(s.p.z, s.p.x);
+    let da = a - prevA;
+    if (da > Math.PI) da -= 2 * Math.PI;
+    if (da < -Math.PI) da += 2 * Math.PI;
+    swept += da;
+    prevA = a;
+    if (!s.g) { arcRest = true; break; }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  const sweptDeg = (swept * 180) / Math.PI;
+  const shortArc = arcRest && Math.abs(sweptDeg) <= 190;
+  check('VG8g/orbital-shortest-arc', shortArc,
+    arcRest ? `seat-0→seat-3 swept ${sweptDeg.toFixed(1)}° (short-arc wall 190°)` : 'shortest-arc glide never rested (timeout)');
+
   // BACKS ARE SHOP-GRAPHIC ONLY (I-65c): every seat board — front carries the data
   // ($), the back carries the shop identity and NO data. Contrast pair per board.
   const stamps = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.boardStamps(i)));
