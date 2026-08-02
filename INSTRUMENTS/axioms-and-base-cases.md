@@ -404,15 +404,19 @@ titled); a separate labels channel is Phase-5 adaptation work.
   engine door and defines no behavior — it labels gallery filters, nothing else. *(I-55,
   tier law)*
 - **GBC-63 —** the visual gate (I-57): in real Chromium, WITHIN THE CANONICAL SCENES
-  (game stage + books modal — scope per K7-vg D3; the showcase and other modals carry
-  pin coverage), (a) every rendered region rect EQUALS its LayoutDef and every def
-  region is PRESENT — a moved rect or a dropped region fails the gate with the layout
-  and region NAMED; (b) the canonical scenes re-derive to their pinned SVG hashes every
-  run, and an ORPHANED pin fails too (computed pins, the vector discipline at the bench
-  tier); (c) the camera PROVABLY MOVES between presets and the same camera re-derives a
-  byte-equal viewBox; (d) every canonical-scene region carries its <title> (a11y floor,
-  in-DOM). A gate that cannot fail verifies nothing — each assertion must be
-  mutation-killable. *(I-57, I-58, GX-39 family)*
+  (game stage + books modal — scope per K7-vg D3; reworded per K7-vg D5, strike 4: the
+  EXACT coverage is — showcase pin-covered; books modal DOM-vs-law + pinned; the four
+  other popped children (preamble, round-card, rival-summary, fortune) UNIT-TIER ONLY
+  with NO visual-gate coverage — extending domVsLaw + pins to them is the recorded
+  next-touch candidate), (a) every rendered region rect EQUALS its LayoutDef and every
+  def region is PRESENT — a moved rect or a dropped region fails the gate with the
+  layout and region NAMED; (b) the canonical scenes re-derive to their pinned SVG
+  hashes every run, and an ORPHANED pin fails too (computed pins, the vector discipline
+  at the bench tier); (c) the camera PROVABLY MOVES between presets and the same camera
+  re-derives a byte-equal viewBox; (d) every GAME-STAGE region carries its <title>
+  (a11y floor, in-DOM; the books modal's titles are guarded by its pin, not by VG5 —
+  K7-vg re-verify obs). A gate that cannot fail verifies nothing — each assertion must
+  be mutation-killable. *(I-57, I-58, GX-39 family)*
 - **GBC-62 —** the PANEL kind (I-56): `PANEL_PARENT` validates and joins the parent
   vocabulary (five parents); its regions are the generic report anatomy (title ·
   mode-tabs · line-items · total · footnote) measured off source 10; `boty:books`

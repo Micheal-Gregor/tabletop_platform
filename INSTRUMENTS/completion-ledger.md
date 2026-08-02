@@ -469,3 +469,21 @@ mutant killed); M-AR residual RECORDED on I-56 with its trigger. R2/R3 cosmetic 
 same-day (comment truth; build.mjs cwd-insensitive). Suite 279/279 · BATTERY 21/21 ·
 DRILLS 11/11. Arc step 1 COMPLETE pending only the source-18 callout add (content-tier,
 lands with the owner's P&L push). Step 2 (visual regression gate) may open.
+
+**K7-vg (arc step 2: the visual regression gate, 2026-08-01): RETURN → RETURN(narrow) → PASS pending final re-check.**
+The gate that makes "does it look right" falsifiable: VG1/VG3 DOM-vs-law (renderer
+checked against the CONTRACTS), VG2 computed scene pins w/ orphan detection, VG4
+camera-provably-moves purity, VG5 a11y floor — every assertion mutation-killed live
+(M-C/M-D/M-F/M-G/M-H/M-O/M-S/DI). Round 1 RETURN on VG4 vacuity (the M-G survivor:
+a dead camera compared a viewBox to itself — the gate's own law demands every
+assertion killable) + the M-E self-verification boundary (a comparator cannot test
+itself; recorded I-57e, gate wired as npm run gate:visual + operations-pack health
+check). Round 2 caught **strike 4 of the I-58 pattern IN THE CLOSURE ITSELF** — the
+reworded scope claimed pin coverage for four modals only the books pin covers; fixed
+with the grep-falsify pass run ON THE RECORD this time. I-58 now registers the pattern
+(instrument wording overclaiming code structure — the register-side twin of "closures
+narrower than their claims") with its standing corrective. Step-1 callout discharge
+re-checked by the same round: source-18 measurement verified by the reviewer's own
+vision (deltas ≤1.7pp), RD-1 bound PASS. Suite 279/279 · VISUAL GATE 5/5 · BATTERY
+21/21 · DRILLS 11/11 · packages/ untouched. Next-touch candidates: domVsLaw+pins for
+the four uncovered modals; VG5 to #popped.
