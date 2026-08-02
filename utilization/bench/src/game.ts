@@ -201,9 +201,11 @@ function boardGroup(view: SeatView, seat: string, i: number): string {
   // REDACTION-HONEST HAND (I-59d): the viewing seat fans its own last draws; a rival
   // board shows only the PUBLIC discard top — more redaction never less.
   const handTop = view.decks[seat]?.discardTop;
-  const handCards = seat === table!.viewSeat ? view.ownDiscard.slice(-3) : handTop ? [handTop] : [];
-  const hand = handCards.map((id, i) =>
-    `<g transform="translate(${handR.x + 2 + i * 10} ${handR.y + 1 + Math.abs(i - (handCards.length - 1) / 2)}) scale(0.27) rotate(${(i - (handCards.length - 1) / 2) * 6} 50 100)">${renderLayout(CARD_PARENT, `${seat}'s ${seat === table!.viewSeat ? `hand card ${i + 1}` : 'public top'}: ${id}`, { title: id })}</g>`).join('');
+  // ownDiscard is NEWEST-FIRST (deck.ts prepends) — slice(0,3) fans the newest three
+  // (K7-v7 D2: slice(-3) selected the OLDEST three, latent only while decks cap at 3)
+  const handCards = seat === table!.viewSeat ? view.ownDiscard.slice(0, 3) : handTop ? [handTop] : [];
+  const hand = handCards.map((id, hi) =>
+    `<g transform="translate(${handR.x + 2 + hi * 10} ${handR.y + 1 + Math.abs(hi - (handCards.length - 1) / 2)}) scale(0.27) rotate(${(hi - (handCards.length - 1) / 2) * 6} 50 100)">${renderLayout(CARD_PARENT, `${seat}'s ${seat === table!.viewSeat ? `hand card ${hi + 1}` : 'public top'}: ${id}`, { title: id })}</g>`).join('');
   // REAL JOBS ROWS (I-59b): per-assignment crew ⇒ venture, from the registered read
   const assignments = mine.filter((c) => c.assignedTo !== undefined).map((c) => `${c.id} ⇒ ${c.assignedTo!.venture}`);
   const inner = renderLayout(SHOP_BOARD, `${seat}'s shop${active ? ' — TO ACT' : ''}`, {

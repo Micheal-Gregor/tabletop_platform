@@ -105,6 +105,32 @@ await page.evaluate(() => { document.querySelector('[data-act="draw"]').dispatch
 await modalCheck('modal:fortune-first-draw');
 await page.screenshot({ path: '/tmp/vg-fortune.png' });
 await page.evaluate(() => window.__GAME__.dismiss());
+// VG6 — THE REDACTION LAW IN-DOM (K7-v7 D1 closure): post-draw, hand-fan cards exist
+// ONLY under the viewing seat's board; every rival board carries at most ONE card and
+// it must be the PUBLIC top. A leaked ownDiscard now FAILS the gate by assertion.
+const vg6 = await page.evaluate(() => {
+  const bad = [];
+  // BOARDS only — the standings rows share data-focus (click-to-focus) but hold no shop-board
+  const boards = [...document.querySelectorAll('#stage [data-focus^="seat-"]')].filter((b) => b.querySelector('[data-layout="boty:shop-board"]'));
+  if (boards.length !== 3) bad.push(`expected 3 boards, found ${boards.length}`);
+  for (const b of boards) {
+    const idx = Number(b.getAttribute('data-focus').slice(5));
+    const fan = [...b.querySelectorAll('[data-layout="template:card"]')];
+    const own = idx === 0; // canonical state views seat-0
+    if (own && fan.length < 1) bad.push(`viewing board fans ${fan.length} cards (expected ≥1 post-draw)`);
+    if (!own && fan.length > 1) bad.push(`rival board ${idx}: ${fan.length} cards (max 1 public top)`);
+    if (!own) for (const f of fan) {
+      const t = f.querySelector('title')?.textContent ?? '';
+      if (!/public top/.test(t)) bad.push(`rival board ${idx} card is not the public top: "${t.slice(0, 40)}"`);
+    }
+  }
+  return bad;
+});
+check('VG6/redaction-in-dom', vg6.length === 0, vg6.slice(0, 3).join(' | ') || 'own fan only on the viewing board; rivals ≤ 1 public top');
+// the cards gallery joins the gate (K7-v7 D3 closure: EVERYTHING popped is now covered)
+await page.click('#gallery');
+await modalCheck('modal:gallery-first-draw');
+await page.evaluate(() => window.__GAME__.dismiss());
 // the static showcase
 await page.goto('http://localhost:4174/showcase.html');
 await page.waitForFunction(() => document.getElementById('stage')?.innerHTML.length > 0);
