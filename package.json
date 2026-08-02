@@ -13,8 +13,10 @@
     "gate:target": "node utilization/bench/build.mjs && node utilization/bench/run-target-check.mjs"
   },
   "devDependencies": {
+    "@types/three": "^0.185.3",
     "esbuild": "^0.28.1",
     "playwright-core": "^1.62.1",
+    "three": "^0.185.1",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   }
