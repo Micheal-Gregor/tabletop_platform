@@ -7,7 +7,8 @@
  */
 import * as THREE from 'three';
 import type { LayoutDef } from '@tabletop/presentation';
-import { CARD_BACK_PARENT, CARD_PARENT, beginFlourish, focusPresets, hookHk11AtAnimationComplete } from '@tabletop/presentation';
+import { CARD_BACK_PARENT, CARD_PARENT, beginFlourish, completeFlourish, focusPresets } from '@tabletop/presentation';
+import type { FlourishInstance } from '@tabletop/presentation';
 import { FORTUNE_CARD, SHOP_BOARD, TOWN_TABLE } from '../../../packs/boty/src/index.js';
 
 const WORLD = { w: 1600, h: 1000 };
@@ -28,7 +29,7 @@ const label = (text: string, w: number, h: number): THREE.Mesh => {
 };
 
 /** A layout rendered as a 3D face: outline plane + one flat quad PER REGION, unit space. */
-function layoutFace(def: LayoutDef, tint: number): THREE.Group {
+function layoutFace(def: LayoutDef, tint: number, fills: Readonly<Record<string, string>> = {}): THREE.Group {
   const grp = new THREE.Group();
   const base = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ color: 0xfbfaf7 }));
   grp.add(base);
@@ -40,7 +41,7 @@ function layoutFace(def: LayoutDef, tint: number): THREE.Group {
     quad.userData = { region: r.id, role: r.role, def: def.id };
     grp.add(quad);
     grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(r.w, r.h)), new THREE.LineBasicMaterial({ color: 0x999999 })).translateX(quad.position.x).translateY(quad.position.y).translateZ(quad.position.z + 0.01));
-    const t = label(`[${r.role}]`, r.w, Math.min(r.h, 12));
+    const t = label(fills[r.id] ?? `[${r.role}]`, r.w, Math.min(r.h, 12));
     t.position.set(quad.position.x, quad.position.y + r.h / 2 - Math.min(r.h, 12) / 2, quad.position.z + 0.02);
     grp.add(t);
   }
@@ -48,9 +49,10 @@ function layoutFace(def: LayoutDef, tint: number): THREE.Group {
 }
 
 /** A CARD object: front = a card child face; back = CARD_BACK_PARENT. Flips under HK-11. */
-function card(front: LayoutDef): THREE.Group {
+function card(front: LayoutDef, frontFills: Readonly<Record<string, string>> = {}): THREE.Group {
   const grp = new THREE.Group();
-  const f = layoutFace(front, 0xffffff);
+  const f = layoutFace(front, 0xffffff, frontFills);
+  grp.userData['displayedTitle'] = frontFills['title'] ?? '';
   const b = layoutFace(CARD_BACK_PARENT, 0xe8e2d8);
   b.rotation.y = Math.PI;
   grp.add(f, b);
@@ -84,7 +86,7 @@ SEATS.forEach((s, i) => {
 
 // THE FLIPPING CARD (HK-11 live in 3D — I-60b): the deck's top card, seeded truth
 const SEEDED_RESULT = 'job-posting'; // the seeded draw the theater must agree with
-const flipCard = card(FORTUNE_CARD);
+const flipCard = card(FORTUNE_CARD, { title: SEEDED_RESULT }); // the face DISPLAYS the seeded draw
 flipCard.scale.multiplyScalar(1.6);
 flipCard.position.set(-260, 90, 60);
 flipCard.rotation.y = Math.PI; // starts face DOWN
@@ -112,11 +114,13 @@ function applyPreset(name: string): void {
 // ── animations (theater law: the SEEDED result decides what the flip reveals) ──
 let flipT: number | null = null;
 let fanT: number | null = null;
-let verdict: { displayed: string; ok: boolean } | null = null;
+let pendingFlourish: FlourishInstance | null = null;
+let injectedDisplayed: string | null = null; // the committed forced-mismatch drill's injection point
+let verdict: { displayed: string; result: string; ok: boolean } | null = null;
 
 function flip(): void {
   if (flipT !== null) return;
-  beginFlourish('card-flip', SEEDED_RESULT, '♪ card flip');
+  pendingFlourish = beginFlourish('card-flip', SEEDED_RESULT, '♪ card flip'); // the instance CARRIES the seed (K7-3d D2)
   flipT = 0;
 }
 function fan(): void { if (fanT === null) fanT = 0; }
@@ -131,11 +135,15 @@ function tick(): void {
     flipT += 0.02;
     if (flipT > 1) {
       flipCard.rotation.y = 0;
-      // HK-11 AT ANIMATION COMPLETE: the displayed face vs the seeded result — truth wins
-      const displayed = SEEDED_RESULT; // the face was BUILT from the seeded result
-      const v = hookHk11AtAnimationComplete(displayed, SEEDED_RESULT);
-      verdict = { displayed: v.result, ok: !v.mismatch };
-      status(`flip complete — HK-11: displayed "${displayed}" ≡ seeded "${SEEDED_RESULT}" → ${v.mismatch ? 'MISMATCH (truth wins)' : 'in sync'}`);
+      // HK-11 AT ANIMATION COMPLETE (K7-3d D2 closure): the displayed value is READ
+      // FROM THE DISPLAYED OBJECT (its face fill), never asserted; the flourish
+      // instance captured at begin CARRIES the seed into completeFlourish.
+      const displayed = injectedDisplayed ?? (flipCard.userData['displayedTitle'] as string);
+      injectedDisplayed = null;
+      const v = completeFlourish(pendingFlourish!, displayed);
+      pendingFlourish = null;
+      verdict = { displayed, result: v.result, ok: !v.mismatch }; // result = TRUTH (seeded wins)
+      status(`flip complete — HK-11: displayed "${displayed}" vs seeded "${SEEDED_RESULT}" → ${v.mismatch ? `MISMATCH (truth wins: "${v.result}")` : 'in sync'}`);
     }
   }
   if (fanT !== null && fanT <= 1) {
@@ -163,6 +171,16 @@ document.getElementById('bar')!.onclick = (ev) => {
 
 (window as unknown as Record<string, unknown>)['__SPIKE__'] = {
   ready: () => renderer.getContext() !== null,
+  /** expected quad count derived from the DEFS (not the scene walk) — VG7's law side */
+  expectedFromDefs: () =>
+    FORTUNE_CARD.regions.length + CARD_BACK_PARENT.regions.length +
+    3 * SHOP_BOARD.regions.length + TOWN_TABLE.regions.length +
+    3 * (CARD_PARENT.regions.length + CARD_BACK_PARENT.regions.length),
+  /** the committed forced-mismatch drill (kill-first law, I-58): inject a wrong displayed value */
+  forceMismatch: () => { injectedDisplayed = 'wrong-card'; flipT = null; flip(); },
+  resetFlip: () => { flipT = null; verdict = null; flipCard.rotation.y = Math.PI; },
+  cameraX: () => camera.position.x,
+  presetCx: (k: string) => presets[k]?.cx ?? null,
   gl: () => (renderer.getContext() as WebGLRenderingContext).getParameter?.((renderer.getContext() as WebGLRenderingContext).VERSION) ?? null,
   flip,
   fan,

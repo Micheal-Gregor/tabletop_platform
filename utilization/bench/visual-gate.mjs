@@ -178,6 +178,36 @@ const vg5 = await page.evaluate(() => {
 });
 check('VG5/a11y-floor-in-dom', vg5.length === 0, vg5.slice(0, 4).join(' | ') || 'every region titled');
 
+// ── VG7 — THE 3D SPIKE JOINS THE GATE (K7-3d D1 closure; the showcase precedent:
+// exhibit status does NOT exempt from coverage). Geometry vs LAW (defs-side count),
+// the HK-11 flip with a COMMITTED forced-mismatch drill (kill-first law), and the
+// preset-consuming camera. All waits are on STATE (I-60f). No pixel hashes (I-57c).
+await page.goto('http://localhost:4174/spike3d.html');
+await page.waitForFunction(() => window.__SPIKE__ && window.__SPIKE__.ready(), null, { timeout: 30000 });
+// VG7a: mesh quads ≡ the def-derived expectation (M-A class: a dropped region fails)
+const rc = await page.evaluate(() => ({ got: window.__SPIKE__.regionCount(), want: window.__SPIKE__.expectedFromDefs() }));
+check('VG7a/3d-regions-vs-law', rc.got === rc.want && rc.want > 0, `${rc.got} quads ≡ ${rc.want} from defs`);
+// VG7b: the honest flip — displayed READ from the object, verdict in sync
+await page.evaluate(() => window.__SPIKE__.flip());
+await page.waitForFunction(() => window.__SPIKE__.verdict() !== null, null, { timeout: 60000 });
+const v1 = await page.evaluate(() => window.__SPIKE__.verdict());
+check('VG7b/3d-flip-hk11-in-sync', v1.ok === true && v1.displayed === v1.result, `displayed "${v1.displayed}" · result "${v1.result}"`);
+// VG7c: the COMMITTED forced mismatch — truth must win (displayed lies, result = seed)
+await page.evaluate(() => { window.__SPIKE__.resetFlip(); window.__SPIKE__.forceMismatch(); });
+await page.waitForFunction(() => window.__SPIKE__.verdict() !== null, null, { timeout: 60000 });
+const v2 = await page.evaluate(() => window.__SPIKE__.verdict());
+check('VG7c/3d-theater-truth-wins', v2.ok === false && v2.displayed === 'wrong-card' && v2.result !== 'wrong-card', `displayed "${v2.displayed}" → truth "${v2.result}"`);
+// VG7d: the camera consumes the preset DATA (x maps directly: cameraX = cx − world.w/2) and is pure
+const cam = await page.evaluate(() => {
+  window.__SPIKE__ && document.querySelector('[data-cam="table"]').click();
+  const x1 = window.__SPIKE__.cameraX();
+  document.querySelector('[data-cam="overview"]').click();
+  document.querySelector('[data-cam="table"]').click();
+  return { x1, x2: window.__SPIKE__.cameraX(), cx: window.__SPIKE__.presetCx('table') };
+});
+check('VG7d/3d-camera-consumes-presets', cam.x1 === cam.x2 && cam.x1 === cam.cx - 800, `x ${cam.x1} ≡ re-derived ≡ cx−800 (${cam.cx}−800)`);
+await page.screenshot({ path: '/tmp/vg-3d.png' });
+
 await browser.close();
 server.close();
 
