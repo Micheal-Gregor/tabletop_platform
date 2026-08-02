@@ -391,3 +391,15 @@ titled); a separate labels channel is Phase-5 adaptation work.
   and rendering one child at a camera focus preset is pure composition: no new
   machinery, no state touch, byte-identical for the same (child, content, camera).
   *(I-50, I-51, GX-39 family)*
+- **GBC-60 —** the parity children (I-55): `boty:round-preamble`, `boty:rival-summary`,
+  `boty:job-card` (promoted), `boty:tradesperson-card`, `boty:equipment-card`, and the
+  town-table `art-banner` add ALL build through extendLayout with EXACT declared
+  shadowing; `rival-summary` SUPPRESSES local-play and hand (a rival's play zones are
+  absent from the view, not hidden — the redaction spirit at the layout tier); the
+  promoted job-card carries ONE definition (the pack's — no duplicate id in the bench);
+  every child renders a11y-clean; the derivations fixture covers the WHOLE export
+  surface. *(I-50, I-55)*
+- **GBC-61 —** vocabulary-as-data (I-55c): `CARD_KINDS` is a frozen 6-member content-tier
+  set (tradespeople · equipment · jobs · persistent · playable · global); it enters no
+  engine door and defines no behavior — it labels gallery filters, nothing else. *(I-55,
+  tier law)*

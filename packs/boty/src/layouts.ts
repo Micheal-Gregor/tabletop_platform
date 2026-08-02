@@ -104,11 +104,120 @@ export const TOWN_OVERLAY: LayoutOverlay = {
   add: [
     { id: 'standings', role: 'standings', x: 8, y: 66, w: 50, h: 28 }, // ranked player rows
     { id: 'log', role: 'table-log', x: 62, y: 70, w: 30, h: 26 }, // the table log
+    { id: 'art-banner', role: 'art', x: 8, y: 1, w: 84, h: 6 }, // "Spring — Maple Hollow" establishing shot (EXT-5 F6)
   ],
 };
 export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
 
-export const BOTY_LAYOUTS: readonly LayoutDef[] = Object.freeze([FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE]);
+// ── THE PARITY CHILDREN (I-55, owner-ruled 2026-08-01; sources: the archived nine +
+// the auditor's live-walk evidence in Report-5 Appendix A / inventory §4–5) ──
+
+/**
+ * The "Who goes first?" preamble — live v1 interposes it BEFORE the round card
+ * (Report-5 F2 evidence). Two modals in sequence, both card-law. The lead-off callout
+ * derives from the PROJECTED active seat (the K7-v1x D2 law carries — I-55a).
+ */
+export const PREAMBLE_OVERLAY: LayoutOverlay = {
+  id: 'boty:round-preamble',
+  override: [
+    { id: 'art', role: 'art', x: 30, y: 8, w: 40, h: 24 }, // the die glyph, small + centered
+    { id: 'title', role: 'title', x: 6, y: 36, w: 88, h: 10 }, // "🎲 Who goes first?"
+    { id: 'text', role: 'text', x: 6, y: 60, w: 88, h: 16 }, // lore ("lead-off rotates one seat clockwise…")
+  ],
+  add: [
+    { id: 'callout', role: 'callout', x: 6, y: 48, w: 88, h: 10 }, // "{seat} leads off Round {n}!"
+    { id: 'action', role: 'action-button', x: 6, y: 86, w: 88, h: 10 }, // "Next ▶" → reveals the round card
+  ],
+  suppress: ['modifiers'],
+};
+export const ROUND_PREAMBLE: LayoutDef = extendLayout(CARD_PARENT, PREAMBLE_OVERLAY);
+
+/**
+ * The rival summary — the carousel's page (I-55b): a COMPACT shop board. A rival's
+ * play zones are ABSENT from the view, not hidden — local-play and hand are SUPPRESSED
+ * (the redaction spirit at the layout tier). Paging (prev/next/index) is bench chrome.
+ */
+export const RIVAL_OVERLAY: LayoutOverlay = {
+  id: 'boty:rival-summary',
+  override: [
+    { id: 'identity', role: 'title', x: 2, y: 20, w: 44, h: 8 },
+    { id: 'counters', role: 'counters', x: 52, y: 20, w: 46, h: 8 },
+    { id: 'crew', role: 'crew-zone', x: 2, y: 42, w: 47, h: 26 }, // CREW(n) [⚡tier]
+    { id: 'equipment', role: 'equipment-rack', x: 51, y: 42, w: 47, h: 26 },
+  ],
+  add: [
+    { id: 'art-banner', role: 'art', x: 2, y: 2, w: 96, h: 16 },
+    { id: 'building-tier', role: 'building-tier', x: 2, y: 30, w: 96, h: 8 }, // "{building} · cap {c}"
+    { id: 'jobs-list', role: 'jobs-list', x: 2, y: 72, w: 96, h: 24 }, // JOBS(n) [title x/N]
+  ],
+  suppress: ['local-play', 'hand'],
+};
+export const RIVAL_SUMMARY: LayoutDef = extendLayout(BOARD_PARENT, RIVAL_OVERLAY);
+
+/**
+ * The job card, PROMOTED from bench-local to the pack (I-55e — same id, ONE definition)
+ * and enriched to the inventory §4.3 parameters: status badge · progress · value/due ·
+ * terms. Measured off 05/06 job rows; regions the stills don't capture at card scale
+ * (the variance note lives in `text`) carry inventory-derived placement (I-55d).
+ */
+export const JOB_OVERLAY: LayoutOverlay = {
+  id: 'boty:job-card',
+  override: [
+    { id: 'title', role: 'title', x: 6, y: 4, w: 62, h: 10 }, // "Tune-up"
+    { id: 'art', role: 'art', x: 6, y: 16, w: 60, h: 34 },
+    { id: 'text', role: 'text', x: 6, y: 62, w: 88, h: 14 }, // variance note / flavor
+  ],
+  add: [
+    { id: 'status', role: 'status-badge', x: 70, y: 4, w: 24, h: 10 }, // Queued | Active
+    { id: 'deadline', role: 'deadline-badge', x: 70, y: 16, w: 24, h: 14 }, // "due turn {t}"
+    { id: 'payout', role: 'payout-strip', x: 70, y: 32, w: 24, h: 18 }, // "${v}"
+    { id: 'progress', role: 'progress', x: 6, y: 52, w: 88, h: 8 }, // "0/4 · crew 0/2"
+    { id: 'terms', role: 'terms', x: 6, y: 78, w: 88, h: 6 }, // "net-30 · sticky"
+  ],
+  suppress: ['modifiers'],
+};
+export const JOB_CARD: LayoutDef = extendLayout(CARD_PARENT, JOB_OVERLAY);
+
+/** The tradesperson card (inventory §4.4): portrait-dominant, productivity · tool · status. */
+export const TRADESPERSON_OVERLAY: LayoutOverlay = {
+  id: 'boty:tradesperson-card',
+  override: [
+    { id: 'art', role: 'art', x: 6, y: 4, w: 88, h: 46 }, // the portrait
+    { id: 'title', role: 'title', x: 6, y: 52, w: 88, h: 8 }, // the name
+    { id: 'text', role: 'text', x: 6, y: 72, w: 88, h: 10 }, // flavor quote (italic in v1)
+  ],
+  add: [
+    { id: 'productivity', role: 'productivity', x: 6, y: 62, w: 42, h: 8 }, // "⚡{n} · T{n}"
+    { id: 'tool', role: 'tool', x: 52, y: 62, w: 42, h: 8 }, // bare-handed | equipped item
+    { id: 'status', role: 'status', x: 6, y: 84, w: 88, h: 8 }, // idle | working {venture}
+  ],
+  suppress: ['modifiers'],
+};
+export const TRADESPERSON_CARD: LayoutDef = extendLayout(CARD_PARENT, TRADESPERSON_OVERLAY);
+
+/** The equipment card (inventory §4.5): grade · tenure · assigned-to · cost/rent. */
+export const EQUIPMENT_OVERLAY: LayoutOverlay = {
+  id: 'boty:equipment-card',
+  override: [
+    { id: 'art', role: 'art', x: 6, y: 16, w: 88, h: 30 },
+    { id: 'text', role: 'text', x: 6, y: 68, w: 88, h: 12 }, // cost / rent line
+  ],
+  add: [
+    { id: 'grade', role: 'grade', x: 6, y: 48, w: 42, h: 8 }, // Basic | Pro
+    { id: 'tenure', role: 'tenure', x: 52, y: 48, w: 42, h: 8 }, // owned | rented
+    { id: 'assigned', role: 'assigned-to', x: 6, y: 58, w: 88, h: 8 }, // worker or "—"
+  ],
+  suppress: ['modifiers'],
+};
+export const EQUIPMENT_CARD: LayoutDef = extendLayout(CARD_PARENT, EQUIPMENT_OVERLAY);
+
+/** The gallery filter vocabulary — content-tier DATA, no engine door (GBC-61). */
+export const CARD_KINDS = Object.freeze(['tradespeople', 'equipment', 'jobs', 'persistent', 'playable', 'global'] as const);
+
+export const BOTY_LAYOUTS: readonly LayoutDef[] = Object.freeze([
+  FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE,
+  ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, TRADESPERSON_CARD, EQUIPMENT_CARD,
+]);
 
 /** (parent, overlay, child) triples — the construction-falsifiability fixture (K7-v1x D5). */
 export const BOTY_LAYOUT_DERIVATIONS = Object.freeze([
@@ -116,4 +225,9 @@ export const BOTY_LAYOUT_DERIVATIONS = Object.freeze([
   { parent: CARD_PARENT, overlay: ROUND_OVERLAY, child: ROUND_CARD },
   { parent: BOARD_PARENT, overlay: SHOP_OVERLAY, child: SHOP_BOARD },
   { parent: TABLE_PARENT, overlay: TOWN_OVERLAY, child: TOWN_TABLE },
+  { parent: CARD_PARENT, overlay: PREAMBLE_OVERLAY, child: ROUND_PREAMBLE },
+  { parent: BOARD_PARENT, overlay: RIVAL_OVERLAY, child: RIVAL_SUMMARY },
+  { parent: CARD_PARENT, overlay: JOB_OVERLAY, child: JOB_CARD },
+  { parent: CARD_PARENT, overlay: TRADESPERSON_OVERLAY, child: TRADESPERSON_CARD },
+  { parent: CARD_PARENT, overlay: EQUIPMENT_OVERLAY, child: EQUIPMENT_CARD },
 ] as const);

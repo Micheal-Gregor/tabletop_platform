@@ -11,11 +11,18 @@ import {
   renderLayout,
   validateLayout,
 } from '@tabletop/presentation';
-import { BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE } from '../src/index.js';
+import {
+  BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, CARD_KINDS,
+  EQUIPMENT_CARD, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE,
+  SHOP_BOARD, TOWN_TABLE, TRADESPERSON_CARD,
+} from '../src/index.js';
 
 describe('GBC-58 · the four children build lawfully; shadowing EXACT and queryable (I-50/I-51)', () => {
-  it('all four validate, are frozen, and name their parent in lineage', () => {
-    expect(BOTY_LAYOUTS.map((l) => l.id)).toEqual(['boty:fortune-card', 'boty:round-card', 'boty:shop-board', 'boty:town-table']);
+  it('all children validate, are frozen, and name their parent in lineage', () => {
+    expect(BOTY_LAYOUTS.map((l) => l.id)).toEqual([
+      'boty:fortune-card', 'boty:round-card', 'boty:shop-board', 'boty:town-table',
+      'boty:round-preamble', 'boty:rival-summary', 'boty:job-card', 'boty:tradesperson-card', 'boty:equipment-card',
+    ]);
     for (const l of BOTY_LAYOUTS) {
       expect(() => validateLayout(l)).not.toThrow();
       expect(Object.isFrozen(l)).toBe(true);
@@ -64,8 +71,8 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     expect(SHOP_BOARD.regions.find((r) => r.id === 'equipment')!.role).toBe('equipment-rack');
   });
 
-  it('town-table: standings + log ADDED; the shared-center parent regions untouched', () => {
-    expect(TOWN_TABLE.shadowed).toEqual({ overridden: [], added: ['standings', 'log'], suppressed: [] });
+  it('town-table: standings + log + art-banner ADDED (EXT-5 F6); the shared-center parent regions untouched', () => {
+    expect(TOWN_TABLE.shadowed).toEqual({ overridden: [], added: ['standings', 'log', 'art-banner'], suppressed: [] });
     for (const id of TABLE_PARENT.regions.map((r) => r.id)) {
       expect(TOWN_TABLE.regions.find((r) => r.id === id)).toEqual(TABLE_PARENT.regions.find((r) => r.id === id));
     }
@@ -90,6 +97,72 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     // grandchild lineage accumulates through a v1 child
     const grandchild = extendLayout(FORTUNE_CARD, { id: 'boty:fortune-foil', suppress: ['payout'] });
     expect(grandchild.lineage).toEqual(['template:card', 'boty:fortune-card']);
+  });
+});
+
+describe('GBC-60 · the parity children (I-55): exact shadowing, redaction-suppression, one job-card definition', () => {
+  it('round-preamble: die-glyph art small+centered, callout+action adds — the preamble is a CARD, sequenced before round-card', () => {
+    expect(ROUND_PREAMBLE.shadowed).toEqual({
+      overridden: ['art', 'title', 'text'],
+      added: ['callout', 'action'],
+      suppressed: ['modifiers'],
+    });
+    const art = ROUND_PREAMBLE.regions.find((r) => r.id === 'art')!;
+    expect(art.w).toBeLessThan(50); // a glyph, not a dominant panel — the preamble inverts art dominance
+    expect(ROUND_PREAMBLE.lineage).toEqual(['template:card']);
+  });
+
+  it('rival-summary: local-play and hand SUPPRESSED — a rival\'s play zones are ABSENT, not hidden', () => {
+    expect(RIVAL_SUMMARY.shadowed).toEqual({
+      overridden: ['identity', 'counters', 'crew', 'equipment'],
+      added: ['art-banner', 'building-tier', 'jobs-list'],
+      suppressed: ['local-play', 'hand'],
+    });
+    expect(RIVAL_SUMMARY.regions.some((r) => r.id === 'local-play')).toBe(false);
+    expect(RIVAL_SUMMARY.regions.some((r) => r.id === 'hand')).toBe(false);
+    expect(RIVAL_SUMMARY.lineage).toEqual(['template:board']);
+  });
+
+  it('job-card (PROMOTED, §4.3): status/deadline/payout/progress/terms declared exactly', () => {
+    expect(JOB_CARD.shadowed).toEqual({
+      overridden: ['title', 'art', 'text'],
+      added: ['status', 'deadline', 'payout', 'progress', 'terms'],
+      suppressed: ['modifiers'],
+    });
+    expect(JOB_CARD.regions.find((r) => r.id === 'status')!.role).toBe('status-badge');
+    expect(JOB_CARD.regions.find((r) => r.id === 'terms')!.role).toBe('terms');
+  });
+
+  it('tradesperson-card (§4.4): portrait-dominant with productivity/tool/status', () => {
+    expect(TRADESPERSON_CARD.shadowed).toEqual({
+      overridden: ['art', 'title', 'text'],
+      added: ['productivity', 'tool', 'status'],
+      suppressed: ['modifiers'],
+    });
+    const art = TRADESPERSON_CARD.regions.find((r) => r.id === 'art')!;
+    expect(art.h).toBeGreaterThan(CARD_PARENT.regions.find((r) => r.id === 'art')!.h); // portrait dominates
+  });
+
+  it('equipment-card (§4.5): grade/tenure/assigned declared exactly', () => {
+    expect(EQUIPMENT_CARD.shadowed).toEqual({
+      overridden: ['art', 'text'],
+      added: ['grade', 'tenure', 'assigned'],
+      suppressed: ['modifiers'],
+    });
+    expect(EQUIPMENT_CARD.regions.some((r) => r.id === 'title')).toBe(true); // inherited untouched
+  });
+
+  it('every parity child renders a11y-clean', () => {
+    for (const child of [ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, TRADESPERSON_CARD, EQUIPMENT_CARD]) {
+      expect(a11yAudit(renderLayout(child, child.id))).toBe(0);
+    }
+  });
+});
+
+describe('GBC-61 · vocabulary-as-data: CARD_KINDS labels filters, defines no behavior', () => {
+  it('the 6-kind set is frozen and exactly the inventory\'s', () => {
+    expect([...CARD_KINDS]).toEqual(['tradespeople', 'equipment', 'jobs', 'persistent', 'playable', 'global']);
+    expect(Object.isFrozen(CARD_KINDS)).toBe(true);
   });
 });
 

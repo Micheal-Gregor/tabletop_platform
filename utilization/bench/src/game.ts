@@ -16,11 +16,11 @@ import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { Camera, LayoutDef, SeatView, World } from '@tabletop/presentation';
 import {
   CARD_BACK_PARENT, CARD_PARENT,
-  beginFlourish, cameraViewBox, emit, extendLayout, focusPresets, project, renderLayout, shadow, TABLE_TILT,
+  beginFlourish, cameraViewBox, emit, focusPresets, project, renderLayout, shadow, TABLE_TILT,
 } from '@tabletop/presentation';
 import {
   BOTY_PACK, BOTY_REF, botyGenesis, botyGcContract, botyJob, botyRecession, botySubcontract, wireBoty,
-  FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE,
+  CARD_KINDS, FORTUNE_CARD, JOB_CARD, RIVAL_SUMMARY, ROUND_CARD, ROUND_PREAMBLE, SHOP_BOARD, TOWN_TABLE,
 } from '../../../packs/boty/src/index.js';
 import { autosave, clearAutosave, exportEnvelope, importEnvelope, loadAutosave, PersistHalt } from './persist.js';
 
@@ -29,25 +29,26 @@ const WORLD: World = { w: 1600, h: 1000 };
 const SEATS = BOTY_PACK.seats.map((s) => s.id);
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
-/** The BOTY job-card child (the certified extension door, live in the game). */
-const JOB_CARD: LayoutDef = extendLayout(CARD_PARENT, {
-  id: 'boty:job-card',
-  override: [{ id: 'art', role: 'art', x: 6, y: 16, w: 60, h: 38 }],
-  add: [{ id: 'deadline', role: 'deadline-badge', x: 70, y: 16, w: 24, h: 16 }, { id: 'payout', role: 'payout-strip', x: 70, y: 36, w: 24, h: 18 }],
-  suppress: ['modifiers'],
-});
+// JOB_CARD is PROMOTED to the pack (I-55e) — one definition, imported above.
 
 interface Table {
   controller: LockstepController;
   viewSeat: string;
 }
-/** Modal-as-card (I-51a): what's popped is a CARD CHILD + its content fill, nothing else. */
-type Popped = { layout: LayoutDef; label: string; content: Record<string, string> } | null;
+/**
+ * Modal-as-card (I-51a): what's popped is a CARD/BOARD CHILD + its content fill.
+ * `nav` marks the interactive modals (carousel/gallery) whose inner chrome must not
+ * dismiss on click; a QUEUE realizes v1's preamble → round-card sequence (I-55a).
+ */
+type Popped = { layout: LayoutDef; label: string; content: Record<string, string>; nav?: 'carousel' | 'gallery' } | null;
 
 const wire = () => (c: EngineCore) => wireBoty(new RuleRegistry() as RegistryT)(c);
 let table: Table | null = null;
 let selectedCrew: string | null = null;
 let popped: Popped = null;
+const popQueue: NonNullable<Popped>[] = [];
+let rivalIdx = 0;
+const galleryFilters = new Set<string>();
 let lastRound: number | null = null;
 const presets = focusPresets(SEATS.length, WORLD);
 let camera: Camera = presets['overview']!;
@@ -154,7 +155,10 @@ function tableGroup(view: SeatView): string {
   const tail = moves.slice(-5);
   const log = `<g><title>table log — last ${tail.length} of ${moves.length} moves</title><rect x="${lgR.x * T}" y="${lgR.y * T}" width="${lgR.w * T}" height="${lgR.h * T}" rx="8" class="panel"/><text x="${lgR.x * T + 10}" y="${lgR.y * T + 20}" class="head">TABLE LOG</text>${tail.map((m, mi) =>
     `<text x="${lgR.x * T + 10}" y="${lgR.y * T + 38 + mi * 16}" class="sub">${esc(m.seat)} · ${esc(m.type)}</text>`).join('')}</g>`;
-  return `<g transform="translate(240 130) ${TABLE_TILT}"><g><title>the shared table</title><rect x="-30" y="-20" width="1120" height="700" rx="40" class="felt"/></g>${deck}${discard}${prompts}${ventures}${standings}${log}</g>`;
+  // ART BANNER — the establishing shot (EXT-5 F6), placeholder-framed per D-1
+  const abR = rg(TOWN_TABLE, 'art-banner');
+  const banner = `<g><title>town art — ${seasonOf(view.turn.round)}, Maple Hollow</title><rect x="${abR.x * T}" y="${abR.y * T}" width="${abR.w * T}" height="${abR.h * T}" rx="6" class="region"/><text x="${abR.x * T + 8}" y="${abR.y * T + 25}" class="sub">[art: ${seasonOf(view.turn.round)} — Maple Hollow]</text></g>`;
+  return `<g transform="translate(240 130) ${TABLE_TILT}"><g><title>the shared table</title><rect x="-30" y="-20" width="1120" height="700" rx="40" class="felt"/></g>${banner}${deck}${discard}${prompts}${ventures}${standings}${log}</g>`;
 }
 
 function boardGroup(view: SeatView, seat: string, i: number): string {
@@ -204,17 +208,29 @@ function boardGroup(view: SeatView, seat: string, i: number): string {
 }
 
 /** Modal-as-card (I-51a): the popped child renders in its own fixed frame, like v1. */
+const POP_STYLE = `<style>.frame{fill:#fbfaf7;stroke:#444;stroke-width:1.2}.region{fill:#fff;stroke:#bbb;stroke-dasharray:3 2}.region-label{font:4.6px system-ui;fill:#555}</style>`;
+
 function drawPopped(): void {
   if (!popped) { $('overlay').style.display = 'none'; return; }
   $('overlay').style.display = 'flex';
-  $('popped').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="340" height="460">
-  <style>.frame{fill:#fbfaf7;stroke:#444;stroke-width:1.2}.region{fill:#fff;stroke:#bbb;stroke-dasharray:3 2}.region-label{font:4.6px system-ui;fill:#555}</style>
-  ${renderLayout(popped.layout, popped.label, popped.content)}</svg>`;
+  const wide = popped.layout.kind === 'board' || popped.nav === 'gallery';
+  const nav = popped.nav
+    ? `<div class="pop-nav">${popped.nav === 'carousel' ? `<button data-nav="prev">◀</button><span>${rivalIdx + 1} / ${SEATS.length}</span><button data-nav="next">▶</button>` : chipsHtml()}<button data-nav="close">✕</button></div>`
+    : '';
+  const body = popped.nav === 'gallery' ? galleryGrid() : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${wide ? 460 : 340}" height="${wide ? 460 : 460}">${POP_STYLE}${renderLayout(popped.layout, popped.label, popped.content)}</svg>`;
+  $('popped').innerHTML = nav + body;
+}
+
+/** Dismissal: plain cards advance the queue (preamble → round card); nav modals close whole. */
+function popNext(): void {
+  popped = popQueue.shift() ?? null;
+  drawPopped();
 }
 
 /** The callout derives from the PROJECTED view — theater never outruns truth (K7-v1x D2). */
 function popRound(round: number, leader: string): void {
-  popped = {
+  popQueue.length = 0;
+  popQueue.push({
     layout: ROUND_CARD,
     label: `Round ${round} · ${seasonOf(round)}`,
     content: {
@@ -223,7 +239,63 @@ function popRound(round: number, leader: string): void {
       callout: `${leader} leads off this round.`,
       action: 'Next ▶ (click to continue)',
     },
+  });
+  // v1 sequence (I-55a): the "Who goes first?" PREAMBLE precedes the round card
+  popped = {
+    layout: ROUND_PREAMBLE,
+    label: 'Who goes first?',
+    content: {
+      art: '🎲',
+      title: '🎲 Who goes first?',
+      callout: `${leader} leads off Round ${round}!`,
+      text: 'lead-off rotates one seat clockwise each round',
+      action: 'Next ▶ (click to continue)',
+    },
   };
+}
+
+/** The rivals carousel (I-55b): one rival-summary page at a time; paging is bench chrome. */
+function popRivals(): void {
+  if (!table) return;
+  const view = project(stateOf(table), table.viewSeat);
+  const seat = SEATS[rivalIdx]!;
+  const s = view.seats.find((v) => v.id === seat)!;
+  const crewState = stateOf(table)['crew'] as readonly { id: string; outfit: string; assignedTo?: unknown }[];
+  const mine = crewState.filter((c) => c.outfit === seat);
+  popped = {
+    layout: RIVAL_SUMMARY,
+    label: `rival: ${seat}`,
+    nav: 'carousel',
+    content: {
+      'art-banner': `${seat}'s shop`,
+      identity: `${seat} · [trade]`,
+      counters: `$${s.cash} · ♥${s.favor}`,
+      'building-tier': `[building · tier —] · ${mine.length} crew`,
+      crew: `CREW (${mine.length})`,
+      equipment: '[equipment-rack]',
+      'jobs-list': `${mine.filter((c) => c.assignedTo !== undefined).length} job(s) crewed`,
+    },
+  };
+  drawPopped();
+}
+
+/** Gallery filter chips — the CARD_KINDS vocabulary as data (GBC-61); rule: substring match on card id. */
+function chipsHtml(): string {
+  return CARD_KINDS.map((k) =>
+    `<button data-chip="${k}" class="${galleryFilters.has(k) ? 'chip on' : 'chip'}" title="filter: card ids containing '${k.slice(0, 3)}'">${k}</button>`).join('');
+}
+
+/** The cards gallery: your drawn cards as fortune-card tiles (I-55c). */
+function galleryGrid(): string {
+  if (!table) return '';
+  const view = project(stateOf(table), table.viewSeat);
+  const cards = view.ownDiscard.filter((id) =>
+    galleryFilters.size === 0 || [...galleryFilters].some((k) => id.toLowerCase().includes(k.slice(0, 3))));
+  const tiles = cards.map((id, i) =>
+    `<g transform="translate(${(i % 4) * 105} ${Math.floor(i / 4) * 145}) scale(1)">${renderLayout(FORTUNE_CARD, `card: ${id}`, { title: id })}</g>`).join('');
+  const rows = Math.max(1, Math.ceil(cards.length / 4));
+  return `<div class="gal-note">${cards.length} of ${view.ownDiscard.length} card(s)${galleryFilters.size ? ' (filtered)' : ''}</div>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 ${rows * 145}" width="440" height="${Math.min(460, rows * 150)}">${POP_STYLE}${tiles || '<text x="10" y="20" class="region-label">no cards yet — draw from the deck</text>'}</svg>`;
 }
 
 function draw(): void {
@@ -282,6 +354,7 @@ function hitInner(ev: Event): void {
         const after = project(stateOf(table), table.viewSeat);
         const drawn = after.decks[activeId]?.discardTop;
         if (drawn) {
+          popQueue.length = 0;
           popped = {
             layout: FORTUNE_CARD,
             label: `drawn: ${drawn}`,
@@ -347,7 +420,19 @@ function wireUi(): void {
     camera = { ...camera, zoom: Math.max(1, Math.min(6, camera.zoom * ((ev as WheelEvent).deltaY < 0 ? 1.15 : 0.87))) };
     draw();
   });
-  $('overlay').addEventListener('click', () => { popped = null; drawPopped(); });
+  $('overlay').addEventListener('click', (ev) => {
+    const t = ev.target as HTMLElement;
+    const nav = t.dataset['nav'];
+    const chip = t.dataset['chip'];
+    if (nav === 'close') { popped = null; drawPopped(); return; }
+    if (nav === 'prev') { rivalIdx = (rivalIdx + SEATS.length - 1) % SEATS.length; popRivals(); return; }
+    if (nav === 'next') { rivalIdx = (rivalIdx + 1) % SEATS.length; popRivals(); return; }
+    if (chip) { galleryFilters.has(chip) ? galleryFilters.delete(chip) : galleryFilters.add(chip); drawPopped(); return; }
+    if (popped?.nav && $('popped').contains(t)) return; // interactive modal: inner clicks never dismiss
+    popNext(); // plain card: advance the queue (preamble → round card → done)
+  });
+  $('rivals').onclick = () => { rivalIdx = 0; popRivals(); };
+  $('gallery').onclick = () => { popped = { layout: FORTUNE_CARD, label: 'your cards', content: {}, nav: 'gallery' }; drawPopped(); };
   $('cam-bar').innerHTML = Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('');
   $('cam-bar').onclick = (ev) => { const k = (ev.target as HTMLElement).dataset['cam']; if (k) { camera = presets[k]!; draw(); } };
   $('new-game').onclick = () => { table = fresh(); $('halt').style.display = 'none'; const v = project(stateOf(table!), table!.viewSeat); lastRound = v.turn.round; popRound(v.turn.round, v.seats[v.turn.seatIdx]!.id); draw(); };
@@ -385,7 +470,8 @@ function wireUi(): void {
   rowHash: () => table?.controller.stateHash() ?? null,
   moveCount: () => table?.controller.row().moves.length ?? null,
   poppedLayout: () => popped?.layout.id ?? null,
-  dismiss: () => { popped = null; drawPopped(); },
+  dismiss: () => { popQueue.length = 0; popped = null; drawPopped(); },
+  advance: () => popNext(),
 };
 wireUi();
 boot();
