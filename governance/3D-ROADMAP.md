@@ -75,4 +75,4 @@ each object ("really perform for the players" is the owner's acceptance bar).
 | Increment | Commit | K7 | Owner verdict |
 |---|---|---|---|
 | Spike (feasibility exhibit) | 6294d06 | k7-pass-3d-adoption | ruled: adopt (2026-08-02) |
-| A1 the stage (game3d shell) | (this commit) | K7 pending this round | awaiting owner playtest |
+| A1 the stage (game3d shell) | 2a699ad | K7 PASS (tag rides the playtest) | awaiting owner playtest |

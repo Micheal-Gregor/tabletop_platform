@@ -522,3 +522,18 @@ forced-mismatch drill (truth wins live), and the seat-0 provable-move camera; ti
 paths fail named. Strike 9 recorded (proposal present-tense "drives it"). Final: suite
 279/279 · VISUAL GATE 15/15 ×2 · BATTERY 21/21 · DRILLS 11/11 · vectors 10/10.
 **PHASE A OPENS** at governance/3D-ROADMAP.md row A1.
+
+**K7-A1 (roadmap A1: the 3D stage, 2026-08-02): RETURN → PASS (pending owner playtest).**
+The playable 3D shell: engine-bound through the same doors (project() reads, no verbs
+at A1), the table flat on real ground with projection-fed stamped fills, boards at the
+edges, and the GLIDING camera on the preset law — wheel dolly, click-to-focus,
+unknown-preset refusal. The RETURN caught (1) the whole interaction layer uncovered
+while the row claimed no-uncovered-code — closed with VG8e driving REAL input
+(page.mouse events; the dead-handlers mutant dies by name); (2) the frozen-state
+boundary: with no verbs at A1 the projection never changes, so exact-hardcode mutants
+are equivalent-mutants — recorded as survivors with the kill-test BOUND TO A2's first
+state change (strike 10; the M-AR pattern); (3) epsilon 0.2 hiding subtle mapping
+drift — now 1e-9, the +0.15 mutant dies. STANDING A2 OBLIGATIONS inherited by the next
+round: re-check VG8b/VG8d after a draw + re-run the hardcode kills; consume rowHash/
+moveCount on the gate. Final: suite 279/279 · VISUAL GATE 20/20 ×3 · BATTERY 21/21 ·
+DRILLS 11/11 · vectors 10/10. The k7 tag for A1 RIDES THE OWNER'S PLAYTEST VERDICT.
