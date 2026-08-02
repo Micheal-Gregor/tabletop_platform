@@ -25,6 +25,7 @@ const label = (text: string, w: number, h: number): THREE.Mesh => {
     new THREE.PlaneGeometry(w, h),
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }),
   );
+  m.userData['renderedText'] = text; // the SOURCE OF TRUTH for "displayed" (K7-3d D2-R)
   return m;
 };
 
@@ -42,6 +43,7 @@ function layoutFace(def: LayoutDef, tint: number, fills: Readonly<Record<string,
     grp.add(quad);
     grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(r.w, r.h)), new THREE.LineBasicMaterial({ color: 0x999999 })).translateX(quad.position.x).translateY(quad.position.y).translateZ(quad.position.z + 0.01));
     const t = label(fills[r.id] ?? `[${r.role}]`, r.w, Math.min(r.h, 12));
+    t.userData['labelFor'] = r.id;
     t.position.set(quad.position.x, quad.position.y + r.h / 2 - Math.min(r.h, 12) / 2, quad.position.z + 0.02);
     grp.add(t);
   }
@@ -52,7 +54,11 @@ function layoutFace(def: LayoutDef, tint: number, fills: Readonly<Record<string,
 function card(front: LayoutDef, frontFills: Readonly<Record<string, string>> = {}): THREE.Group {
   const grp = new THREE.Group();
   const f = layoutFace(front, 0xffffff, frontFills);
-  grp.userData['displayedTitle'] = frontFills['title'] ?? '';
+  // K7-3d D2-R (M-MIRROR kill): read what the title label ACTUALLY RENDERED — a
+  // reverted fill now yields '[title]', which HK-11 will refuse to call the seed.
+  let rendered = '';
+  f.traverse((o: THREE.Object3D) => { if (o.userData?.['labelFor'] === 'title') rendered = o.userData['renderedText'] as string; });
+  grp.userData['displayedTitle'] = rendered;
   const b = layoutFace(CARD_BACK_PARENT, 0xe8e2d8);
   b.rotation.y = Math.PI;
   grp.add(f, b);
@@ -179,8 +185,8 @@ document.getElementById('bar')!.onclick = (ev) => {
   /** the committed forced-mismatch drill (kill-first law, I-58): inject a wrong displayed value */
   forceMismatch: () => { injectedDisplayed = 'wrong-card'; flipT = null; flip(); },
   resetFlip: () => { flipT = null; verdict = null; flipCard.rotation.y = Math.PI; },
-  cameraX: () => camera.position.x,
-  presetCx: (k: string) => presets[k]?.cx ?? null,
+  cameraPos: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
+  presetData: (k: string) => (presets[k] ? { cx: presets[k].cx, cy: presets[k].cy, zoom: presets[k].zoom } : null),
   gl: () => (renderer.getContext() as WebGLRenderingContext).getParameter?.((renderer.getContext() as WebGLRenderingContext).VERSION) ?? null,
   flip,
   fan,
