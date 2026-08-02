@@ -285,6 +285,56 @@ const wheelName = await page.evaluate(() => window.__GAME3D__.camName());
 const refused = await page.evaluate(() => { try { window.__GAME3D__.glideTo('nope'); return 'NO-THROW'; } catch (e) { return /unknown preset/.test(String(e)) ? 'refused-named' : 'wrong-error'; } });
 check('VG8e/3d-real-input-paths', btnName === 'overview' && clickName === 'seat-1' && wheelName === 'custom' && refused === 'refused-named',
   `button→${btnName} · board-click→${clickName} · wheel→${wheelName} · unknown-preset→${refused}`);
+// VG8f — READ VIEW (I-63, the owner's A1 playtest ruling; kill-first): flat overhead
+// for the table, face-on for a board, FIT (no bbox corner cropped), pan clamped to the
+// object, orientation unchanged while panning, re-toggle purity (pan resets).
+const waitRest = async (name) => {
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); return true; }
+  catch { check(name, false, 'read glide never rested (timeout)'); return false; }
+};
+// table read: overhead + fit
+await page.evaluate(() => window.__GAME3D__.toggleRead('table'));
+if (await waitRest('VG8f/read-view-law')) {
+  const t = await page.evaluate(() => ({
+    st: window.__GAME3D__.readState(), pos: window.__GAME3D__.cameraPos(),
+    look: window.__GAME3D__.lookAtPoint(), corners: window.__GAME3D__.cornersNdc(), cam: window.__GAME3D__.camName(),
+  }));
+  const overhead = Math.abs(t.pos.x - t.look.x) < 1e-6 && Math.abs(t.pos.z - t.look.z) < 1e-6 && t.pos.y > t.look.y;
+  const fit = t.corners && t.corners.every((c) => Math.abs(c.x) <= 1 && Math.abs(c.y) <= 1);
+  const framed = t.corners && Math.max(...t.corners.map((c) => Math.max(Math.abs(c.x), Math.abs(c.y)))) >= 0.5;
+  // pan: orientation must NOT change; the look stays inside the object's bounds even on a huge drag
+  const q1 = await page.evaluate(() => window.__GAME3D__.quat());
+  await page.evaluate(() => { window.__GAME3D__.panProbe(4000, 2500); });
+  const afterPan = await page.evaluate(() => ({ q: window.__GAME3D__.quat(), inside: window.__GAME3D__.lookInsideFocusBox(), st: window.__GAME3D__.readState() }));
+  const qSame = ['x', 'y', 'z', 'w'].every((k) => Math.abs(q1[k] - afterPan.q[k]) < 1e-9);
+  const clamped = afterPan.inside === true && afterPan.st.panned === true;
+  // re-toggle purity: scene → read again = fit pose restored, pan reset
+  await page.evaluate(() => { window.__GAME3D__.toggleRead(); window.__GAME3D__.toggleRead('table'); });
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const t2 = await page.evaluate(() => ({ pos: window.__GAME3D__.cameraPos(), st: window.__GAME3D__.readState() }));
+  const pure = Math.abs(t2.pos.x - t.pos.x) < 1e-6 && Math.abs(t2.pos.y - t.pos.y) < 1e-6 && Math.abs(t2.pos.z - t.pos.z) < 1e-6 && t2.st.panned === false;
+  check('VG8f/read-view-law', t.st.mode === 'read' && t.cam === 'table:read' && overhead && fit && framed && qSame && clamped && pure,
+    `overhead:${overhead} fit:${fit} framed:${framed} pan-orient-stable:${qSame} pan-clamped:${clamped} retoggle-pure:${pure}`);
+}
+// board read: face-on to seat-1 (camera direction ∥ the board normal)
+await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
+await page.evaluate(() => window.__GAME3D__.toggleRead('seat-1'));
+if (await waitRest('VG8f/read-board-face-on')) {
+  const b = await page.evaluate(() => ({
+    pos: window.__GAME3D__.cameraPos(), look: window.__GAME3D__.lookAtPoint(),
+    corners: window.__GAME3D__.cornersNdc(), cam: window.__GAME3D__.camName(),
+  }));
+  // face-on: the view direction matches the board normal (0, sin .25, cos .25) — dot ≈ −1 toward the board
+  const dir = { x: b.look.x - b.pos.x, y: b.look.y - b.pos.y, z: b.look.z - b.pos.z };
+  const len = Math.hypot(dir.x, dir.y, dir.z);
+  const n = { x: 0, y: Math.sin(0.25), z: Math.cos(0.25) }; // boards rotated x by −0.25
+  const dot = (dir.x * n.x + dir.y * n.y + dir.z * n.z) / len;
+  const faceOn = Math.abs(dot + 1) < 1e-6;
+  const fitB = b.corners && b.corners.every((c) => Math.abs(c.x) <= 1 && Math.abs(c.y) <= 1);
+  check('VG8f/read-board-face-on', b.cam === 'seat-1:read' && faceOn && fitB, `dot ${dot.toFixed(6)} (want −1) · fit:${fitB}`);
+}
+await page.screenshot({ path: '/tmp/vg-3d-read.png' });
+await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
 await page.screenshot({ path: '/tmp/vg-3d-stage.png' });
 
 await browser.close();
