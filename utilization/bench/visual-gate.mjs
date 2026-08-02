@@ -401,8 +401,13 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     && st.front.some((l) => l.includes('$'))
     && !st.back.some((l) => l.includes('$'))
     && st.back.length === 2 && st.back[1] === '[shop art]');
-  check('VG8g/backs-shop-graphic-only', backsOk,
-    stamps.map((st, i) => `${i}:${st && st.back ? (st.back.some((l) => l.includes('$')) ? 'LEAK' : 'ok') : 'MISSING'}`).join(' '));
+  // K7-A1c D2: the back must FACE BACKWARD — a wrong-facing (invisible) back is a lie
+  // the stamp alone cannot catch. World-normal of the back ≈ −(board front normal).
+  const backDots = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.backFacingDot(i)));
+  const backsOpposed = backDots.every((d) => d !== null && Math.abs(d + 1) < 1e-6);
+  check('VG8g/backs-shop-graphic-only', backsOk && backsOpposed,
+    stamps.map((st, i) => `${i}:${st && st.back ? (st.back.some((l) => l.includes('$')) ? 'LEAK' : 'ok') : 'MISSING'}`).join(' ')
+    + ` · opposed:${backsOpposed} (dots ${backDots.map((d) => (d === null ? 'null' : d.toFixed(3))).join(',')})`);
 
   // far board read: face-on along the FAR normal (0, sin.25, −cos.25) + full pose law
   await page.evaluate(() => window.__GAME3D__.toggleRead('seat-4'));
@@ -474,6 +479,20 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
   const floorWall = zFloor.mode === 'read' && zFloor.focus === 'table' && zFloor.dist >= zFloor.inFloor * fitT * 0.999;
   check('VG8h/wheel-continuum-walls', farWall && floorWall,
     `far-wall:${farWall} (${distFar.toFixed(0)} vs fit ${fitT.toFixed(0)}) · floor:${floorWall} (${zFloor.dist.toFixed(0)} vs ${(zFloor.inFloor * fitT).toFixed(0)})`);
+  // K7-A1c D1: the SCENE far wall — wheel-out from a scene pose must also land at
+  // TABLE READ (I-64c's second wall; "both walls exist and both transitions fire")
+  await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
+  await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  let sceneWall = false;
+  for (let i = 0; i < 40 && !sceneWall; i++) {
+    await page.mouse.wheel(0, 240);
+    sceneWall = await page.evaluate(() => { const z = window.__GAME3D__.zoomState(); return z.mode === 'read' && z.focus === 'table'; });
+  }
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  const sceneWallName = await page.evaluate(() => window.__GAME3D__.camName());
+  check('VG8h/wheel-scene-far-wall', sceneWall && sceneWallName === 'table:read',
+    `scene-out-to-table:${sceneWall} (${sceneWallName})`);
   await page.evaluate(() => { window.__GAME3D__.toggleRead(); });
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
 }

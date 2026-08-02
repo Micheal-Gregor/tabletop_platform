@@ -413,6 +413,22 @@ function tick(): void {
     return { front, back };
   },
   seatGroupKeys: () => Object.keys(focusGroups).filter((k) => k.startsWith('seat-')).sort(),
+  /** K7-A1c D2: the back face must FACE BACKWARD — world-normal dot vs the board front */
+  backFacingDot: (i: number) => {
+    const grp = focusGroups[`seat-${i}`];
+    if (!grp) return null;
+    let backMesh: THREE.Object3D | null = null;
+    grp.traverse((o: THREE.Object3D) => { if (o.userData?.['back']) backMesh = o; });
+    if (!backMesh) return null;
+    grp.updateMatrixWorld(true);
+    const fq = new THREE.Quaternion();
+    grp.getWorldQuaternion(fq);
+    const bq = new THREE.Quaternion();
+    (backMesh as THREE.Object3D).getWorldQuaternion(bq);
+    const fn = new THREE.Vector3(0, 0, 1).applyQuaternion(fq);
+    const bn = new THREE.Vector3(0, 0, 1).applyQuaternion(bq);
+    return fn.dot(bn);
+  },
   /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
   boardScreenXY: (i: number) => {
     let hit: THREE.Object3D | null = null;
