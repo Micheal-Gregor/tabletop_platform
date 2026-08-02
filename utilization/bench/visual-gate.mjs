@@ -244,24 +244,47 @@ check('VG8b/3d-standings-stamp-vs-projection', JSON.stringify(st8.stamp) === JSO
 // provable-move vs table, purity on re-glide (I-62c; the dead-camera class stays dead)
 const glide = async (name) => {
   await page.evaluate((n) => window.__GAME3D__.glideTo(n), name);
-  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 });
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); }
+  catch { check('VG8c/3d-stage-glide-law', false, `glide to ${name} never rested (timeout)`); return null; } // named, never a crash (I-60g)
   return page.evaluate(() => window.__GAME3D__.cameraPos());
 };
 const g1 = await glide('seat-0');
-const gt = await glide('table');
-const g2 = await glide('seat-0');
+const gt = g1 && await glide('table');
+const g2 = gt && await glide('seat-0');
+if (g1 && gt && g2) {
 const pd8 = await page.evaluate(() => window.__GAME3D__.presetData('seat-0'));
 const d8 = 1900 / pd8.zoom;
 const want8 = { x: pd8.cx - 800, y: d8 * 0.72, z: pd8.cy - 500 + d8 * 0.7 };
-const near = (a, b) => Math.abs(a - b) < 0.2; // glide rest epsilon (0.05 distance snap)
+const near = (a, b) => Math.abs(a - b) < 1e-9; // K7-A1 D3: rest is an EXACT copy of the mapped target — identical IEEE expressions, no epsilon to hide in
 const moved8 = !(near(g1.x, gt.x) && near(g1.y, gt.y) && near(g1.z, gt.z));
 const pure8 = near(g1.x, g2.x) && near(g1.y, g2.y) && near(g1.z, g2.z);
 const lawful8 = near(g1.x, want8.x) && near(g1.y, want8.y) && near(g1.z, want8.z);
 check('VG8c/3d-stage-glide-law', moved8 && pure8 && lawful8,
   moved8 ? `seat-0 rest (${g1.x.toFixed(1)},${g1.y.toFixed(1)},${g1.z.toFixed(1)}) ≡ law (${want8.x.toFixed(1)},${want8.y.toFixed(1)},${want8.z.toFixed(1)}) · moved · pure` : 'CAMERA NEVER MOVED');
+}
 // VG8d: the header chrome speaks the projection (round + active seat)
 const hdr8 = await page.evaluate(() => ({ txt: document.getElementById('hdr').textContent, v: window.__GAME3D__.viewData() }));
 check('VG8d/3d-chrome-vs-projection', hdr8.txt.includes(`round ${hdr8.v.round}`) && hdr8.txt.includes(`${hdr8.v.active}'s turn`), hdr8.txt.slice(0, 90));
+// VG8e — REAL INPUT (K7-A1 D1 closure, kill-first): the gate drives the ACTUAL input
+// paths — a preset button click, a raycast click on a board, a wheel dolly — and the
+// unknown-preset refusal. Dead handlers now fail by name (M5 class killed).
+await page.click('[data-cam="overview"]');
+try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { /* named below */ }
+const btnName = await page.evaluate(() => window.__GAME3D__.camName());
+const bxy = await page.evaluate(() => window.__GAME3D__.boardScreenXY(1));
+let clickName = 'NO-BOARD-XY';
+if (bxy) {
+  await page.mouse.click(bxy.x, bxy.y);
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { /* fall through */ }
+  clickName = await page.evaluate(() => window.__GAME3D__.camName());
+}
+const stg = await page.locator('#stage canvas').boundingBox();
+await page.mouse.move(stg.x + stg.width / 2, stg.y + stg.height / 2);
+await page.mouse.wheel(0, -240);
+const wheelName = await page.evaluate(() => window.__GAME3D__.camName());
+const refused = await page.evaluate(() => { try { window.__GAME3D__.glideTo('nope'); return 'NO-THROW'; } catch (e) { return /unknown preset/.test(String(e)) ? 'refused-named' : 'wrong-error'; } });
+check('VG8e/3d-real-input-paths', btnName === 'overview' && clickName === 'seat-1' && wheelName === 'custom' && refused === 'refused-named',
+  `button→${btnName} · board-click→${clickName} · wheel→${wheelName} · unknown-preset→${refused}`);
 await page.screenshot({ path: '/tmp/vg-3d-stage.png' });
 
 await browser.close();

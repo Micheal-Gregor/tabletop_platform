@@ -191,6 +191,17 @@ function tick(): void {
   cameraPos: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
   presetData: (k: string) => (presets[k] ? { cx: presets[k].cx, cy: presets[k].cy, zoom: presets[k].zoom } : null),
   camName: () => currentName,
+  /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
+  boardScreenXY: (i: number) => {
+    let hit: THREE.Object3D | null = null;
+    scene.traverse((o: THREE.Object3D) => { if (o.userData?.['seatIdx'] === i) hit = o; });
+    if (!hit) return null;
+    const v = new THREE.Vector3();
+    (hit as THREE.Object3D).getWorldPosition(v);
+    v.project(camera);
+    const r = renderer.domElement.getBoundingClientRect();
+    return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+  },
 };
 tick();
 status('the stage is set — glide with the presets, dolly with the wheel, click a board to focus it');
