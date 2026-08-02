@@ -27,3 +27,20 @@ never source material.
 
 Full hashes: run `sha256sum governance/audits/sources/v1-screens/*.jpg` and compare
 against the audit charge's attestation step.
+
+## Round-2 captures (owner-authenticated live session, pushed 2026-08-01)
+
+Renamed into the numbered convention CONTENT-UNCHANGED (git mv); the owner's original
+filenames and byte-identical duplicate re-uploads of screens 01–09 (plus the EXT-5
+auditor's measurement crops) are preserved in `archive-uploads/`.
+
+| File | Screen | What it documents |
+|---|---|---|
+| 10-books-balance.jpg `4e34b385…d88734` | **Books · Balance Sheet tab** | THE F5 source: panel title "The books · {seat}", P&L/Balance tab pair, section rows (Assets/Cash · Liabilities/none · Equity/Owner's capital + Retained earnings **with negative-red**), Liabilities+equity total, "The books always balance." reconciliation line, footer nav w/ Books active. Geometry source for `boty:books`/PANEL_PARENT. **⚠ P&L tab NOT yet captured** — its rows are inventory/Report-5-documented; the cash-vs-paper callout's geometry stays DEFERRED until a P&L capture exists |
+| 11-settings-over-books.jpg `23c3f019…dcae97` | Settings modal (scrolled) | $/W display unit ($50 per W), rivals'-cards-popup options, confirm-before-end-turn, card-animation copy ("the on-card buttons are gone, so the art shows uncluttered" — the F1 art-dominance corroboration) |
+| 12-round-preamble-live.jpg `d9e04933…3a0e3d` | "🎲 Who goes first?" live | `boty:round-preamble` validation: small die glyph, gold callout "You lead off Round 1!", italic lore ("lead-off rotates one seat clockwise each round"), single Next ▶ |
+| 13-cards-gallery.jpg `3c613b76…fb7c4c` | "Your cards" gallery live | tile grid with TYPE BADGES (TRADESPERSON · JOB), per-tile stat sublines, the SIX filter checkboxes (the CARD_KINDS vocabulary live), Close — gallery + tradesperson/job card children validation + future measurement source |
+| 14-rivals-carousel.jpg `478dbd46…299404` | Rivals carousel live | `boty:rival-summary` validation: prev/next paging, identity "·mechanic", gold cash, "Garage · cap 2", shop art, CREW(1) chips, EQUIPMENT none, JOBS(1) chips, Close — and NO local-play/hand (the suppression is v1-true) |
+| 15-endturn-confirm.jpg `a44184f6…13640e` | "End turn?" confirm | the settings' confirm-before-ending-turn dialog — product chrome (I-51d) |
+| 16-how-to-play.jpg `f572504d…0427b77` | How-to-play doc | rules text: THE GOAL (cash ≠ profit — the Books teaching), EACH ROUND, CREW & EQUIPMENT (one tool per worker), JOBS (walk-ins vs ladder **J1–J6**, factor/sell — the I-55d deferral's future source), WORKING TOGETHER (referrals/finder's fee/civic levy), GROWING |
+| 17-save-and-leave.jpg `293f24b9…4efd51` | Save & leave confirm | stand-in-covers-your-seat copy — Option B/production chrome |
