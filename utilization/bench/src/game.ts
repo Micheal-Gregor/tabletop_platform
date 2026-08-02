@@ -281,8 +281,9 @@ function popRivals(): void {
 
 /**
  * The Books panel (I-56d): Balance-sheet numbers are REAL from the projection — cash,
- * AR, AP, and the equity identity the reckoning already proves. P&L rows are visibly
- * BRACKETED (the slice tracks no revenue/COGS breakdown — mechanics-increment concept).
+ * AR, AP, and the equity identity the reckoning already proves. P&L is a single
+ * visibly-bracketed TAB-LABEL placeholder; no P&L rows render at all (the slice
+ * tracks no revenue/COGS breakdown — mechanics-increment concept; K7-books D2/R2).
  */
 function popBooks(): void {
   if (!table) return;

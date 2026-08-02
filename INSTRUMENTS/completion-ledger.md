@@ -452,3 +452,20 @@ round-callout — re-run live post-closure and KILLED by GD2). Re-verify PASS, a
 real drawn card: kept by 'jobs', dropped by 'global'). Suite 277/277 · BATTERY 21/21 ·
 DRILLS 9/9 · vectors 9/9 · packages/ untouched. Books increment remains BLOCKED on the
 owner's Books source screen (PANEL_PARENT approved, deferred to that increment).
+
+**K7-books (arc step 1: PANEL_PARENT + boty:books, 2026-08-01): RETURN → PASS.** The
+certified vocabulary grew ADDITIVELY to five parents (kind union card|board|table|panel;
+the reviewer independently pixel-measured the coded panel anatomy against source 10 —
+every region within tolerance — and proved additivity by diff + vectors 10/10 + M-D:
+reverting the union fails tsc, the type carries the law). boty:books = a THIN whole
+child (v1's Books IS the generic panel); the P&L callout stays a PINNED ABSENCE pending
+source 18 (M-C proves the deferral falsifiable). RETURN on one blocking: the object-model
+row claimed a "title override" the code never carried — the K7-parity D1 class RECURRING
+(2nd time); superseded on the record. The register-claim discipline is now the named
+weak spot: every structural word in an instrument row ("override", "carried", "roled")
+must be grep-falsifiable before commit. Bench Books modal: real projected balance,
+identity proven in-target at degenerate AND non-degenerate states (GD5/GD5b; sign
+mutant killed); M-AR residual RECORDED on I-56 with its trigger. R2/R3 cosmetic folded
+same-day (comment truth; build.mjs cwd-insensitive). Suite 279/279 · BATTERY 21/21 ·
+DRILLS 11/11. Arc step 1 COMPLETE pending only the source-18 callout add (content-tier,
+lands with the owner's P&L push). Step 2 (visual regression gate) may open.
