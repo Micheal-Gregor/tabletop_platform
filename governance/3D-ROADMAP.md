@@ -76,4 +76,4 @@ each object ("really perform for the players" is the owner's acceptance bar).
 |---|---|---|---|
 | Spike (feasibility exhibit) | 6294d06 | k7-pass-3d-adoption | ruled: adopt (2026-08-02) |
 | A1 the stage (game3d shell) | 2a699ad | K7 PASS (tag rides the playtest) | 2026-08-02: "It feels good to move around the board" — movement ACCEPTED; ruled a read view required (flat overhead for the table, 90° face-on for seats, scroll when content outruns the frame) → A1b |
-| A1b read view (I-63) | 5688a73 | pending K7 | awaiting owner playtest |
+| A1b read view (I-63) | 5688a73 + closure 0cad6ab | RETURN (D1–D5) → closed same-day → PASS · k7-pass-a1b-read | awaiting owner playtest (A1+A1b seal together) |
