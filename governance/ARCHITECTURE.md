@@ -91,3 +91,25 @@ itself MAY be parallelized (one agent per extracted concern against the frozen s
 interface); (2) the size gate lands WITH the split; (3) first parallel pilot: A3
 (fortune card in the reading board) + A4 (round preamble + the tossed die) in separate
 worktrees, merged one at a time. The owner rules per increment as always.
+
+### Pipeline v2 — STATUS RECONCILIATION (2026-08-03, same day)
+
+The section above was recorded while a PARALLEL SESSION was already executing the same
+owner direction — the rebase surfaced its work. Reconciled against reality:
+
+- **EXECUTED (by the parallel session, K7-passed):** the split refactor (I-71,
+  k7-pass-split) — as-built layout is FLAT files in `src/` (stage · surfaces · stacks ·
+  camera · onion · die · ledger · box + the game3d.ts spine), which SUPERSEDES the
+  `src/game3d/` directory shape proposed above; gate-server ports parameterized for
+  parallel worktrees (I-72); the FIRST PARALLEL BATCH already ran — A4 die + A10 ledger
+  + A15 box in worktrees, integrated serially (I-73/I-74/I-75/I-76) — so the "pilot"
+  is done, with a different (larger) roster than the A3+A4 proposed above; A3/A3b also
+  landed (I-69/I-70).
+- **STILL OPEN from Pipeline v2:** (1) the CI SIZE GATE is not yet enforced — and two
+  files already exceed 300 lines (the spine game3d.ts at 518; die.ts at 306): the gate
+  lands WITH a trim-or-recorded-exception decision per file; (2) the visual-gate SUITE
+  FLAGS (--suite / --check) are not yet implemented; (3) the owner's playtests of
+  A3/A3b, A4, A10, A15.
+- **COORDINATION LAW (learned the hard way just now):** ONE active build session at a
+  time. Two sessions pushing main races (non-fast-forward). The newer session is the
+  active thread; an older session hands off by pushing its records and STOPPING.
