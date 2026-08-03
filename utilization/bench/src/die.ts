@@ -12,9 +12,12 @@
  *     caller passes in (the K7-v1x D2 law — theater never outruns truth). A bar button
  *     opens it; a stage click advances preamble -> round-card -> dismiss.
  *
- * (2) THE DIE (owner-ruled 2026-08-03 — a SEEDED ROLLING EXHIBIT): a cube with 1-6 pip
- *     faces sitting near the TOWN_TABLE 'dice' region. rollDie() plays a seeded toss (arc
- *     up + tumble) settling with the SEEDED face upright. HK-11 (displayed up-face ≡
+ * (2) THE DIE (owner-ruled 2026-08-03 — a SEEDED ROLLING EXHIBIT; K-E free-tumble fix,
+ *     I-81, SUPERSEDES the caged dice-region spot of I-73): a cube with 1-6 pip faces
+ *     that sits ON TOP of the table surface and is FREE to tumble across the table's WHOLE
+ *     area. rollDie() plays a seeded toss (arc up + tumble + a horizontal glide) that
+ *     TRAVELS across the surface and settles at a SEEDED landing point anywhere within the
+ *     live table bounds, with the SEEDED face upright. HK-11 (displayed up-face ≡
  *     seeded) fires through beginFlourish/completeFlourish with the 'die-throw' flourish;
  *     on a mismatch TRUTH WINS — the die re-settles to the seeded face and the verdict
  *     flags it. A COMMITTED forced-mismatch drill (forceDieMismatch, the VG7d/I-67c
@@ -84,6 +87,13 @@ function pipTexture(value: number): THREE.CanvasTexture {
   return new THREE.CanvasTexture(c);
 }
 
+/** The table's world footprint + surface-top y — the die tumbles FREE across THIS whole
+ *  area (K-E, I-81 — SUPERSEDES I-73's caged dice-region spot), never confined to a
+ *  sub-square. DERIVED from the live table bbox (components/die.ts), not a magic square. */
+export type TableRect = { minX: number; maxX: number; minZ: number; maxZ: number; topY: number };
+let tableRect: TableRect | null = null;
+const TABLE_MARGIN = DIE_SIZE; // a margin so the whole cube settles ON the table, not over its edge
+
 let die: THREE.Mesh | null = null;
 let dieBaseY = DIE_SIZE / 2;
 type DieAnim = {
@@ -95,24 +105,32 @@ type DieAnim = {
   inst: ReturnType<typeof beginFlourish> | null; // null = a fidget dead roll (no HK-11)
   seeded: number;
   displayedTarget: number; // the face the toss settles on (the lie, under the drill)
+  fromPos: THREE.Vector3; // where the toss starts — the die's current rest spot
+  toPos: THREE.Vector3; // the SEEDED landing point WITHIN the table area (K-E)
 };
 let dieAnim: DieAnim | null = null;
 let diePhase: 'idle' | 'rolling' | 'rest' = 'idle';
 let dieVerdict: { mismatch: boolean; displayed: number; seeded: number } | null = null;
 let forceDieMismatch = false; // the committed forced-mismatch drill — one-shot
 
-/** Build the die ONCE as a top-level scene object resting on the dice-region anchor. It
- *  is NOT a table child (the table's 9×7 scale would distort the cube) and NOT rebuilt on
- *  state change — reinforcing that the die touches no game state. */
-export function buildDie(scene: THREE.Scene, anchor: THREE.Vector3 | null): void {
+/** Build the die ONCE as a top-level scene object resting ON TOP of the table surface,
+ *  FREE to tumble across the table's WHOLE area (K-E, I-81). It is NOT a table child (the
+ *  table's 9×7 scale would distort the cube) and NOT rebuilt on state change — reinforcing
+ *  that the die touches no game state. `table` is the live table bbox (from components/
+ *  die.ts): the cube's UNDERSIDE sits on the table top, its initial rest is the table
+ *  centre, and its rolls settle at SEEDED points anywhere within the area. */
+export function buildDie(scene: THREE.Scene, table: TableRect | null): void {
   if (die) { scene.remove(die); die = null; }
   const geo = new THREE.BoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE);
   const mats = DIE_FACE_VALUES.map((v) => new THREE.MeshBasicMaterial({ map: pipTexture(v) }));
   const m = new THREE.Mesh(geo, mats);
   m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x6f6857 })));
-  const a = anchor ?? new THREE.Vector3(0, 0.4, 0);
-  dieBaseY = a.y + DIE_SIZE / 2 + 0.5;
-  m.position.set(a.x, dieBaseY, a.z);
+  tableRect = table;
+  const topY = table ? table.topY : 0.4;
+  dieBaseY = topY + DIE_SIZE / 2 + 0.5; // underside on the table plane (on top), a hair clear
+  const cx = table ? (table.minX + table.maxX) / 2 : 0;
+  const cz = table ? (table.minZ + table.maxZ) / 2 : 0;
+  m.position.set(cx, dieBaseY, cz); // initial rest: the table centre, free to travel from here
   m.quaternion.copy(faceUpQuat(1)); // start showing 1
   m.userData['die'] = true; // NEVER a 'region' — the die is not counted by VG8a's law
   die = m;
@@ -134,7 +152,32 @@ export function dieUpFace(): number {
 /** The six pip-face values (for the die-face-count law). */
 export const dieFaces = (): number[] => [...DIE_FACE_VALUES].sort((a, b) => a - b);
 
-function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number, displayedTarget: number): void {
+/** A splitmix32 avalanche → a uniform fraction in [0,1). The raw LCG's consecutive outputs
+ *  from a linear counter lie on a lattice LINE (poor 2D coverage); hashing decorrelates the
+ *  x and z fractions so the landings FILL the table AREA, not a diagonal. */
+function mix32(z0: number): number {
+  let z = (z0 + 0x9e3779b9) >>> 0;
+  z = Math.imul(z ^ (z >>> 16), 0x21f0aaad) >>> 0;
+  z = Math.imul(z ^ (z >>> 15), 0x735a2d97) >>> 0;
+  z = (z ^ (z >>> 15)) >>> 0;
+  return z / 4294967296;
+}
+
+/** A SEEDED landing point WITHIN the table AREA (K-E) — one LCG draw seeds two avalanche
+ *  hashes (an x-fraction and a z-fraction) so the same seed replays to the same spot AND
+ *  the points fill the whole area; the margin keeps the whole cube on the table. */
+function seededLanding(rnd: () => number): THREE.Vector3 {
+  const r = tableRect;
+  if (!r) return die ? die.position.clone() : new THREE.Vector3(0, dieBaseY, 0);
+  const u = Math.floor(rnd() * 4294967296) >>> 0; // one LCG draw → the landing seed
+  const fx = mix32((u ^ 0x9e3779b9) >>> 0);
+  const fz = mix32((u + 0x6d2b79f5) >>> 0);
+  const x = r.minX + TABLE_MARGIN + fx * (r.maxX - r.minX - 2 * TABLE_MARGIN);
+  const z = r.minZ + TABLE_MARGIN + fz * (r.maxZ - r.minZ - 2 * TABLE_MARGIN);
+  return new THREE.Vector3(x, dieBaseY, z);
+}
+
+function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number, displayedTarget: number, landing: THREE.Vector3): void {
   if (!die || diePhase === 'rolling') return;
   dieAnim = {
     t: 0,
@@ -145,6 +188,8 @@ function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number
     inst,
     seeded,
     displayedTarget,
+    fromPos: die.position.clone(),
+    toPos: landing,
   };
   diePhase = 'rolling';
 }
@@ -158,7 +203,7 @@ export function rollDie(): void {
   dieRollCount++;
   const seeded = 1 + Math.floor(rnd() * 6);
   const displayedTarget = forceDieMismatch ? (seeded % 6) + 1 : seeded; // a wrong face for the drill
-  startRoll(beginFlourish('die-throw', String(seeded), '♪ die throw'), seeded, displayedTarget);
+  startRoll(beginFlourish('die-throw', String(seeded), '♪ die throw'), seeded, displayedTarget, seededLanding(rnd));
 }
 
 /** deadRoll — the FIDGET (NOT the viewer's turn): a lazy dead roll to a DETERMINISTIC
@@ -168,7 +213,7 @@ export function deadRoll(): void {
   const rnd = lcg(DIE_SEED + 0x5eed + Math.imul(dieRollCount, 40503));
   dieRollCount++;
   const side = 1 + Math.floor(rnd() * 6);
-  startRoll(null, side, side);
+  startRoll(null, side, side, seededLanding(rnd));
 }
 
 /** The per-frame die step — arc up (sin) + tumble, settling EXACTLY on the target face. */
@@ -177,6 +222,10 @@ export function tickDie(): void {
   dieAnim.t = Math.min(1, dieAnim.t + (dieAnim.inst ? 0.045 : 0.06));
   const t = dieAnim.t;
   const ease = t * t * (3 - 2 * t);
+  // TRAVEL across the table: a horizontal glide from the toss spot to the SEEDED landing
+  // point (the die is FREE to tumble over the WHOLE surface — K-E, not caged) + an arc up.
+  die.position.x = dieAnim.fromPos.x + (dieAnim.toPos.x - dieAnim.fromPos.x) * ease;
+  die.position.z = dieAnim.fromPos.z + (dieAnim.toPos.z - dieAnim.fromPos.z) * ease;
   die.position.y = dieBaseY + Math.sin(t * Math.PI) * (dieAnim.inst ? 130 : 55); // arc up
   // tumble: the settle slerp plus extra whole spins that resolve to identity at t=1, so
   // the final orientation is EXACTLY the target face-up quaternion.
@@ -184,7 +233,7 @@ export function tickDie(): void {
   const spin = new THREE.Quaternion().setFromAxisAngle(dieAnim.axis, (1 - ease) * dieAnim.spins * 2 * Math.PI);
   die.quaternion.copy(spin).multiply(settle);
   if (t >= 1) {
-    die.position.y = dieBaseY;
+    die.position.set(dieAnim.toPos.x, dieBaseY, dieAnim.toPos.z); // land on the seeded spot, ON the table
     die.quaternion.copy(dieAnim.to); // land exactly on the settle target
     if (dieAnim.inst) {
       const displayed = dieUpFace(); // the toss's up-face (the lie, under the drill)
@@ -201,6 +250,15 @@ export function tickDie(): void {
 export const diePhaseState = (): 'idle' | 'rolling' | 'rest' => diePhase;
 export const dieVerdictState = () => dieVerdict;
 export const setForceDieMismatch = (v: boolean): void => { forceDieMismatch = v; };
+/** The die's rest STATE — centre x/z, base y, and its bbox UNDERSIDE y (a GEOMETRY-STATE
+ *  read, never pixels — I-57c): at rest the underside ≈ the table top (the die sits ON TOP). */
+export function dieRestInfo(): { x: number; z: number; baseY: number; underY: number } | null {
+  if (!die) return null;
+  const b = new THREE.Box3().setFromObject(die);
+  return { x: die.position.x, z: die.position.z, baseY: dieBaseY, underY: b.min.y };
+}
+/** The live table area the die is free to tumble across (K-E) — for the gate's free-tumble math. */
+export function dieTableRect(): TableRect | null { return tableRect; }
 /** The die's center projected to canvas pixels — the gate's real-input helper. */
 export function dieScreenXY(renderer: THREE.WebGLRenderer): { x: number; y: number } | null {
   if (!die) return null;

@@ -19,11 +19,63 @@ export async function run(h) {
       try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rest', null, { timeout: 60000 }); return true; }
       catch { check(name, false, 'die roll never settled (timeout)'); return false; } // named, never a crash (I-60g)
     };
+    // A REAL click on the die (re-fetching its screen point — the die MOVES each roll),
+    // confirming the roll STARTED (diePhase → 'rolling') then WAITING ON its settle STATE
+    // (I-60f). Returns the die's rest STATE (its seeded landing spot). K-E (I-81).
+    const rollOnce = async (name) => {
+      const xy = await page.evaluate(() => window.__GAME3D__.dieScreenXY());
+      if (!xy) return null;
+      await page.mouse.click(xy.x, xy.y);
+      try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rolling', null, { timeout: 8000 }); }
+      catch { return null; } // the click missed the die — a failed roll, not a settle
+      if (!(await waitDieRest(name))) return null;
+      return page.evaluate(() => window.__GAME3D__.dieRestInfo());
+    };
 
     // die-face-count: exactly SIX pip faces, values 1..6 (a standard die).
     const faces = await page.evaluate(() => window.__GAME3D__.dieFaces());
     check('VG8m/die-face-count', JSON.stringify(faces) === JSON.stringify([1, 2, 3, 4, 5, 6]),
       `die faces [${(faces ?? []).join(',')}] (want 1..6)`);
+
+    // die-free-tumble (K-E, I-81 — the check that CATCHES batch-1's "caged to a square"):
+    // across several SEEDED rolls the die TRAVELS and its settle points SPREAD across a
+    // LARGE fraction of the WHOLE table area (>> the old ~16%-of-table dice sub-square),
+    // and EVERY settle lands WITHIN the table bbox. Geometry STATE, never pixels (I-57c);
+    // wait on diePhase STATE, never clocks (I-60f). The die area is the LIVE table bbox.
+    const rect = await page.evaluate(() => window.__GAME3D__.dieTableRect());
+    const settles = [];
+    let tumbleOk = false, tumbleDetail = 'NO-TABLE-RECT';
+    if (rect) {
+      for (let i = 0; i < 6; i++) {
+        const info = await rollOnce('VG8m/die-free-tumble');
+        if (!info) break;
+        settles.push({ x: info.x, z: info.z });
+      }
+      if (settles.length >= 6) {
+        const xs = settles.map((s) => s.x), zs = settles.map((s) => s.z);
+        const spreadX = Math.max(...xs) - Math.min(...xs), spreadZ = Math.max(...zs) - Math.min(...zs);
+        const tableW = rect.maxX - rect.minX, tableD = rect.maxZ - rect.minZ;
+        const oldCageW = tableW * 0.16; // the old dice region was w:16/100 of the table width
+        const withinTable = settles.every((s) => s.x >= rect.minX && s.x <= rect.maxX && s.z >= rect.minZ && s.z <= rect.maxZ);
+        const spanned = spreadX > tableW * 0.4 && spreadZ > tableD * 0.4;
+        tumbleOk = spanned && spreadX > oldCageW * 2 && withinTable;
+        tumbleDetail = `spreadX ${spreadX.toFixed(0)}/${tableW.toFixed(0)} (>${(tableW * 0.4).toFixed(0)} & >>old-cage ${oldCageW.toFixed(0)}) · spreadZ ${spreadZ.toFixed(0)}/${tableD.toFixed(0)} (>${(tableD * 0.4).toFixed(0)}) · all-within-table:${withinTable} · settles ${settles.length}`;
+      } else tumbleDetail = `only ${settles.length}/6 rolls settled`;
+    }
+    check('VG8m/die-free-tumble', tumbleOk, tumbleDetail);
+
+    // die-on-table (K-E, I-81): at rest the die sits ON TOP of the table — its bbox
+    // UNDERSIDE y ≈ the table-top y AND its centre x/z within the table bounds. STATE, not
+    // pixels (I-57c). Kill: float the die above / off the surface → underside ≠ top → fails.
+    const restI = await page.evaluate(() => window.__GAME3D__.dieRestInfo());
+    let onTableOk = false, onTableDetail = 'NO-REST';
+    if (restI && rect) {
+      const onSurface = Math.abs(restI.underY - rect.topY) < 3;
+      const inBounds = restI.x >= rect.minX && restI.x <= rect.maxX && restI.z >= rect.minZ && restI.z <= rect.maxZ;
+      onTableOk = onSurface && inBounds;
+      onTableDetail = `underside y ${restI.underY.toFixed(2)} ≈ table-top ${rect.topY.toFixed(2)} (Δ${Math.abs(restI.underY - rect.topY).toFixed(2)}<3):${onSurface} · centre (${restI.x.toFixed(0)},${restI.z.toFixed(0)}) within table:${inBounds}`;
+    }
+    check('VG8m/die-on-table', onTableOk, onTableDetail);
 
     // die-roll-hk11: on the VIEWER'S turn (moe) a REAL click on the die rolls the SEEDED
     // toss; at settle the DISPLAYED up-face EQUALS the seeded result (HK-11, no mismatch),

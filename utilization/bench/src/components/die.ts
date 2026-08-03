@@ -14,26 +14,41 @@ import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import {
   buildDie, rollDie, deadRoll, tickDie, dieScreenXY, diePhaseState, dieVerdictState,
   dieUpFace, dieFaces, setForceDieMismatch, advanceRoundModal, roundModalState,
+  dieRestInfo, dieTableRect,
 } from '../die.js';
+import type { TableRect } from '../die.js';
 
 export { openRoundSequence } from '../die.js';
 
 let cx: PlayAreaContext | null = null;
+
+/** The table's world footprint + surface-top y, DERIVED from the LIVE table group (the
+ *  SAME object buildScene places — components/box.ts reads it the same way). This is the
+ *  WHOLE table area the die is free to tumble across (K-E, I-81), NOT the tiny 'dice'
+ *  sub-region and NOT a magic square — the caged-die fix. */
+function tableRect(ctx: PlayAreaContext): TableRect | null {
+  const t = ctx.theater.focusObject('table');
+  if (!t) return null;
+  t.updateWorldMatrix(true, true);
+  const b = new THREE.Box3().setFromObject(t);
+  return { minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z, topY: b.max.y };
+}
 
 export const die: Component = {
   id: 'die',
   persistent: true,
   placement: { kind: 'free', surface: 'table' },
 
-  // A4 (I-73): built ONCE resting on the TOWN_TABLE 'dice' region anchor — NOT a table
-  // child (the table's 9×7 scale would distort the cube), NOT rebuilt on state change.
+  // A4 (I-73) + K-E (I-81): built ONCE resting ON TOP of the table surface, FREE to tumble
+  // across the table's WHOLE area — NOT a table child (the table's 9×7 scale would distort
+  // the cube), NOT rebuilt on state change. The table area is DERIVED from the LIVE table
+  // bbox (COMPONENTS order builds the table before this persistent die, so focusObject
+  // resolves) — NOT the tiny 'dice' sub-region, NOT a magic square (the caged-die fix).
   // buildDie self-adds to the scene; this returns null (persistent, not in builtRoots).
   build(ctx) {
     cx = ctx;
     ctx.scene.updateMatrixWorld(true);
-    const diceObj = ctx.theater.focusObject('table:dice');
-    const diceAnchor = diceObj ? new THREE.Box3().setFromObject(diceObj).getCenter(new THREE.Vector3()) : null;
-    buildDie(ctx.scene, diceAnchor);
+    buildDie(ctx.scene, tableRect(ctx));
     return null;
   },
 
@@ -77,6 +92,12 @@ export const die: Component = {
       forceDieMismatch: setForceDieMismatch,
       dieScreenXY: () => dieScreenXY(ctx.renderer),
       roundModalState,
+      /** K-E (I-81) free-tumble surfaces: the die's rest STATE (centre x/z + bbox underside
+       *  y, so on-table is asserted as geometry — the underside ≈ the table top) and the
+       *  LIVE table area it is free to tumble across (so the gate proves the settle spread
+       *  spans a large fraction of the WHOLE table, not the old dice sub-square). */
+      dieRestInfo,
+      dieTableRect,
     };
   },
 };
