@@ -7,9 +7,12 @@
   "scripts": {
     "test": "vitest run",
     "check:tiers": "node tools/check-tiers.mjs",
+    "check:size": "node tools/check-size.mjs",
     "build": "tsc -b packages/engine packages/presentation packages/patterns && tsc -p packs/boty/tsconfig.json",
-    "ci": "npm run check:tiers && npm run build && npm run test",
-    "gate:visual": "node utilization/bench/build.mjs && node utilization/bench/visual-gate.mjs",
+    "ci": "npm run check:tiers && npm run check:size && npm run build && npm run test",
+    "gate:visual": "node utilization/bench/build.mjs && node utilization/bench/gate/run.mjs",
+    "gate:visual:3d": "node utilization/bench/build.mjs && node utilization/bench/gate/run.mjs --suite=3d",
+    "gate:visual:check": "node utilization/bench/build.mjs && node utilization/bench/gate/run.mjs",
     "gate:target": "node utilization/bench/build.mjs && node utilization/bench/run-target-check.mjs"
   },
   "devDependencies": {
