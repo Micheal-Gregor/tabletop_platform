@@ -600,8 +600,12 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
   // THE DRAW — a REAL click on the deck; the gate then WAITS ON STATE (drawPhase)
   const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
   await page.mouse.click(dxy.x, dxy.y);
-  // K7-A2 D1: a SECOND deck click lands MID-FLIGHT — one theater at a time; it must
-  // change NOTHING (exactly one draw: moves +1, deck −1, one onion)
+  // K7-A2 D1 (re-cut at D7): a SECOND deck click lands GENUINELY mid-flight — wait on
+  // STATE (drawPhase left 'idle') PLUS one rendered frame (matrixWorld fresh), never
+  // clocks (I-60f), so the second raycast really hits the deck. One theater at a time:
+  // the second click must change NOTHING (exactly one draw: moves +1, deck −1, one onion).
+  await page.waitForFunction(() => window.__GAME3D__.drawPhase() !== 'idle', null, { timeout: 60000 }).catch(() => {});
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
   await page.mouse.click(dxy.x, dxy.y);
   let flightDone = true;
   try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
