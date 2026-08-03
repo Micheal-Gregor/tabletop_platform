@@ -22,6 +22,7 @@ import { layoutFace, panel, fortuneFaceTexture } from './surfaces.js';
 import { cardBack, cardStack } from './stacks.js';
 import * as cam from './camera.js';
 import * as onion from './onion.js';
+import { buildDie, rollDie, deadRoll, tickDie, dieScreenXY, diePhaseState, dieVerdictState, dieUpFace, dieFaces, setForceDieMismatch, openRoundSequence, advanceRoundModal, roundModalState } from './die.js';
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
@@ -124,6 +125,14 @@ function buildScene(): void {
 }
 buildScene();
 
+// A4 (I-73): the DIE is a SEEDED ROLLING EXHIBIT resting on the TOWN_TABLE 'dice' region
+// anchor — built ONCE (not a table child: the table's 9×7 scale would distort the cube;
+// not rebuilt on state change: the die touches NO game state).
+scene.updateMatrixWorld(true);
+const diceObj = cam.focusObject('table:dice');
+const diceAnchor = diceObj ? new THREE.Box3().setFromObject(diceObj).getCenter(new THREE.Vector3()) : null;
+buildDie(scene, diceAnchor);
+
 scene.add(camera); // camera children render
 
 // ── DRAW THEATER (I-67c): the verb through the same doors; HK-11 at flight end ──
@@ -189,6 +198,8 @@ renderer.domElement.addEventListener('pointermove', (ev) => {
 });
 renderer.domElement.addEventListener('pointerup', (ev) => {
   const wasDrag = dragMoved; dragFrom = null; dragMoved = false;
+  // A4 (I-55a): a click through an OPEN round sequence advances it preamble → round-card → dismiss
+  if (roundModalState().open) { advanceRoundModal(); const rs = roundModalState(); status(rs.open ? `round → ${rs.stage}` : 'round sequence dismissed'); return; }
   if (onion.onionState().open) { onion.closeOnion(); drawPhase = 'idle'; status('reading board closed'); return; } // I-67b: ANY click closes; consumed
   if (wasDrag || cam.getMode() === 'read') return; // reads don't refocus on click; drags never do
   const r = renderer.domElement.getBoundingClientRect();
@@ -197,6 +208,14 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
     let o: THREE.Object3D | null = hit.object;
     let region: string | null = null;
     while (o) {
+      // A4 (I-73): a touch on the die — viewer's turn → the SEEDED roll (HK-11); else a
+      // lazy dead-roll FIDGET (no state change; the die never reaches the engine).
+      if (o.userData['die']) {
+        const vd = projectNow();
+        if (vd.seats[vd.turn.seatIdx]!.id === viewSeat) { rollDie(); status('rolling the die — ♪ die throw'); }
+        else { deadRoll(); status('die fidget — a dead roll (not your turn)'); }
+        return;
+      }
       if (typeof o.userData['region'] === 'string' && !region) region = o.userData['region'] as string;
       if (typeof o.userData['seatIdx'] === 'number') { cam.glideTo(`seat-${o.userData['seatIdx']}`); return; }
       if (o.userData['focus'] === 'table') {
@@ -222,17 +241,22 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
 document.getElementById('bar')!.innerHTML =
   Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
   `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
-  `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>`;
+  `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>` +
+  `<button id="round-btn" title="the round sequence — preamble → round card (I-55a)">🎲 round</button>`;
 document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
+  // A4 (I-55a): open the round sequence; the lead-off callout DERIVES from the projected
+  // active seat (the K7-v1x D2 law — theater never outruns truth).
+  if (t.id === 'round-btn') { const v = projectNow(); openRoundSequence(v.turn.round, v.seats[v.turn.seatIdx]!.id, SEASONS[(v.turn.round - 1) % 4]!); status('round sequence — who goes first?'); }
 };
 
 function tick(): void {
   requestAnimationFrame(tick);
   cam.tickGlide();
+  tickDie(); // A4 (I-73): the seeded toss / dead-roll animation step (HK-11 at settle)
   // the DRAW FLIGHT (I-67c): deck → camera, flipping at the midpoint; HK-11 at the end
   if (flight) {
     flight.t = Math.min(1, flight.t + 0.03);
@@ -326,6 +350,15 @@ function tick(): void {
    *  certified SVG bench). Null when the board is closed. */
   onionRegions: onion.onionRegions,
   forceFlipMismatch: (v: boolean) => { forceMismatch = v; },
+  /** A4 (I-73) surfaces: the seeded rolling die exhibit (gates WAIT ON diePhase STATE,
+   *  assert geometry/verdict STATE never pixels) and the round-card sequence. */
+  diePhase: diePhaseState,
+  dieVerdict: dieVerdictState,
+  dieUpFace,
+  dieFaces,
+  forceDieMismatch: setForceDieMismatch,
+  dieScreenXY: () => dieScreenXY(renderer),
+  roundModalState,
   stackInfo: (rid: string) => {
     const grp = cam.focusObject(`table:${rid}`);
     if (!grp) return null;
