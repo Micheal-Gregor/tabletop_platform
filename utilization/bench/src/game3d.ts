@@ -9,8 +9,8 @@ import * as THREE from 'three';
 import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { LayoutDef, SeatView } from '@tabletop/presentation';
-import { beginFlourish, completeFlourish, emit, focusPresets, project } from '@tabletop/presentation';
-import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, SHOP_BOARD, TOWN_TABLE } from '../../../packs/boty/src/index.js';
+import { CARD_BACK_PARENT, beginFlourish, completeFlourish, emit, focusPresets, project } from '@tabletop/presentation';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, FORTUNE_CARD, SHOP_BOARD, TOWN_TABLE } from '../../../packs/boty/src/index.js';
 
 const WORLD = { w: 1600, h: 1000 };
 const SEATS = BOTY_PACK6.seats.map((s) => s.id);
@@ -64,6 +64,51 @@ function layoutFace(def: LayoutDef, tint: number, fills: Readonly<Record<string,
     grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(r.w, r.h)), new THREE.LineBasicMaterial({ color: 0x999999 })).translateX(quad.position.x).translateY(quad.position.y).translateZ(quad.position.z + 0.01));
   }
   return grp;
+}
+
+/**
+ * A3 (I-69) — the FORTUNE CARD as a front/back mesh (the spike-proven `card()` brought
+ * into the playable bench): front = the child's measured anatomy via layoutFace; back =
+ * CARD_BACK_PARENT flipped π about Y. The reading board presents this as the modal-as-card
+ * (I-51a) — v1's drawn-card popup is a CARD CHILD at a camera focus, never a dialog.
+ */
+function card(front: LayoutDef, frontFills: Readonly<Record<string, readonly string[]>> = {}): THREE.Group {
+  const grp = new THREE.Group();
+  const f = layoutFace(front, 0xffffff, frontFills);
+  f.position.z = 0.3;
+  grp.add(f);
+  const b = layoutFace(CARD_BACK_PARENT, 0xe8e2d8, { emblem: ['BOTY'] });
+  b.rotation.y = Math.PI; // the back faces −z (the spike/I-65c π-about-Y pattern)
+  b.position.z = -0.3;
+  b.traverse((o) => { o.userData['back'] = true; }); // the front/back contrast surface
+  grp.add(b);
+  return grp;
+}
+
+/**
+ * A3 (I-69) — the flight's mid-flip reveal as a fortune FACE texture whose art band and
+ * title/subtitle boxes are read FROM FORTUNE_CARD.regions (I-60a: the def is the sole
+ * geometry source), so the flip reveals an art-dominant fortune card, not bare text.
+ */
+function fortuneFaceTexture(title: string): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 358; // card-ish aspect; the 0..100 unit regions map proportionally
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#fbfaf7'; g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = '#444'; g.strokeRect(1, 1, c.width - 2, c.height - 2);
+  const reg = (id: string) => FORTUNE_CARD.regions.find((r) => r.id === id);
+  const px = (v: number) => (v / 100) * c.width;
+  const py = (v: number) => (v / 100) * c.height;
+  const art = reg('art');
+  if (art) {
+    g.fillStyle = '#e7e2d8'; g.fillRect(px(art.x), py(art.y), px(art.w), py(art.h));
+    g.fillStyle = '#8a8577'; g.font = '15px system-ui'; g.fillText('[fortune art]', px(art.x) + 8, py(art.y + art.h / 2));
+  }
+  const t = reg('title');
+  if (t) { g.fillStyle = '#1c1c1c'; g.font = 'bold 19px system-ui'; g.fillText(title, px(t.x) + 4, py(t.y) + 17); }
+  const sub = reg('subtitle');
+  if (sub) { g.fillStyle = '#6b6b6b'; g.font = 'italic 13px system-ui'; g.fillText('Fortune', px(sub.x) + 4, py(sub.y) + 12); }
+  return new THREE.CanvasTexture(c);
 }
 
 // ── scene from the PROJECTION ──
@@ -402,19 +447,39 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
 // the card centered; ANY click closes it; the ladder runs unchanged beneath it ──
 scene.add(camera); // camera children render
 let onion: THREE.Group | null = null;
-let onionCard: THREE.Mesh | null = null;
+let onionCard: THREE.Object3D | null = null;
 let onionVerdict: { mismatch: boolean; displayed: string; seeded: string } | null = null;
-function openOnion(title: string, lines: readonly string[]): void {
+// A3 (I-69): the reading board presents the drawn card as the FORTUNE ANATOMY (a
+// front/back `card()` of FORTUNE_CARD), not a plain text panel — v1's modal-as-card
+// (I-51a). `cardId` is the truth-wins result (the SEEDED id even under a forced
+// mismatch, R-20); `mismatch` rides the stamp so the gate reads the verdict.
+function openOnion(cardId: string, mismatch: boolean): void {
   closeOnion();
   onion = new THREE.Group();
   const veil = new THREE.Mesh(new THREE.PlaneGeometry(420, 260), new THREE.MeshBasicMaterial({ color: 0x14181c, transparent: true, opacity: 0.55, depthTest: false }));
   veil.renderOrder = 90;
   onion.add(veil);
-  onionCard = panel(lines, 52, 78, title);
-  (onionCard.material as THREE.MeshBasicMaterial).depthTest = false;
-  onionCard.renderOrder = 91;
-  onionCard.position.z = 2;
-  onion.add(onionCard);
+  const flavor = BOTY_PACK6.cards[cardId]?.flavor ?? '';
+  // fills MIRROR the certified SVG bench's fortune modal (game.ts, I-51a): title = the
+  // seeded card, 'Fortune' subtitle, the effect/flavor line; art + payout stay honest
+  // placeholders (D-1 — the slice carries no art asset or payout figure).
+  const grp = card(FORTUNE_CARD, {
+    title: [cardId],
+    subtitle: ['Fortune'],
+    text: flavor ? [flavor] : ['the card takes effect through the engine'],
+  });
+  grp.scale.set(0.72, 1, 1).multiplyScalar(0.86); // card aspect (I-48b); regions stay proportional
+  grp.position.z = 2;
+  // draw OVER the veil: depthTest off + high render order on every sub-mesh/line
+  grp.traverse((o) => {
+    const mat = (o as THREE.Mesh).material as (THREE.Material & { depthTest: boolean }) | undefined;
+    if (mat && 'depthTest' in mat) { mat.depthTest = false; o.renderOrder = 91; }
+  });
+  // the onionState stamp (I-67 contract): renderedLines[0] MUST be the shown card id so
+  // the HK-11 gate reads the truth-wins result; the mismatch flag rides after it.
+  grp.userData['renderedLines'] = [cardId, 'Fortune', ...(mismatch ? ['⚑ mismatch — truth shown'] : [])];
+  onionCard = grp;
+  onion.add(grp);
   onion.position.z = -130;
   camera.add(onion);
 }
@@ -565,22 +630,18 @@ function tick(): void {
     if (pT >= 0.5 && !flight.flipped) {
       flight.flipped = true; // the midpoint face-swap: the classic flip trick
       const displayed = forceMismatch ? 'WRONG-CARD' : flight.seeded;
-      const face = panel([displayed], 52, 78);
       (flight.mesh.material as THREE.Material).dispose();
-      flight.mesh.material = face.material;
+      // A3 (I-69): the flip reveals a FORTUNE face, not bare text; `displayed` may be the
+      // drill's lie — the flying card shows it, the reading board then shows the truth.
+      flight.mesh.material = new THREE.MeshBasicMaterial({ map: fortuneFaceTexture(displayed) });
     }
     if (pT >= 1) {
       const displayed = forceMismatch ? 'WRONG-CARD' : flight.seeded;
       const verdict = completeFlourish(flight.inst, displayed); // HK-11 — truth wins (R-20)
       onionVerdict = { mismatch: verdict.mismatch !== null, displayed, seeded: flight.seeded };
-      const flavor = BOTY_PACK6.cards[flight.seeded]?.flavor ?? '';
-      openOnion(verdict.result, [
-        'Fortune',
-        ...(flavor ? [flavor] : []),
-        'the card takes effect',
-        'through the engine',
-        ...(verdict.mismatch ? ['⚑ mismatch — truth shown'] : []),
-      ]);
+      // A3 (I-69): the reading board opens on the fortune anatomy of the TRUTH-WINS card
+      // (verdict.result is the seeded id even when displayed lied — R-20).
+      openOnion(verdict.result, verdict.mismatch !== null);
       if (verdict.mismatch) status('⚑ theater mismatch — truth wins (R-20)');
       scene.remove(flight.mesh);
       flight = null;
@@ -675,6 +736,25 @@ function tick(): void {
     title: onionCard ? (onionCard.userData['renderedLines'] as string[])[0] ?? null : null,
     verdict: onionVerdict,
   }),
+  /** A3/I-69: the reading-board fortune card's RENDERED anatomy — per-region rendered
+   *  height (art-dominance is a rendered property, I-57a, not a def claim), the front/back
+   *  presence (the spike-proven `card()`), and the title/subtitle/text fills (mirroring the
+   *  certified SVG bench). Null when the board is closed. */
+  onionRegions: () => {
+    if (!onion || !onionCard) return null;
+    const regions: Record<string, { h: number; lines: readonly string[] | null }> = {};
+    let hasBack = false;
+    onionCard.traverse((o: THREE.Object3D) => {
+      if (o.userData?.['back']) { hasBack = true; return; } // back sub-tree — not a front region
+      const rid = o.userData?.['region'];
+      if (typeof rid === 'string') {
+        const b = new THREE.Box3().setFromObject(o);
+        regions[rid] = { h: b.max.y - b.min.y, lines: (o.userData['renderedLines'] as string[]) ?? null };
+      }
+    });
+    const fb = new THREE.Box3().setFromObject(onionCard);
+    return { ids: Object.keys(regions).sort(), regions, hasBack, cardH: fb.max.y - fb.min.y };
+  },
   forceFlipMismatch: (v: boolean) => { forceMismatch = v; },
   stackInfo: (rid: string) => {
     const grp = focusObject(`table:${rid}`);

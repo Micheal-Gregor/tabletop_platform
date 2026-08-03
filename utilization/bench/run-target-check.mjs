@@ -3,9 +3,12 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
-const ROOT = new URL('.', import.meta.url).pathname;
+// fileURLToPath (not .pathname) so a Windows path — esp. one WITH SPACES — decodes
+// correctly (I-68); .pathname yields `/C:/…/CPA%20CMA%20Services/…` and existsSync fails.
+const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
 const server = createServer((req, res) => {
   const p = join(ROOT, req.url === '/' ? 'index.html' : req.url.split('?')[0]);

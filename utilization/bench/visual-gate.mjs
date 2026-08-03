@@ -618,6 +618,7 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     check('VG8j/draw-theater-hk11', false, 'draw flight never reached the reading board (timeout)');
   } else {
     const o1 = await page.evaluate(() => window.__GAME3D__.onionState());
+    const oa = await page.evaluate(() => window.__GAME3D__.onionRegions()); // A3/I-69: anatomy while the board is OPEN
     const d1 = await info('deck');
     const c1 = await info('discard');
     const hm1 = await hashes();
@@ -635,6 +636,23 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
       && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
       && closed.o === false && closed.p === 'idle' && consumed,
       `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} (double-click made ONE) · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
+
+    // VG8k — A3 (I-69): the reading board presents the FORTUNE ANATOMY, not A2's text
+    // panel. Art-dominance is a RENDERED property (I-57a): art.h > title.h AND inside the
+    // measured 55–70% band (the EXT-5 F1 law carried into 3D). The card is front/back
+    // (the spike-proven card()). Fills MIRROR the certified SVG bench (title = the seeded
+    // card, subtitle 'Fortune', a non-empty effect line). Captured while the board was OPEN.
+    const wantIds = ['art', 'payout', 'subtitle', 'text', 'title'];
+    const idsOk = oa && JSON.stringify(oa.ids) === JSON.stringify(wantIds);
+    // NULL-GUARDED so a MUTANT that drops a region (e.g. the front face) fails CLEANLY by
+    // name (pass:false), never crashes the gate — the anatomy-absent leg's live falsifier.
+    const artFrac = oa && oa.cardH && oa.regions.art ? oa.regions.art.h / oa.cardH : 0;
+    const artDominant = !!(oa && oa.regions.art && oa.regions.title && oa.regions.art.h > oa.regions.title.h && artFrac >= 0.55 && artFrac <= 0.70);
+    const fillsOk = !!(oa && JSON.stringify(oa.regions.title?.lines) === JSON.stringify(['job-posting'])
+      && JSON.stringify(oa.regions.subtitle?.lines) === JSON.stringify(['Fortune'])
+      && Array.isArray(oa.regions.text?.lines) && oa.regions.text.lines.length >= 1);
+    check('VG8k/fortune-anatomy', !!(idsOk && artDominant && oa.hasBack && fillsOk),
+      oa ? `regions:[${oa.ids.join(',')}] · art/title:${oa.regions.art?.h?.toFixed(1)}>${oa.regions.title?.h?.toFixed(1)} artFrac:${artFrac.toFixed(3)}(band .55–.70) · front/back:${oa.hasBack} · fills[title=${JSON.stringify(oa.regions.title?.lines)} sub=${JSON.stringify(oa.regions.subtitle?.lines)} text#${oa.regions.text?.lines?.length ?? 0}]` : 'onionRegions null — board not open (anatomy absent)');
 
     // FORCED MISMATCH (the VG7d committed-drill precedent): HK-11 flags, TRUTH WINS
     await page.evaluate(() => window.__GAME3D__.forceFlipMismatch(true));
