@@ -51,3 +51,43 @@ variant) · game3d.html (chrome). Anything else → stop, propose first.
 The session is DISPOSABLE; the repo is not. Everything needed to resume lives here
 (CLAUDE.md ritual → instruments → roadmap → this file). Ending a long session and
 starting fresh is safe at any sealed increment — and preferable to a bloated context.
+
+## PIPELINE v2 (owner-ruled 2026-08-03; source: governance/reference/Build-analysis-2026-08-03.md)
+
+The owner's direction: the UI file is too large, per-step development has bogged down —
+limit UI size and run parallel agents. Adopted, adapted to THIS repo's laws:
+
+**ADOPTED as law:**
+1. **Module decomposition of the 3D bench.** `utilization/bench/src/game3d.ts` (731
+   lines) splits into `src/game3d/`: a thin SPINE (`game3d.ts` entry: engine binding,
+   scene, tick, module wiring ONLY) + leaf modules — `camera.ts` (presets/glide/ladder),
+   `stacks.ts` (card stacks + fidget), `onion.ts` (reading board + draw theater),
+   `panels.ts` (panel/panelTexture/layoutFace/backdrop), `input.ts` (pointer/wheel/bar),
+   `surfaces.ts` (__GAME3D__). Named exports only; no circular imports; a module's
+   public surface is its exports — consumers never reach into internals.
+2. **THE SIZE GATE: ≤300 lines per implementation file** in the bench source, enforced
+   in CI (a real check that FAILS the build, not advice). Exceed it → extract a
+   subordinate module in that same increment.
+3. **Parallel-agent protocol.** Before fan-out: freeze the spine's exports + the module
+   contracts (recorded in this file). Each agent gets ONE leaf module (or disjoint
+   subtree) in its OWN git worktree; editing outside the assignment is a defect. A
+   public-export change requires updating the contract here in the same commit. Merges
+   land ONE at a time; the FULL battery (ci + gate:visual + gate:target) runs green on
+   each merged result before the next merge; K7 reviews each merged increment.
+4. **Gate partitioning (the ACTUAL bottleneck).** Measured: esbuild is ~3s — build time
+   is NOT the problem; the ~8-minute full visual gate per iteration is. The gate gains
+   suite flags (`--suite=svg | --suite=3d | --check=VG8x`) so an agent iterates on ITS
+   OWN checks in seconds-to-a-minute and the FULL battery runs at merge/K7 only. The
+   full battery remains the only thing that seals an increment.
+
+**DEFERRED (recorded, not dropped):** dynamic `import()` / lazy loading, tree-shaking
+budgets, `platforms/` device adapters, per-component versioned packages — production/
+skin-era concerns; the bench has no bundle-size or route problem yet. Responsive layout
+is already owned by the camera ladder (owner-ruled A1c/A1d), not CSS trees.
+
+**Migration path (the doc's §6, as increments):** (1) the split refactor — pure
+behavior-preserving, gates unchanged and green, K7 verifies identical; the extraction
+itself MAY be parallelized (one agent per extracted concern against the frozen spine
+interface); (2) the size gate lands WITH the split; (3) first parallel pilot: A3
+(fortune card in the reading board) + A4 (round preamble + the tossed die) in separate
+worktrees, merged one at a time. The owner rules per increment as always.
