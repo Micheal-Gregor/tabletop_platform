@@ -583,7 +583,7 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
 // I-63h standing obligations fire HERE — the first state-advancing increment.
 {
   await page.evaluate(() => window.__GAME3D__.glideTo('table'));
-  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+  await waitRest('VG8j/table-glide-rest');
   const stg3 = await page.locator('#stage canvas').boundingBox();
   await page.mouse.move(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
   const info = (rid) => page.evaluate((r) => window.__GAME3D__.stackInfo(r), rid);
@@ -600,6 +600,9 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
   // THE DRAW — a REAL click on the deck; the gate then WAITS ON STATE (drawPhase)
   const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
   await page.mouse.click(dxy.x, dxy.y);
+  // K7-A2 D1: a SECOND deck click lands MID-FLIGHT — one theater at a time; it must
+  // change NOTHING (exactly one draw: moves +1, deck −1, one onion)
+  await page.mouse.click(dxy.x, dxy.y);
   let flightDone = true;
   try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
   catch { flightDone = false; }
@@ -610,15 +613,20 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     const d1 = await info('deck');
     const c1 = await info('discard');
     const hm1 = await hashes();
-    // close: ANY click (consumed by the onion)
-    await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
-    const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase() }));
+    // K7-A2 D2: close by clicking the DECK's own screen position — the close click is
+    // CONSUMED (no raycast beneath: no draw, no fidget, no re-anchor from this click)
+    const dxyClose = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+    await page.mouse.click(dxyClose.x, dxyClose.y);
+    const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase(), z: window.__GAME3D__.zoomState() }));
+    const hmClose = await hashes();
+    const dClose = await info('deck');
+    const consumed = hmClose.m === hm1.m && hmClose.h === hm1.h && dClose.count === d1.count && dClose.fidget === d1.fidget;
     check('VG8j/draw-theater-hk11',
       o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
       && d1.count === 2 && c1.count === 1 && c1.topFace === 'job-posting'
       && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
-      && closed.o === false && closed.p === 'idle',
-      `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false}`);
+      && closed.o === false && closed.p === 'idle' && consumed,
+      `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} (double-click made ONE) · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
 
     // FORCED MISMATCH (the VG7d committed-drill precedent): HK-11 flags, TRUTH WINS
     await page.evaluate(() => window.__GAME3D__.forceFlipMismatch(true));
@@ -629,10 +637,12 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     catch { f2 = false; }
     const o2 = f2 ? await page.evaluate(() => window.__GAME3D__.onionState()) : null;
     await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
+    const c2 = await info('discard');
+    const ownDiscardTrue = c2.count === 2 && c2.topFace === 'new-van'; // K7-A2 D3: the VIEWER'S ownDiscard, both cards
     check('VG8j/forced-mismatch-truth-wins',
       f2 && o2 && o2.verdict && o2.verdict.mismatch === true && o2.verdict.displayed === 'WRONG-CARD'
-      && o2.verdict.seeded === 'new-van' && o2.title === 'new-van',
-      f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins)` : 'second flight never landed (timeout)');
+      && o2.verdict.seeded === 'new-van' && o2.title === 'new-van' && ownDiscardTrue,
+      f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins) · own-discard:${c2.count}/${c2.topFace}` : 'second flight never landed (timeout)');
 
     // FIDGET = PURE THEATER (I-67e): three discard clicks cycle loose → spread → NEAT
     // EXACT; rowHash AND moveCount are invariant through every fidget click.
@@ -669,6 +679,8 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     const logOk = after.log && after.log.some((l) => l === 'moe · turn:end') && after.log.some((l) => l === 'moe · deck:draw'); // the engine's intent type names
     const d2 = await info('deck');
     const deckIsPetes = d2.count === 2; // the committed pack: pete's deck holds 2
+    const c3 = await info('discard');
+    const ownDiscardHeld = c3.count === 2 && c3.topFace === 'new-van'; // K7-A2 D3: ownDiscard is the VIEWER'S — invariant across the turn change
     // deck fidget when NOT the viewer's turn (I-67d): a deck click must NOT draw
     const hm4 = await hashes();
     const dxy3 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
@@ -676,8 +688,8 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     const dFid = await info('deck');
     const hm5 = await hashes();
     const fidgetNotDraw = dFid.fidget === 1 && hm5.h === hm4.h && hm5.m === hm4.m && dFid.count === 2;
-    check('VG8j/state-change-recheck', standingsOk && hdrOk && logOk && deckIsPetes && fidgetNotDraw,
-      `active:${after.v.active} · standings-rederived:${standingsOk} · hdr:${hdrOk} · log(end-turn+draw):${logOk} · deck-now-petes(2):${deckIsPetes} · deck-fidget-not-draw:${fidgetNotDraw}`);
+    check('VG8j/state-change-recheck', standingsOk && hdrOk && logOk && deckIsPetes && ownDiscardHeld && fidgetNotDraw,
+      `active:${after.v.active} · standings-rederived:${standingsOk} · hdr:${hdrOk} · log(end-turn+draw):${logOk} · deck-now-petes(2):${deckIsPetes} · own-discard-held:${ownDiscardHeld} · deck-fidget-not-draw:${fidgetNotDraw}`);
   }
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});

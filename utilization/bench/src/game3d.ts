@@ -404,7 +404,7 @@ function openOnion(title: string, lines: readonly string[]): void {
   camera.add(onion);
 }
 function closeOnion(): void {
-  if (onion) { camera.remove(onion); onion = null; onionCard = null; }
+  if (onion) { camera.remove(onion); onion = null; onionCard = null; onionVerdict = null; } // verdict dies with the board (K7-A2 D5)
 }
 
 // ── DRAW THEATER (I-67c): the verb through the same doors; HK-11 at flight end ──
@@ -430,6 +430,7 @@ function submitVerb(verb: string, args: Record<string, unknown>): boolean {
 }
 
 function doDraw(): void {
+  if (drawPhase !== 'idle') { status('the draw is already in the air — one theater at a time (I-67c)'); return; } // K7-A2 D1
   const before = projectNow();
   const active = before.seats[before.turn.seatIdx]!.id;
   if (!submitVerb('draw', { deck: active })) return;
