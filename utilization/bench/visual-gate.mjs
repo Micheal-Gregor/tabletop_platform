@@ -16,6 +16,7 @@ import { chromium } from 'playwright-core';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PIN_FILE = join(HERE, 'visual-pins.json');
 const DISCHARGE = process.argv.includes('--discharge');
+const GATE_PORT = Number(process.env.GATE_PORT) || 4174;
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
@@ -25,7 +26,7 @@ const server = createServer((req, res) => {
   res.writeHead(200, { 'content-type': MIME[extname(p)] ?? 'text/plain' });
   res.end(readFileSync(p));
 });
-await new Promise((r) => server.listen(4174, r));
+await new Promise((r) => server.listen(GATE_PORT, r));
 
 const exe = process.env.PLAYWRIGHT_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
 const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
@@ -57,7 +58,7 @@ const domVsLaw = (scope) => page.evaluate((sel) => {
 }, scope);
 
 // ── the canonical deterministic state: fresh seeded game · popups dismissed · overview ──
-await page.goto('http://localhost:4174/game.html');
+await page.goto(`http://localhost:${GATE_PORT}/game.html`);
 await page.waitForFunction(() => window.__GAME__ && window.__GAME__.rowHash() !== null);
 await page.evaluate(() => { localStorage.clear(); });
 await page.reload();
@@ -135,7 +136,7 @@ await page.click('#gallery');
 await modalCheck('modal:gallery-first-draw');
 await page.evaluate(() => window.__GAME__.dismiss());
 // the static showcase
-await page.goto('http://localhost:4174/showcase.html');
+await page.goto(`http://localhost:${GATE_PORT}/showcase.html`);
 await page.waitForFunction(() => document.getElementById('stage')?.innerHTML.length > 0);
 derived['scene:showcase'] = sha(await page.evaluate(() => document.getElementById('stage').innerHTML));
 await page.screenshot({ path: '/tmp/vg-showcase.png' });
@@ -156,7 +157,7 @@ if (DISCHARGE) {
 // VG4 — camera purity in-DOM (GX-39 family), K7-vg D1 closure: the camera must
 // PROVABLY MOVE (table ≠ overview — a dead setCamera can no longer compare a viewBox
 // to itself) and then re-derive byte-equal on the same preset.
-await page.goto('http://localhost:4174/game.html');
+await page.goto(`http://localhost:${GATE_PORT}/game.html`);
 await page.waitForFunction(() => window.__GAME__ && window.__GAME__.rowHash() !== null);
 await page.evaluate(() => window.__GAME__.dismiss());
 const vbOverview = await page.evaluate(() => { window.__GAME__.setCamera('overview'); return window.__GAME__.viewBox(); });
@@ -182,7 +183,7 @@ check('VG5/a11y-floor-in-dom', vg5.length === 0, vg5.slice(0, 4).join(' | ') || 
 // exhibit status does NOT exempt from coverage). Geometry vs LAW (defs-side count),
 // the HK-11 flip with a COMMITTED forced-mismatch drill (kill-first law), and the
 // preset-consuming camera. All waits are on STATE (I-60f). No pixel hashes (I-57c).
-await page.goto('http://localhost:4174/spike3d.html');
+await page.goto(`http://localhost:${GATE_PORT}/spike3d.html`);
 await page.waitForFunction(() => window.__SPIKE__ && window.__SPIKE__.ready(), null, { timeout: 30000 });
 // VG7a: mesh quads ≡ the def-derived expectation (M-A class: a dropped region fails)
 const rc = await page.evaluate(() => ({ got: window.__SPIKE__.regionCount(), want: window.__SPIKE__.expectedFromDefs() }));
@@ -230,7 +231,7 @@ check('VG7d/3d-camera-consumes-presets', moved7 && pure7 && lawful7,
 await page.screenshot({ path: '/tmp/vg-3d.png' });
 
 // ── VG8 — GAME3D, THE A1 STAGE (I-62d: coverage lands WITH the increment, kill-first).
-await page.goto('http://localhost:4174/game3d.html');
+await page.goto(`http://localhost:${GATE_PORT}/game3d.html`);
 await page.waitForFunction(() => window.__GAME3D__ && window.__GAME3D__.ready(), null, { timeout: 30000 });
 // VG8a: mesh regions ≡ the def-derived expectation
 const rc8 = await page.evaluate(() => ({ got: window.__GAME3D__.regionCount(), want: window.__GAME3D__.expectedFromDefs() }));

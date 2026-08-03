@@ -9,6 +9,7 @@ import { chromium } from 'playwright-core';
 // fileURLToPath (not .pathname) so a Windows path — esp. one WITH SPACES — decodes
 // correctly (I-68); .pathname yields `/C:/…/CPA%20CMA%20Services/…` and existsSync fails.
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const TARGET_PORT = Number(process.env.TARGET_PORT) || 4173; // I-72: per-worktree port for parallel gating
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
 const server = createServer((req, res) => {
   const p = join(ROOT, req.url === '/' ? 'index.html' : req.url.split('?')[0]);
@@ -16,7 +17,7 @@ const server = createServer((req, res) => {
   res.writeHead(200, { 'content-type': MIME[extname(p)] ?? 'text/plain' });
   res.end(readFileSync(p));
 });
-await new Promise((r) => server.listen(4173, r));
+await new Promise((r) => server.listen(TARGET_PORT, r));
 
 const exe = process.env.PLAYWRIGHT_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
 const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
@@ -26,12 +27,12 @@ const out = { battery: null, drills: [] };
 const drill = (name, pass, detail = '') => out.drills.push({ name, pass, detail });
 
 // ── PR-3/PR-4: the in-target battery page ──
-await page.goto('http://localhost:4173/verify.html');
+await page.goto(`http://localhost:${TARGET_PORT}/verify.html`);
 await page.waitForFunction(() => window.__K8__ && window.__K8__.done, null, { timeout: 120000 });
 out.battery = await page.evaluate(() => window.__K8__);
 
 // ── PR-5 drills + PR-3 live-bench smoke on the REAL bench ──
-await page.goto('http://localhost:4173/index.html');
+await page.goto(`http://localhost:${TARGET_PORT}/index.html`);
 await page.waitForFunction(() => window.__BENCH__ && window.__BENCH__.rowHash() !== null);
 // smoke: a legal move logs; an ILLEGAL one refuses and does not log (HK-1 live in the bench)
 const m0 = await page.evaluate(() => window.__BENCH__.moveCount());
@@ -73,7 +74,7 @@ await page.evaluate(() => localStorage.clear());
 // ── GD (game drills; renamed from PR-6 per K7-parity re-verify obs 1 — the PR-6 label
 // belongs to the operations-pack upgrade drill): the SPATIAL GAME surface, gate-visible
 // (K7-parity D3 closure); M-F-class hardcoding of the round callout MUST fail here ──
-await page.goto('http://localhost:4173/game.html');
+await page.goto(`http://localhost:${TARGET_PORT}/game.html`);
 await page.waitForFunction(() => window.__GAME__ && window.__GAME__.rowHash() !== null);
 // PR-6a: v1's modal sequence — preamble FIRST, then the round card, then clear (I-55a)
 const seq = [await page.evaluate(() => window.__GAME__.poppedLayout())];
