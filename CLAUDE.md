@@ -189,3 +189,6 @@ THIS file + the Specification sheet; ODG-4 is the anchor's first recorded decisi
 - **The 3D program (owner-ruled 2026-08-02, I-61):** `governance/3D-ROADMAP.md` governs
   the object-by-object 3D work and SURVIVES SESSION COMPRESSION — a resuming session
   reads it after this file and the instruments, then continues at the first open row.
+- **Touch boundaries (owner-requested 2026-08-02):** `governance/ARCHITECTURE.md` maps
+  the repo and each increment's LANE — read it before editing anything; out-of-lane
+  changes without a register row are defects for K7.
