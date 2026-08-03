@@ -22,6 +22,7 @@ import { layoutFace, panel, fortuneFaceTexture } from './surfaces.js';
 import { cardBack, cardStack } from './stacks.js';
 import * as cam from './camera.js';
 import * as onion from './onion.js';
+import * as ledger from './ledger.js';
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
@@ -118,6 +119,15 @@ function buildScene(): void {
     scene.add(b);
     builtRoots.push(b);
   });
+  // A10 (I-74): the LEDGER — a CLOSED book FLAT in front of the VIEWING seat's board
+  // (seat-0, near row +z). A click FLIPS it open (see the raycast handler); the ladder
+  // anchors it via focusGroups['ledger']. No region tag on the closed book — VG8a's
+  // scene-region count is untouched; the panel's regions live only on the open overlay.
+  const book = ledger.ledgerBook(viewSeat);
+  book.position.set(-420, 2, 560);
+  focusGroups['ledger'] = book;
+  scene.add(book);
+  builtRoots.push(book);
   // chrome (I-51d)
   document.getElementById('hdr')!.textContent =
     `Maple Hollow · ${SEASONS[(v.turn.round - 1) % 4]} · round ${v.turn.round} / ${BOTY_PACK6.maxRounds} · ▶ ${active}'s turn · viewing as ${viewSeat}`;
@@ -190,6 +200,7 @@ renderer.domElement.addEventListener('pointermove', (ev) => {
 renderer.domElement.addEventListener('pointerup', (ev) => {
   const wasDrag = dragMoved; dragFrom = null; dragMoved = false;
   if (onion.onionState().open) { onion.closeOnion(); drawPhase = 'idle'; status('reading board closed'); return; } // I-67b: ANY click closes; consumed
+  if (ledger.ledgerState().open) { ledger.closeLedger(); status('the ledger closes'); return; } // A10/I-74: ANY click closes the open ledger; consumed
   if (wasDrag || cam.getMode() === 'read') return; // reads don't refocus on click; drags never do
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);
@@ -198,6 +209,10 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
     let region: string | null = null;
     while (o) {
       if (typeof o.userData['region'] === 'string' && !region) region = o.userData['region'] as string;
+      // A10 (I-74): the closed ledger — click FLIPS it open on the REAL projection; the
+      // ladder anchors it (setLastFocus). Checked before the board/table hits so the
+      // nearer book wins its own pixel.
+      if (o.userData['ledger'] === true) { cam.setLastFocus('ledger'); ledger.openLedger(projectNow(), viewSeat); status('the ledger flips open — the books (Balance Sheet)'); return; }
       if (typeof o.userData['seatIdx'] === 'number') { cam.glideTo(`seat-${o.userData['seatIdx']}`); return; }
       if (o.userData['focus'] === 'table') {
         cam.glideTo('table');
@@ -326,6 +341,33 @@ function tick(): void {
    *  certified SVG bench). Null when the board is closed. */
   onionRegions: onion.onionRegions,
   forceFlipMismatch: (v: boolean) => { forceMismatch = v; },
+  /** A10/I-74 surfaces: the ledger state, the figures the open fills were built from, the
+   *  open panel's rendered anatomy + opaque paint-state, BOOKS_PANEL's def ids, and the
+   *  INDEPENDENT projection oracle (raw cash/AR/AP for the view seat — the gate sums it
+   *  itself, VG8b-style, so a compute mutation in ledger.ts diverges and fails by name). */
+  ledgerState: ledger.ledgerState,
+  ledgerBalance: ledger.ledgerBalance,
+  ledgerRegions: ledger.ledgerRegions,
+  booksPanelIds: ledger.booksPanelIds,
+  ledgerProjection: () => {
+    const v = projectNow();
+    return {
+      seat: viewSeat,
+      cash: v.seats.find((s) => s.id === viewSeat)!.cash,
+      ar: v.receivables.filter((r) => r.holder === viewSeat).map((r) => r.amount),
+      ap: v.debts.filter((d) => d.debtor === viewSeat).map((d) => d.amount),
+    };
+  },
+  /** the closed book's center projected to canvas pixels (VG8n's real-click helper). */
+  ledgerScreenXY: () => {
+    const o = focusGroups['ledger'];
+    if (!o) return null;
+    const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
+    camera.updateMatrixWorld();
+    const v = c.project(camera);
+    const r = renderer.domElement.getBoundingClientRect();
+    return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+  },
   stackInfo: (rid: string) => {
     const grp = cam.focusObject(`table:${rid}`);
     if (!grp) return null;
