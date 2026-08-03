@@ -594,8 +594,12 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
   const d0 = await info('deck');
   const c0 = await info('discard');
   const hm0 = await hashes();
-  check('VG8j/stacks-count-true', d0 && c0 && d0.count === 3 && c0.count === 0,
-    `deck:${d0?.count} (want 3, the committed genesis) · discard:${c0?.count} (want 0)`);
+  // A2b (owner: "the decks not visible"): the pile has PHYSICAL height — the top card
+  // sits measurably above the bottom one (≥0.8 world units per card between them)
+  const ys = d0 ? d0.top.map((t) => t.y) : [];
+  const heightTrue = ys.length === 3 && (ys[2] - ys[0]) >= (d0.count - 1) * 0.8;
+  check('VG8j/stacks-count-true', d0 && c0 && d0.count === 3 && c0.count === 0 && heightTrue,
+    `deck:${d0?.count} (want 3, the committed genesis) · discard:${c0?.count} (want 0) · height-true:${heightTrue} (Δy ${ys.length ? (ys[2] - ys[0]).toFixed(2) : '?'})`);
 
   // THE DRAW — a REAL click on the deck; the gate then WAITS ON STATE (drawPhase)
   const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));

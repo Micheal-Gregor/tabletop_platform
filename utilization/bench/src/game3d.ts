@@ -25,8 +25,8 @@ const viewSeat = SEATS[0]!;
 const projectNow = (): SeatView => project(rebuild(controller.row(), botyGenesis6, wire()).getState(), viewSeat);
 
 // ── mesh builders (defs are the SOLE geometry source — the I-60a charter carries) ──
-/** A multi-line panel texture; the mesh STAMPS the lines it was ASKED to draw (I-62b). */
-function panel(lines: readonly string[], w: number, h: number, head?: string): THREE.Mesh {
+/** The panel canvas → texture; the caller STAMPS the lines it ASKED to draw (I-62b). */
+function panelTexture(lines: readonly string[], w: number, h: number, head?: string): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 512; c.height = Math.max(64, Math.round((h / w) * 512));
   const g = c.getContext('2d')!;
@@ -37,7 +37,12 @@ function panel(lines: readonly string[], w: number, h: number, head?: string): T
   if (head) { g.fillText(head, 10, y); y += 30; }
   g.font = '20px system-ui'; g.fillStyle = '#444';
   for (const ln of lines) { g.fillText(ln, 10, y); y += 26; }
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: false }));
+  return new THREE.CanvasTexture(c);
+}
+
+/** A multi-line panel mesh; STAMPS the lines it was ASKED to draw (I-62b). */
+function panel(lines: readonly string[], w: number, h: number, head?: string): THREE.Mesh {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: panelTexture(lines, w, h, head), transparent: false }));
   m.userData['renderedLines'] = [...(head ? [head] : []), ...lines]; // the asked-text stamp
   return m;
 }
@@ -130,19 +135,29 @@ function cardStack(r: { x: number; y: number; w: number; h: number }, rid: strin
   grp.add(ghost);
   const state = fidget[rid] ?? 0;
   const rnd = lcg(1069 * (state + 1) + (rid === 'deck' ? 7 : 131));
+  // A2b (the owner's playtest report "the decks not visible"): a card is a THIN BOX
+  // with edge lines — the pile has PHYSICAL height (CARD_T per card), not paper planes
+  // that foreshorten to a sliver. Thickness is realization freedom (I-48b); the
+  // footprint stays the def's region. Count-true is now also HEIGHT-true.
+  const CARD_T = 0.9;
+  const sideMat = new THREE.MeshBasicMaterial({ color: 0xd8cfbc });
   for (let i = 0; i < count; i++) {
     const fromTop = count - 1 - i;
     const face = faces ? faces[fromTop] ?? null : null;
-    const m = face
-      ? panel([face], 10, 16)
-      : new THREE.Mesh(new THREE.PlaneGeometry(10, 16), new THREE.MeshBasicMaterial({ map: cardBack() }));
+    const topMat = new THREE.MeshBasicMaterial({ map: face ? panelTexture([face], 10, 16) : cardBack() });
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(10, 16, CARD_T),
+      [sideMat, sideMat, sideMat, sideMat, topMat, sideMat], // +z (the table's UP) wears the face
+    );
+    if (face) m.userData['renderedLines'] = [face]; // the asked-text stamp (I-62b)
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0x77705f })));
     // resting irregularity for every card; the FIDGET states move the TOP FIVE more
     let amp = 0.18, rot = 0.02, dx = 0;
     if (fromTop < 5 && state > 0) {
       if (rid === 'deck') { amp = state === 1 ? 2.2 : 3.4; rot = state === 1 ? 0.14 : 0.22; } // loose pile → re-scatter
       else { dx = (state === 1 ? 2.6 : 5.2) * (fromTop + 1); amp = 0.4; rot = state === 1 ? 0.06 : 0.1; } // peek → spread the last 5
     }
-    m.position.set(dx + (rnd() - 0.5) * 2 * amp, (rnd() - 0.5) * 2 * amp, 0.06 + i * 0.12);
+    m.position.set(dx + (rnd() - 0.5) * 2 * amp, (rnd() - 0.5) * 2 * amp, 0.5 + CARD_T / 2 + i * (CARD_T + 0.08));
     m.rotation.z = (rnd() - 0.5) * 2 * rot;
     m.userData = { ...m.userData, card: true, idx: i };
     grp.add(m);
