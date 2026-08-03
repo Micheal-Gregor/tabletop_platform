@@ -458,11 +458,13 @@ function openOnion(cardId: string, mismatch: boolean): void {
   onion = new THREE.Group();
   const veil = new THREE.Mesh(new THREE.PlaneGeometry(420, 260), new THREE.MeshBasicMaterial({ color: 0x14181c, transparent: true, opacity: 0.55, depthTest: false }));
   veil.renderOrder = 90;
+  veil.userData['veil'] = true; // A3b (I-70): the gate reads its renderOrder to prove the card sorts ABOVE it
   onion.add(veil);
   const flavor = BOTY_PACK6.cards[cardId]?.flavor ?? '';
-  // fills MIRROR the certified SVG bench's fortune modal (game.ts, I-51a): title = the
-  // seeded card, 'Fortune' subtitle, the effect/flavor line; art + payout stay honest
-  // placeholders (D-1 — the slice carries no art asset or payout figure).
+  // fills follow the certified SVG bench's fortune modal (game.ts, I-51a): title + 'Fortune'
+  // subtitle MIRROR it; `text` renders the card's OWN flavor line — richer than game.ts's
+  // constant, NOT a mirror of it (I-69(b)/I-58 strike 11; comment aligned per K7-A3b D2);
+  // art + payout stay honest placeholders (D-1 — the slice carries no art asset or payout).
   const grp = card(FORTUNE_CARD, {
     title: [cardId],
     subtitle: ['Fortune'],
@@ -470,10 +472,16 @@ function openOnion(cardId: string, mismatch: boolean): void {
   });
   grp.scale.set(0.72, 1, 1).multiplyScalar(0.86); // card aspect (I-48b); regions stay proportional
   grp.position.z = 2;
-  // draw OVER the veil: depthTest off + high render order on every sub-mesh/line
+  // OPAQUE OVER THE VEIL (owner playtest): the veil is transparent (55%), and three.js
+  // renders the ENTIRE opaque pass BEFORE the transparent pass — so an opaque card draws
+  // FIRST and the veil then paints 55% dark over it ("the card looks transparent"). Put
+  // the card in the TRANSPARENT pass at FULL opacity with a renderOrder ABOVE the veil
+  // (90): it sorts AFTER the veil and fully covers it. depthTest off keeps the whole onion
+  // above the 3D scene; depthWrite off + the reverse-painter z-sort keeps the card's own
+  // regions layered (base behind, fills in front).
   grp.traverse((o) => {
-    const mat = (o as THREE.Mesh).material as (THREE.Material & { depthTest: boolean }) | undefined;
-    if (mat && 'depthTest' in mat) { mat.depthTest = false; o.renderOrder = 91; }
+    const mat = (o as THREE.Mesh).material as (THREE.MeshBasicMaterial | THREE.LineBasicMaterial) | undefined;
+    if (mat && 'opacity' in mat) { mat.transparent = true; mat.opacity = 1; mat.depthTest = false; mat.depthWrite = false; o.renderOrder = 92; }
   });
   // the onionState stamp (I-67 contract): renderedLines[0] MUST be the shown card id so
   // the HK-11 gate reads the truth-wins result; the mismatch flag rides after it.
@@ -744,7 +752,18 @@ function tick(): void {
     if (!onion || !onionCard) return null;
     const regions: Record<string, { h: number; lines: readonly string[] | null }> = {};
     let hasBack = false;
+    // A3b (I-70): the reading card must render OPAQUE OVER the transparent veil. Read the
+    // paint state so the gate PROVES it (not a pixel hash — material/order state, I-57c): every
+    // card face fully opaque (opacity 1) AND in the transparent pass (transparent:true) AND
+    // sorted ABOVE the veil (renderOrder) — the three conditions that make it cover the veil.
+    let minOpacity = 1, allTransparentPass = true, minCardOrder = Infinity;
     onionCard.traverse((o: THREE.Object3D) => {
+      const mat = (o as THREE.Mesh).material as (THREE.Material & { opacity: number; transparent: boolean }) | undefined;
+      if (mat && 'opacity' in mat) {
+        minOpacity = Math.min(minOpacity, mat.opacity);
+        if (!mat.transparent) allTransparentPass = false;
+        minCardOrder = Math.min(minCardOrder, o.renderOrder);
+      }
       if (o.userData?.['back']) { hasBack = true; return; } // back sub-tree — not a front region
       const rid = o.userData?.['region'];
       if (typeof rid === 'string') {
@@ -752,8 +771,13 @@ function tick(): void {
         regions[rid] = { h: b.max.y - b.min.y, lines: (o.userData['renderedLines'] as string[]) ?? null };
       }
     });
+    let veilOrder = -Infinity;
+    onion.traverse((o: THREE.Object3D) => { if (o.userData?.['veil']) veilOrder = o.renderOrder; });
     const fb = new THREE.Box3().setFromObject(onionCard);
-    return { ids: Object.keys(regions).sort(), regions, hasBack, cardH: fb.max.y - fb.min.y };
+    return {
+      ids: Object.keys(regions).sort(), regions, hasBack, cardH: fb.max.y - fb.min.y,
+      opaque: minOpacity === 1 && allTransparentPass, minOpacity, transparentPass: allTransparentPass, overVeil: minCardOrder > veilOrder, cardOrder: minCardOrder, veilOrder,
+    };
   },
   forceFlipMismatch: (v: boolean) => { forceMismatch = v; },
   stackInfo: (rid: string) => {

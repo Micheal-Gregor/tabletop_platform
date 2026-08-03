@@ -654,6 +654,16 @@ await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 
     check('VG8k/fortune-anatomy', !!(idsOk && artDominant && oa.hasBack && fillsOk),
       oa ? `regions:[${oa.ids.join(',')}] · art/title:${oa.regions.art?.h?.toFixed(1)}>${oa.regions.title?.h?.toFixed(1)} artFrac:${artFrac.toFixed(3)}(band .55–.70) · front/back:${oa.hasBack} · fills[title=${JSON.stringify(oa.regions.title?.lines)} sub=${JSON.stringify(oa.regions.subtitle?.lines)} text#${oa.regions.text?.lines?.length ?? 0}]` : 'onionRegions null — board not open (anatomy absent)');
 
+    // VG8l — A3b (I-70, owner playtest): the reading card must be OPAQUE OVER the 55% veil.
+    // three.js renders the whole opaque pass before the transparent one, so an OPAQUE card
+    // draws first and the veil paints over it ("the card looks transparent"). The fix puts
+    // the card in the transparent pass at full opacity, sorted above the veil. Asserted as
+    // material/order STATE (not pixels — I-57c): every face opacity 1 + transparent-pass +
+    // renderOrder above the veil. Kill-first: opacity<1, or transparent:false (the reported
+    // bug — card back in the opaque pass), or renderOrder ≤ veil each fail this by name.
+    check('VG8l/fortune-opaque', !!(oa && oa.opaque && oa.overVeil),
+      oa ? `opaque:${oa.opaque} (minOpacity ${oa.minOpacity} · transparent-pass:${oa.transparentPass}) · over-veil:${oa.overVeil} (card order ${oa.cardOrder} > veil ${oa.veilOrder})` : 'onionRegions null — board not open');
+
     // FORCED MISMATCH (the VG7d committed-drill precedent): HK-11 flags, TRUTH WINS
     await page.evaluate(() => window.__GAME3D__.forceFlipMismatch(true));
     const dxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
