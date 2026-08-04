@@ -1,10 +1,11 @@
 /**
- * DIE component (K-A adapter, I-77) — A4 (I-73): the ROUND-CARD SEQUENCE + a SEEDED
- * ROLLING EXHIBIT die. Wraps the EXISTING die.ts UNCHANGED (buildDie/rollDie/deadRoll/
- * tickDie + the round sequence + its gate surfaces), delegating. PERSISTENT: built ONCE
- * after the first buildScene (so the `table:dice` region anchor resolves), never rebuilt
- * on state change (the die touches no game state). Placement: free{surface:'table'} —
- * the die is free to tumble anywhere on the table's whole area.
+ * DIE component (K-A adapter, I-77) — the ROUND-CARD SEQUENCE + a SEEDED ROLLING EXHIBIT
+ * die. Wraps die.ts, delegating. PERSISTENT: built ONCE after the first buildScene, never
+ * rebuilt on state change (the die touches no game state). Placement: free{surface:'table'}
+ * — rolls TRAVEL and settle anywhere on the table's whole area (K-E, I-81), while the
+ * `table:dice` region is the die's HOME (P-1, I-83): the fixed spot it is built at, tossed
+ * from, and glides back to after each settled result is read — the home marker, NOT a cage
+ * (I-73's cage stays retired).
  *
  * `openRoundSequence` is re-exported for the spine's #round-btn bar wiring (bar wiring
  * stays harness-level per the plan; the round sequence is this component's feature).
@@ -14,7 +15,7 @@ import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import {
   buildDie, rollDie, deadRoll, tickDie, dieScreenXY, diePhaseState, dieVerdictState,
   dieUpFace, dieFaces, setForceDieMismatch, advanceRoundModal, roundModalState,
-  dieRestInfo, dieTableRect,
+  dieRestInfo, dieTableRect, dieHome,
 } from '../die.js';
 import type { TableRect } from '../die.js';
 
@@ -48,7 +49,16 @@ export const die: Component = {
   build(ctx) {
     cx = ctx;
     ctx.scene.updateMatrixWorld(true);
-    buildDie(ctx.scene, tableRect(ctx));
+    // P-1 (I-83): the HOME = the live `table:dice` REGION object's world-bbox centre —
+    // derived, not a magic point; the home marker only, never the roll cage (I-81 stands).
+    let home: { x: number; z: number } | null = null;
+    const region = ctx.theater.focusObject('table:dice');
+    if (region) {
+      region.updateWorldMatrix(true, true);
+      const rb = new THREE.Box3().setFromObject(region);
+      home = { x: (rb.min.x + rb.max.x) / 2, z: (rb.min.z + rb.max.z) / 2 };
+    }
+    buildDie(ctx.scene, tableRect(ctx), home);
     return null;
   },
 
@@ -98,6 +108,18 @@ export const die: Component = {
        *  spans a large fraction of the WHOLE table, not the old dice sub-square). */
       dieRestInfo,
       dieTableRect,
+      /** P-1 (I-83) home surfaces: the derived dice-region home the die starts from and
+       *  returns to (die-returns-home asserts rest position ≈ home after a full cycle). */
+      dieHome,
+      /** the `table:dice` REGION's live world centre, recomputed here INDEPENDENTLY of the
+       *  die module (K7-P D5: dieHome must match the REGION, not merely itself). */
+      dieRegionCenter: () => {
+        const r = cx!.theater.focusObject('table:dice');
+        if (!r) return null;
+        r.updateWorldMatrix(true, true);
+        const b = new THREE.Box3().setFromObject(r);
+        return { x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2 };
+      },
     };
   },
 };

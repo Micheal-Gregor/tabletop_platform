@@ -1,9 +1,12 @@
-// VG8m — A4 (I-73; kill-first): THE ROUND-CARD SEQUENCE + a SEEDED ROLLING EXHIBIT die.
-// Reload game3d for a clean genesis (moe active = the VIEWING seat). The die is an EXHIBIT
-// — the slice has NO engine die verb — so it touches NO game state: rowHash AND moveCount
-// are invariant through every roll and fidget. Assert geometry/verdict STATE, never pixels
-// (I-57c); WAIT ON diePhase STATE, never clocks (I-60f). Already SELF-SEEDING (its own
-// clean genesis nav), so it PASSES in isolation.
+// VG8m — A4 (I-73) + K-E free-tumble (I-81) + P-1 size/home (I-83; kill-first): THE
+// ROUND-CARD SEQUENCE + a SEEDED ROLLING EXHIBIT die. Reload game3d for a clean genesis
+// (moe active = the VIEWING seat). The die is an EXHIBIT — the slice has NO engine die
+// verb — so it touches NO game state: rowHash AND moveCount are invariant through every
+// roll and fidget. P-1: the die is HALF its old size (edge ≈ 5% of the table width), is
+// built AT its `table:dice`-region HOME, and after every settled result GLIDES back home
+// (fixed starting position — never "random on the table"). Assert geometry/verdict STATE,
+// never pixels (I-57c); WAIT ON diePhase STATE, never clocks (I-60f). SELF-SEEDING (its
+// own clean genesis nav), so it PASSES in isolation. 10 checks.
 export const suite = '3d';
 export const id = 'VG8m';
 
@@ -19,9 +22,15 @@ export async function run(h) {
       try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rest', null, { timeout: 60000 }); return true; }
       catch { check(name, false, 'die roll never settled (timeout)'); return false; } // named, never a crash (I-60g)
     };
+    const waitDieIdle = async (name) => {
+      try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'idle', null, { timeout: 60000 }); return true; }
+      catch { check(name, false, 'die never returned to idle/home (timeout)'); return false; } // named, never a crash (I-60g)
+    };
     // A REAL click on the die (re-fetching its screen point — the die MOVES each roll),
     // confirming the roll STARTED (diePhase → 'rolling') then WAITING ON its settle STATE
-    // (I-60f). Returns the die's rest STATE (its seeded landing spot). K-E (I-81).
+    // (I-60f). Reads the rest STATE (the seeded landing spot) DURING the readable hold,
+    // then waits out the return-home glide (P-1, I-83) so the next click finds the die at
+    // its home. K-E (I-81) free-tumble law unchanged: the landing spans the whole table.
     const rollOnce = async (name) => {
       const xy = await page.evaluate(() => window.__GAME3D__.dieScreenXY());
       if (!xy) return null;
@@ -29,13 +38,43 @@ export async function run(h) {
       try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rolling', null, { timeout: 8000 }); }
       catch { return null; } // the click missed the die — a failed roll, not a settle
       if (!(await waitDieRest(name))) return null;
-      return page.evaluate(() => window.__GAME3D__.dieRestInfo());
+      const info = await page.evaluate(() => window.__GAME3D__.dieRestInfo());
+      if (!(await waitDieIdle(name))) return null; // the return-home is part of the cycle
+      return info;
     };
 
     // die-face-count: exactly SIX pip faces, values 1..6 (a standard die).
     const faces = await page.evaluate(() => window.__GAME3D__.dieFaces());
     check('VG8m/die-face-count', JSON.stringify(faces) === JSON.stringify([1, 2, 3, 4, 5, 6]),
       `die faces [${(faces ?? []).join(',')}] (want 1..6)`);
+
+    // die-size-proportion (P-1, I-83 — the check that CATCHES "way too big for the board"):
+    // the die's rest bbox EDGE (a geometry read, never the constant against itself) is a
+    // small fraction of the table width — within [0.03, 0.07]. Kill: DIE_SIZE=90 → 0.10 →
+    // out of band → false.
+    const rect0 = await page.evaluate(() => window.__GAME3D__.dieTableRect());
+    const rest0 = await page.evaluate(() => window.__GAME3D__.dieRestInfo());
+    let sizeOk = false, sizeDetail = 'NO-RECT-OR-REST';
+    if (rect0 && rest0) {
+      const frac = rest0.edge / (rect0.maxX - rect0.minX);
+      sizeOk = frac >= 0.03 && frac <= 0.07;
+      sizeDetail = `die edge ${rest0.edge.toFixed(1)} / table ${(rect0.maxX - rect0.minX).toFixed(0)} = ${frac.toFixed(3)} (want 0.03–0.07)`;
+    }
+    check('VG8m/die-size-proportion', sizeOk, sizeDetail);
+
+    // die-home-genesis (P-1, I-83 — the "starting position is random" fix, half 1): BEFORE
+    // any roll the die sits AT its derived home (the `table:dice` region centre). The home
+    // comes from the REGION object's bbox, the position from the die MESH — two sources.
+    const home0 = await page.evaluate(() => window.__GAME3D__.dieHome());
+    const region0 = await page.evaluate(() => window.__GAME3D__.dieRegionCenter()); // INDEPENDENT source (K7-P D5)
+    let homeGenOk = false, homeGenDetail = 'NO-HOME';
+    if (home0 && rest0 && region0) {
+      const d0 = Math.hypot(rest0.x - home0.x, rest0.z - home0.z);
+      const dr = Math.hypot(home0.x - region0.x, home0.z - region0.z);
+      homeGenOk = d0 < 10 && dr < 10; // position ≈ home AND home ≈ the live dice REGION centre
+      homeGenDetail = `genesis position (${rest0.x.toFixed(0)},${rest0.z.toFixed(0)}) vs home (${home0.x.toFixed(0)},${home0.z.toFixed(0)}) Δ${d0.toFixed(1)} (<10) · home vs region-centre (${region0.x.toFixed(0)},${region0.z.toFixed(0)}) Δ${dr.toFixed(1)} (<10)`;
+    }
+    check('VG8m/die-home-genesis', homeGenOk, homeGenDetail);
 
     // die-free-tumble (K-E, I-81 — the check that CATCHES batch-1's "caged to a square"):
     // across several SEEDED rolls the die TRAVELS and its settle points SPREAD across a
@@ -64,6 +103,20 @@ export async function run(h) {
     }
     check('VG8m/die-free-tumble', tumbleOk, tumbleDetail);
 
+    // die-returns-home (P-1, I-83 — the "starting position is random" fix, half 2): after a
+    // FULL roll cycle (settle → readable hold → return glide, waited as STATE never clocks,
+    // I-60f) the die is back AT its home — every toss starts from the same spot. Kill: drop
+    // the return glide → the die stays at its last landing → Δ large → false.
+    const homeR = await page.evaluate(() => window.__GAME3D__.dieHome());
+    const restH = await page.evaluate(() => window.__GAME3D__.dieRestInfo());
+    let retOk = false, retDetail = 'NO-HOME-OR-REST';
+    if (homeR && restH) {
+      const dr = Math.hypot(restH.x - homeR.x, restH.z - homeR.z);
+      retOk = dr < 10 && settles.length >= 6; // the 6 free-tumble rolls all cycled home
+      retDetail = `after ${settles.length} full roll cycles the die sits at (${restH.x.toFixed(0)},${restH.z.toFixed(0)}) vs home (${homeR.x.toFixed(0)},${homeR.z.toFixed(0)}) Δ${dr.toFixed(1)} (<10)`;
+    }
+    check('VG8m/die-returns-home', retOk, retDetail);
+
     // die-on-table (K-E, I-81): at rest the die sits ON TOP of the table — its bbox
     // UNDERSIDE y ≈ the table-top y AND its centre x/z within the table bounds. STATE, not
     // pixels (I-57c). Kill: float the die above / off the surface → underside ≠ top → fails.
@@ -80,6 +133,7 @@ export async function run(h) {
     // die-roll-hk11: on the VIEWER'S turn (moe) a REAL click on the die rolls the SEEDED
     // toss; at settle the DISPLAYED up-face EQUALS the seeded result (HK-11, no mismatch),
     // and the die touched NO game state (rowHash + moveCount invariant — the EXHIBIT law).
+    await waitDieIdle('VG8m/die-roll-hk11'); // the die must be home (idle) before the click
     const dieXY = await page.evaluate(() => window.__GAME3D__.dieScreenXY());
     const preRoll = await hashesM();
     let hk11Ok = false, hk11Detail = 'NO-DIE-XY';
@@ -99,6 +153,7 @@ export async function run(h) {
     // forced-mismatch-truth-wins (the VG7d / I-67c committed drill): the toss settles on a
     // DIFFERENT face (the lie), HK-11 FLAGS it, and TRUTH WINS — the die re-settles so the
     // final up-face is the SEEDED value.
+    await waitDieIdle('VG8m/forced-mismatch-truth-wins'); // wait out the previous return
     await page.evaluate(() => window.__GAME3D__.forceDieMismatch(true));
     const dieXY2 = await page.evaluate(() => window.__GAME3D__.dieScreenXY());
     let tw = false, twDetail = 'NO-DIE-XY';
@@ -115,6 +170,7 @@ export async function run(h) {
 
     // die-fidget-pure: END the turn so it is NOT the viewer's turn; a die touch then does a
     // lazy DEAD ROLL (fidget) — rowHash AND moveCount invariant across it (pure theater).
+    await waitDieIdle('VG8m/die-fidget-pure'); // wait out the previous return
     await page.click('#end-btn');
     const preFidget = await hashesM();
     const dieXY3 = await page.evaluate(() => window.__GAME3D__.dieScreenXY());
