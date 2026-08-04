@@ -155,8 +155,13 @@ export function discardGrabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean 
 
 /** R-1b (I-122): launch the slide sim from the release pose + the plane-window velocity.
  *  Returns whether a real slide begins (≥2 recorded frames and real motion). */
+const STALE_MS = 150; // R-1b2 (I-125): the owner's time-gate — a stopped hand is a stopped hand
 function beginSlide(ctx: PlayAreaContext, g: Gest): boolean {
   if (g.planePts.length < 2) return false;
+  // R-1b2 (I-125, closing K7-T B-1): a STALE window at release means the hand had
+  // STOPPED — the card drops dead where it is (owner-ruled; the die's analog stale-window
+  // quick roll stays, ALSO owner-ruled — this gate is the discard's alone).
+  if (performance.now() - g.planePts[g.planePts.length - 1]!.t > STALE_MS) return false;
   const t0 = ctx.theater.focusObject('table');
   if (!t0) return false;
   t0.updateWorldMatrix(true, true);
@@ -173,7 +178,7 @@ function beginSlide(ctx: PlayAreaContext, g: Gest): boolean {
     hz: Math.max(0.001, (mb.max.z - mb.min.z) / 2 / 900),
   };
   const res = simulateSlide(rect, { x: g.mesh.position.x, z: g.mesh.position.z }, vel, halfM);
-  if (!res || res.frames.length < 2) return false;
+  if (!res) return false; // K7-T m-1: the dead `frames.length < 2` guard LEFT with I-124/I-125 — the time-gate above is the real refusal
   slideTrace = { steps: res.steps, dist: res.dist };
   g.slide = { frames: res.frames, i: 0, rect, baseQuat: g.mesh.quaternion.clone() };
   return true;

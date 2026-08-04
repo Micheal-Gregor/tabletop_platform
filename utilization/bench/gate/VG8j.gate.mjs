@@ -304,6 +304,36 @@ export async function run(h) {
           `physics-ready:${physReady} · trace:${st ? `steps ${st.steps} · slid ${st.dist.toFixed(1)}u` : 'NULL (the toss never touched physics)'} — the toss carries real momentum (I-122)`);
       }
 
+      // R-1b2 (I-125, closing K7-T B-1 by the owner's ruling "time-gate the discard card
+      // so it drops the card dead"): a fast drag → FULL STOP (600 ms ≫ the 150 ms
+      // staleness gate) → release must launch NO slide — the trace stays byte-identical
+      // to the previous check's, the card just lies loose and returns. KILL: remove the
+      // STALE_MS gate → the stale window's velocity launches a slide → the trace is
+      // rewritten → THIS fails by name. (The DIE's stale-window quick roll is the
+      // owner-ACCEPTED analog, I-120/I-125 — this gate belongs to the discard alone.)
+      {
+        const stBefore = await page.evaluate(() => JSON.stringify(window.__GAME3D__.discardSlideTrace()));
+        const hmS = await hashes();
+        const sxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        await page.mouse.move(sxy.x, sxy.y);
+        await page.mouse.down();
+        await page.mouse.move(sxy.x + 60, sxy.y - 30);
+        await page.waitForTimeout(250);
+        await page.mouse.move(sxy.x + 120, sxy.y - 55);
+        await page.waitForTimeout(600); // THE STOP — 4× the staleness gate, never a tight race
+        await page.mouse.up();
+        let stopLoose = false;
+        try {
+          await page.waitForFunction(() => { const g = window.__GAME3D__.discardGesture(); return g === 'loose' || g === 'returning'; }, null, { timeout: 8000 });
+          stopLoose = true;
+        } catch { /* named below */ }
+        const stAfter = await page.evaluate(() => JSON.stringify(window.__GAME3D__.discardSlideTrace()));
+        await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 120000 }).catch(() => {});
+        const hmS1 = await hashes();
+        check('VG8j/discard-stop-release-drops-dead', stopLoose && stAfter === stBefore && hmS1.m === hmS.m && hmS1.h === hmS.h,
+          `loose-not-sliding:${stopLoose} · trace-unchanged:${stAfter === stBefore} (a stopped hand launched ${stAfter === stBefore ? 'nothing' : 'A SLIDE — the time-gate is dead'}) · state-invariant:${hmS1.m === hmS.m && hmS1.h === hmS.h}`);
+      }
+
       // discard-flick-reads: a FAST flick on the pile card opens the reading board on
       // THAT card (the deck's mechanics mirrored); a corner click closes (no route — the
       // draw phase is idle); the card is home again.
