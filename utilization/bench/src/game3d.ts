@@ -29,7 +29,7 @@ import { manifestBackdrop } from './backdrop.js'; // S-1c (I-107): the verbatim 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
 // ── the engine, through the same doors as the SVG bench (I-62a); the 6-up exhibit variant (I-65e) ──
-const wire = () => (c: EngineCore) => wireBoty(new RuleRegistry() as RegistryT)(c);
+const wire = () => (c: EngineCore) => wireBoty(new RuleRegistry() as RegistryT, BOTY_PACK6 as never)(c); // W-1 (I-121): the WIRED catalog ≡ the HOSTED pack — all 36 cards drawable (B1 closed)
 const controller = LockstepController.host(BOTY6_REF, BOTY_PACK6.seats, 'maple-hollow', botyGenesis6, wire());
 for (const s of SEATS) controller.join('bench-3d', s);
 const viewSeat = SEATS[0]!;

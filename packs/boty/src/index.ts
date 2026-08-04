@@ -5,6 +5,7 @@
  */
 import type { EngineCore, Genesis, PackRef, RuleContribution, RuleRegistry } from '@tabletop/engine';
 import { validateContribution, wireLibrary, wirePack, wireRules } from '@tabletop/engine';
+import type { ContentPack } from '@tabletop/engine';
 import { buildGlobal, buildJob, buildRouted, buildRouting } from '@tabletop/patterns';
 import { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
 
@@ -61,10 +62,14 @@ export const botyRecession = () => buildGlobal({ id: 'recession', charge: 1, rou
 export const botySubcontract = () =>
   buildRouting('subcontract-debt', { venture: 'G1', from: 'moe', to: 'pete', amount: 2, due: 3 });
 
-/** Wire the whole slice: pack + rules + library + validated contributions. */
-export function wireBoty(registry: RuleRegistry): (core: EngineCore) => void {
+/** Wire the whole slice: pack + rules + library + validated contributions.
+ *  W-1 (I-121, closing K7-Q B1): the PACK is a parameter — the 3D bench passes
+ *  BOTY_PACK6 so its 36-card deck is DRAWABLE (the wired catalog finally matches the
+ *  hosted variant); the default keeps the FROZEN game.ts (and every existing caller)
+ *  byte-unchanged on the certified BOTY_PACK. */
+export function wireBoty(registry: RuleRegistry, pack: ContentPack = BOTY_PACK as unknown as ContentPack): (core: EngineCore) => void {
   return (core: EngineCore): void => {
-    wirePack(core, BOTY_PACK);
+    wirePack(core, pack);
     wireRules(core, registry);
     wireLibrary(core, registry);
     for (const c of BOTY_CONTRIBUTIONS) {
