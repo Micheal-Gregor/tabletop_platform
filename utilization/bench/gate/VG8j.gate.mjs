@@ -508,6 +508,44 @@ export async function run(h) {
       check('VG8j/fidget-pure-theater', moved1 && moved2 && restored && pure,
         `normalized-then: peek-moved:${moved1} · spread-moved:${moved2} · neat-restored-exact:${restored} · rowHash+moves-invariant:${pure}`);
 
+      // A8 (I-129) · window-prompt-decides: moe's THIRD draw is crossroads BY THE SEED
+      // (genesis deck [job-posting, new-van, crossroads, …]) — its open_window fires and
+      // HK-5 would refuse the end-turn below until DECIDED. The prompt must render at the
+      // windows region (amber, mine, options ≡ projection), the option click must submit
+      // the REAL decide verb (moves+1), and the prompt must leave with the window.
+      // KILL: unregister the component → no prompt (match false / XY null) → fails;
+      // cut the decide wiring → the window stays open → THIS times out by name AND the
+      // end-turn below refuses (two failures name the defect).
+      {
+        const hmW = await hashes();
+        const dxyW = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+        await page.mouse.click(dxyW.x, dxyW.y); // draw #3 (moe's turn holds)
+        await page.waitForFunction(() => window.__GAME3D__.onionState().open === true, null, { timeout: 60000 });
+        const oW = await page.evaluate(() => window.__GAME3D__.onionState());
+        await page.mouse.click(dxyW.x, dxyW.y); // consumed close → the route runs
+        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+        let promptUp = false;
+        try {
+          await page.waitForFunction(() => { const p = window.__GAME3D__.windowPrompts(); return p.want.length === 1 && p.match && p.rendered[0].mine === true; }, null, { timeout: 8000 });
+          promptUp = true;
+        } catch { /* named below */ }
+        const pW = await page.evaluate(() => window.__GAME3D__.windowPrompts());
+        let decided = false;
+        if (promptUp && pW.rendered[0]) {
+          const oxy = await page.evaluate((a) => window.__GAME3D__.windowOptionXY(a, 0), pW.rendered[0].id);
+          if (oxy) {
+            await page.mouse.click(oxy.x, oxy.y);
+            try { await page.waitForFunction(() => window.__GAME3D__.windowPrompts().want.length === 0, null, { timeout: 8000 }); decided = true; } catch { /* named below */ }
+          }
+        }
+        const pW2 = await page.evaluate(() => window.__GAME3D__.windowPrompts());
+        const hmW1 = await hashes();
+        check('VG8j/window-prompt-decides',
+          oW.title === 'crossroads' && promptUp && decided && pW2.rendered.length === 0
+          && hmW1.m === hmW.m + 2 && hmW1.h !== hmW.h, // draw + decide — two REAL moves
+          `drew:${oW.title} (want crossroads) · prompt-up+mine+match:${promptUp} (${pW.rendered[0] ? `${pW.rendered[0].kind}/${pW.rendered[0].decider}/${pW.rendered[0].options.length} opts` : 'NONE'}) · decided:${decided} · prompt-gone:${pW2.rendered.length === 0} · moves ${hmW.m}→${hmW1.m} (want +2) — the HK-5 soft-lock closes (I-129)`);
+      }
+
       // END-TURN + the I-62b OBLIGATION: after real state change the frozen-panel class
       // dies — standings (★ moves), chrome, log, and the deck (now PETE's, 2 by the pack)
       await page.click('#end-btn');
@@ -525,7 +563,10 @@ export async function run(h) {
       const d2 = await info('deck');
       const deckIsPetes = d2.count === 2; // the committed pack: pete's deck holds 2
       const c3 = await info('discard');
-      const ownDiscardHeld = c3.count === 2 && c3.topFace === 'new-van'; // K7-A2 D3: ownDiscard is the VIEWER'S — invariant across the turn change
+      // K7-A2 D3: ownDiscard is the VIEWER'S — invariant across the turn change. The
+      // pinned values moved 2/new-van → 3/crossroads at I-129 (the A8 leg's third draw
+      // now precedes this block); the LAW (held across end-turn) is unchanged.
+      const ownDiscardHeld = c3.count === 3 && c3.topFace === 'crossroads';
       // deck fidget when NOT the viewer's turn (I-67d): a deck click must NOT draw
       const hm4 = await hashes();
       const dxy3 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));

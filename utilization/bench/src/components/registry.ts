@@ -13,5 +13,8 @@ import { ledgerComponent } from './ledger.js';
 import { seats } from './seats.js';
 import { seatPlay } from './seat-play.js';
 import { box } from './box.js';
+import { windowsPrompt } from './windows-prompt.js';
 
-export const COMPONENTS: readonly Component[] = [die, table, seats, seatPlay, ledgerComponent, box];
+// A8 (I-129): windows-prompt builds AFTER table (its pose derives from the live table
+// bbox) and dispatches disjointly (winId/optIdx tags are its alone — the K-A D1 law).
+export const COMPONENTS: readonly Component[] = [die, table, seats, seatPlay, ledgerComponent, box, windowsPrompt];
