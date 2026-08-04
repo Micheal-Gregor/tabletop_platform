@@ -14,6 +14,9 @@
 import * as THREE from 'three';
 import type { PlayAreaContext } from './component.js';
 import * as onion from './onion.js';
+import { simulateSlide, feltFrameToWorld } from './die-physics.js'; // R-1b (I-122)
+import type { SimFrame } from './die-physics.js';
+import type { TableRect } from './die.js';
 
 const FLICK_T = 0.35; // px/ms — the same gesture threshold as the deck (I-91)
 const HOLD_FRAMES = 120; // "a couple seconds" (I-82d) before the return glide
@@ -23,10 +26,12 @@ type Gest = {
   group: THREE.Object3D; // the discard stack group (the card's home parent)
   homeLocal: { pos: THREE.Vector3; quat: THREE.Quaternion };
   cardId: string; idx: number; total: number;
-  phase: 'held' | 'loose' | 'returning';
+  phase: 'held' | 'sliding' | 'loose' | 'returning';
   hold: number; t: number; fromPos: THREE.Vector3 | null;
   wasLoose: boolean; // a re-grabbed loose card — the click fall-through never applies
   samples: { x: number; y: number; t: number }[];
+  planePts: { x: number; z: number; t: number }[]; // R-1b (I-122): the SAME plane as the follow (I-117's one-frame law)
+  slide: { frames: SimFrame[]; i: number; rect: TableRect; baseQuat: THREE.Quaternion } | null;
   plane: THREE.Plane; ray: THREE.Raycaster;
 };
 // Q-6b (I-95): THE GESTURE POOL — one card HELD (one pointer), any number LOOSE or
@@ -42,14 +47,16 @@ let tween: { pairs: { mesh: THREE.Object3D; from: THREE.Vector3; to: THREE.Vecto
 // mutant records 0..1 frames and fails the gate BY NAME. Zero behavior change.
 let tweenTrace: { frames: number; maxMove: number } | null = null;
 let returnTrace: { frames: number; dist: number } | null = null;
+let slideTrace: { steps: number; dist: number } | null = null; // R-1b (I-122): the toss-physics oracle
 
-export const discardGrabbing = (): 'held' | 'loose' | 'returning' | null =>
-  held ? 'held' : pool.some((g) => g.phase === 'loose') ? 'loose' : pool.length ? 'returning' : null;
+export const discardGrabbing = (): 'held' | 'sliding' | 'loose' | 'returning' | null =>
+  held ? 'held' : pool.some((g) => g.phase === 'sliding') ? 'sliding' : pool.some((g) => g.phase === 'loose') ? 'loose' : pool.length ? 'returning' : null;
 export const discardPoolSize = () => pool.length + (held ? 1 : 0);
 export const discardFidgetTransitioning = () => tween !== null;
 export const lastFlickRead = () => flickRead;
 export const discardTweenTrace = () => tweenTrace;
 export const discardReturnTrace = () => returnTrace;
+export const discardSlideTrace = () => slideTrace;
 
 /** a rebuild resets the whole gesture pool — the fresh stack renders truth (K7-P D2). */
 export function resetDiscardPlay(): void {
@@ -68,6 +75,7 @@ export function discardGrabStart(ctx: PlayAreaContext, mesh: THREE.Object3D, gro
     existing.phase = 'held';
     existing.wasLoose = true;
     existing.samples = [{ x: ev.clientX, y: ev.clientY, t: performance.now() }];
+    existing.planePts = []; existing.slide = null; // R-1b: a fresh gesture, fresh plane window
     held = existing;
     ctx.status(`picked ${existing.cardId} up again`);
     return true;
@@ -81,6 +89,7 @@ export function discardGrabStart(ctx: PlayAreaContext, mesh: THREE.Object3D, gro
     cardId, idx: (mesh.userData['idx'] as number) ?? 0, total: cards.length,
     phase: 'held', hold: 0, t: 0, fromPos: null, wasLoose: false,
     samples: [{ x: ev.clientX, y: ev.clientY, t: performance.now() }],
+    planePts: [], slide: null, // R-1b (I-122)
     plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -8), ray: new THREE.Raycaster(),
   };
   ctx.scene.attach(mesh); // the SAME object, world pose preserved — never a copy
@@ -96,7 +105,13 @@ export function discardGrabMove(ctx: PlayAreaContext, ev: PointerEvent): void {
   const r = ctx.renderer.domElement.getBoundingClientRect();
   held.ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
   const p = new THREE.Vector3();
-  if (held.ray.ray.intersectPlane(held.plane, p)) held.mesh.position.set(p.x, Math.max(10, p.y + 12), p.z);
+  if (held.ray.ray.intersectPlane(held.plane, p)) {
+    held.mesh.position.set(p.x, Math.max(10, p.y + 12), p.z);
+    // R-1b (I-122): the slide's velocity window — sampled in THE SAME PLANE as the
+    // follow (the I-117 one-frame law; world velocity is never inferred from pixels).
+    held.planePts.push({ x: p.x, z: p.z, t: performance.now() });
+    if (held.planePts.length > 6) held.planePts.shift();
+  }
 }
 
 export function discardGrabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
@@ -125,10 +140,42 @@ export function discardGrabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean 
     g.phase = 'returning'; g.t = 0; g.fromPos = g.mesh.position.clone();
     ctx.status(`reading ${g.cardId} — drawn · discard #${g.total - g.idx} of ${g.total}`);
   } else {
-    g.phase = 'loose'; g.hold = 0; // tossed — it lies where it fell for a couple seconds
-    ctx.status('tossed — it will find its way back to the pile');
+    // R-1b (I-122): the TOSS now SLIDES with real momentum — a burst sim replayed
+    // (record-and-replay; no live session, so a die drag never contends). Fallbacks
+    // (physics cold · no table · a degenerate ≤1-step sim, i.e. drag-stop-release)
+    // keep the existing loose-where-dropped behavior — both are the registered
+    // interpretation, and both END in the same loose→return-glide pipeline.
+    const slid = beginSlide(ctx, g);
+    g.phase = slid ? 'sliding' : 'loose'; g.hold = 0;
+    ctx.status(slid ? 'tossed — it slides, then finds its way back' : 'tossed — it will find its way back to the pile');
   }
   pool.push(g);
+  return true;
+}
+
+/** R-1b (I-122): launch the slide sim from the release pose + the plane-window velocity.
+ *  Returns whether a real slide begins (≥2 recorded frames and real motion). */
+function beginSlide(ctx: PlayAreaContext, g: Gest): boolean {
+  if (g.planePts.length < 2) return false;
+  const t0 = ctx.theater.focusObject('table');
+  if (!t0) return false;
+  t0.updateWorldMatrix(true, true);
+  const tb = new THREE.Box3().setFromObject(t0);
+  const rect: TableRect = { minX: tb.min.x, maxX: tb.max.x, minZ: tb.min.z, maxZ: tb.max.z, topY: tb.max.y };
+  const a = g.planePts[0]!, z = g.planePts[g.planePts.length - 1]!;
+  const dt = Math.max(1, z.t - a.t); // ms
+  const vel = { x: ((z.x - a.x) / dt) * 1000, z: ((z.z - a.z) / dt) * 1000 }; // world units/s (the R-1a ×1000 lesson)
+  if (Math.hypot(vel.x, vel.z) < 40) return false; // a near-still release lies where dropped
+  const mb = new THREE.Box3().setFromObject(g.mesh);
+  const halfM = { // half-extents DERIVED from the live world bbox — never magic dims
+    hx: Math.max(0.001, (mb.max.x - mb.min.x) / 2 / 900),
+    hy: Math.max(0.0005, (mb.max.y - mb.min.y) / 2 / 900),
+    hz: Math.max(0.001, (mb.max.z - mb.min.z) / 2 / 900),
+  };
+  const res = simulateSlide(rect, { x: g.mesh.position.x, z: g.mesh.position.z }, vel, halfM);
+  if (!res || res.frames.length < 2) return false;
+  slideTrace = { steps: res.steps, dist: res.dist };
+  g.slide = { frames: res.frames, i: 0, rect, baseQuat: g.mesh.quaternion.clone() };
   return true;
 }
 
@@ -192,6 +239,19 @@ export function tickDiscardPlay(_ctx: PlayAreaContext): void {
     return;
   }
   for (const g of [...pool]) {
+    if (g.phase === 'sliding' && g.slide) {
+      // R-1b (I-122): replay the recorded slide — position from the frame, the physics
+      // YAW composed on the release quat (rotations were locked to yaw in the sim, so
+      // the card spins flat exactly as simulated; the card never tumbles).
+      const s = g.slide;
+      s.i = Math.min(s.frames.length - 1, s.i + 1);
+      const fr = s.frames[s.i]!;
+      const w = feltFrameToWorld(s.rect, fr);
+      g.mesh.position.set(w.x, Math.max(w.y, s.rect.topY + 0.5), w.z);
+      g.mesh.quaternion.copy(new THREE.Quaternion(fr.qx, fr.qy, fr.qz, fr.qw).multiply(s.baseQuat));
+      if (s.i >= s.frames.length - 1) { g.slide = null; g.phase = 'loose'; g.hold = 0; } // → the same loose→return pipeline
+      continue;
+    }
     if (g.phase === 'loose') {
       g.hold++;
       if (g.hold >= HOLD_FRAMES) { g.phase = 'returning'; g.t = 0; g.fromPos = g.mesh.position.clone(); }

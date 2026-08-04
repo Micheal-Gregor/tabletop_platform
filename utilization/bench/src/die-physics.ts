@@ -55,9 +55,10 @@ const worldToFelt = (r: TableRect, x: number, z: number): { px: number; pz: numb
   return { px: (x - f.cx) / M2W, pz: (z - f.cz) / M2W };
 };
 
-/** the shaker's world: felt floor + four rails at the LIVE table edges (containment is
- *  structural), one die body. A FRESH world per toss/drag — no cross-toss state. */
-function buildWorld(r: TableRect): { world: RAPIER.World; body: RAPIER.RigidBody } {
+/** the shaker's ARENA: felt floor + four rails at the LIVE table edges (containment is
+ *  structural). Extracted at R-1b (I-122) so the die AND the card-slide share one arena
+ *  builder — a FRESH world per toss/drag/slide, no cross-toss state. */
+function buildArena(r: TableRect): RAPIER.World {
   const f = feltOf(r);
   const world = new RAPIER.World({ x: 0, y: -G, z: 0 });
   const fixed = (hx: number, hy: number, hz: number, x: number, y: number, z: number, rest: number, fric: number): void => {
@@ -69,6 +70,10 @@ function buildWorld(r: TableRect): { world: RAPIER.World; body: RAPIER.RigidBody
   fixed(0.01, RAIL_H, f.hz, f.hx, RAIL_H, 0, 0.1, 0.7);
   fixed(f.hx, RAIL_H, 0.01, 0, RAIL_H, -f.hz, 0.1, 0.7);
   fixed(f.hx, RAIL_H, 0.01, 0, RAIL_H, f.hz, 0.1, 0.7);
+  return world;
+}
+function buildWorld(r: TableRect): { world: RAPIER.World; body: RAPIER.RigidBody } {
+  const world = buildArena(r);
   const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(0, HALF, 0).setCcdEnabled(true).setCanSleep(true));
   world.createCollider(RAPIER.ColliderDesc.cuboid(HALF, HALF, HALF).setRestitution(0.25).setFriction(0.6).setDensity(1), body);
   return { world, body };
@@ -120,6 +125,60 @@ export function simulateToss(r: TableRect, startWorld: { x: number; z: number },
   const settleFace = topFaceOf(body.rotation());
   world.free();
   return { frames, settleFace, steps };
+}
+
+/** R-1b (I-122) — THE CARD SLIDE, a BURST sim like `simulateToss` (record-and-replay:
+ *  no live session, so a concurrent die drag never contends). A card-shaped cuboid
+ *  (half-extents DERIVED from the grabbed mesh's world bbox — never magic dims) with
+ *  rotations LOCKED TO YAW (the planar law: a tossed card slides and spins flat, never
+ *  tumbles), launched at the plane-sample velocity (I-117: one frame — world velocity
+ *  never inferred from screen pixels), CAPPED at the owner's 3.2 m/s ceiling; the
+ *  escape guard closes as settled (rails make escape structural defense-in-depth).
+ *  Pure fidget theater: no verb, no seeded truth, hence NO reconcile (HK-11 vacuous). */
+export function simulateSlide(
+  r: TableRect, startWorld: { x: number; z: number }, velWorld: { x: number; z: number },
+  halfM: { hx: number; hy: number; hz: number },
+): { frames: SimFrame[]; steps: number; dist: number } | null {
+  if (!ready) return null; // fallback: the caller keeps the loose-where-dropped behavior
+  const world = buildArena(r);
+  const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCcdEnabled(true).setCanSleep(true));
+  // TUNING (I-122): under the shaker's 3× gravity the felt's 0.7 friction would stop a
+  // card in millimetres (decel ≈ μ·3g). A glossy card slides: fric 0.1 with the MIN
+  // combine rule (the pair uses the card's coefficient, not the felt's) → decel ≈ 2.9
+  // m/s² → a capped 3.2 m/s flick carries ≈ 0.35 m of real travel. Verified headless.
+  world.createCollider(
+    RAPIER.ColliderDesc.cuboid(halfM.hx, halfM.hy, halfM.hz).setRestitution(0.05).setFriction(0.1)
+      .setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min).setDensity(1), body);
+  const s = worldToFelt(r, startWorld.x, startWorld.z);
+  const f = feltOf(r);
+  body.setTranslation({
+    x: Math.max(-f.hx + halfM.hx, Math.min(f.hx - halfM.hx, s.px)), y: halfM.hy + 0.002,
+    z: Math.max(-f.hz + halfM.hz, Math.min(f.hz - halfM.hz, s.pz)),
+  }, true);
+  body.setEnabledRotations(false, true, false, true); // yaw only — the planar law
+  let vx = velWorld.x / M2W, vz = velWorld.z / M2W;
+  const raw = Math.hypot(vx, vz);
+  if (raw > FLICK_CAP) { const k = FLICK_CAP / raw; vx *= k; vz *= k; }
+  body.setLinvel({ x: vx, y: 0, z: vz }, true);
+  body.setAngvel({ x: 0, y: (vx - vz) * 3, z: 0 }, true); // a flat spin, velocity-derived (deterministic)
+  const frames: SimFrame[] = [record(body)];
+  let steps = 0;
+  for (; steps < 600; steps++) {
+    world.step();
+    frames.push(record(body));
+    const t = body.translation();
+    if (asleep(body) || t.y < -0.05 || Math.abs(t.x) > f.hx + 0.05 || Math.abs(t.z) > f.hz + 0.05) break;
+  }
+  const a = frames[0]!, z0 = frames[frames.length - 1]!;
+  const dist = Math.hypot(z0.px - a.px, z0.pz - a.pz) * M2W; // world units, the oracle's teeth
+  world.free();
+  return { frames, steps, dist };
+}
+/** a recorded frame's felt-local position → bench world units (generic-body form of
+ *  `feltToWorld`: centre y = felt top + body-centre metres — exact for any cuboid). */
+export function feltFrameToWorld(r: TableRect, fr: SimFrame): { x: number; y: number; z: number } {
+  const f = feltOf(r);
+  return { x: f.cx + fr.px * M2W, y: f.topY + fr.py * M2W, z: f.cz + fr.pz * M2W };
 }
 
 // ── THE LIVE DRAG SESSION (the shaker's kinematic drag → flick) — grab-flick fidget ──

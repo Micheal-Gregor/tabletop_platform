@@ -267,6 +267,9 @@ export async function run(h) {
         // flick threshold — 143 px over ≥810 ms ≈ 0.18 px/ms vs T 0.35 (>48% margin),
         // never a bet on main-thread latency. Waits SHAPE the input (I-91's timing note);
         // every assertion still waits on STATE.
+        // R-1b (I-122): the toss now feeds the slide sim — wait on the READY state first
+        // (the VG8r opening-wait pattern), so the drive never races RAPIER's init.
+        await page.waitForFunction(() => window.__GAME3D__.dicePhysicsReady() === true, null, { timeout: 30000 });
         await page.mouse.move(txy.x, txy.y);
         await page.mouse.down();
         await page.mouse.move(txy.x + 50, txy.y - 25);
@@ -288,6 +291,17 @@ export async function run(h) {
         const glided = !!rt && rt.frames >= 2;
         check('VG8j/discard-toss-return', loose && back && glided && d1q.count === d0q.count && hmT1.m === hmT.m && hmT1.h === hmT.h,
           `loose-observed:${loose} · back-at-slot:${back} (Δ ${top0 && top1 ? Math.hypot(top1.x - top0.x, top1.y - top0.y, top1.z - top0.z).toFixed(2) : '?'}) · glided:${glided} (${rt?.frames} frames over ${rt?.dist?.toFixed?.(0)}u) · count ${d0q.count}→${d1q.count} · state-invariant:${hmT1.m === hmT.m && hmT1.h === hmT.h}`);
+
+        // R-1b (I-122) discard-toss-slides: the SAME toss drive above must have run a
+        // REAL slide sim before the card lay loose — the oracle records the burst sim's
+        // steps + planar travel. KILL: remove the beginSlide/simulateSlide call (or feed
+        // it zero velocity) → the trace stays null / dist ≈ 0 → THIS fails by name.
+        // (Physics is warmed by VG8r's opening wait pattern: the readiness gate below
+        // never bets on a clock — it waits on the ready STATE first.)
+        const physReady = await page.evaluate(() => window.__GAME3D__.dicePhysicsReady());
+        const st = await page.evaluate(() => window.__GAME3D__.discardSlideTrace());
+        check('VG8j/discard-toss-slides', physReady && !!st && st.steps >= 2 && st.dist > 2,
+          `physics-ready:${physReady} · trace:${st ? `steps ${st.steps} · slid ${st.dist.toFixed(1)}u` : 'NULL (the toss never touched physics)'} — the toss carries real momentum (I-122)`);
       }
 
       // discard-flick-reads: a FAST flick on the pile card opens the reading board on

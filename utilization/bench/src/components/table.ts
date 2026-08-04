@@ -238,6 +238,7 @@ export const table: Component = {
       discardFlickRead: dplay.lastFlickRead,
       discardTweenTrace: dplay.discardTweenTrace, // G-1 (I-101): M6's motion teeth
       discardReturnTrace: dplay.discardReturnTrace, // G-1 (I-101): M8's glide teeth
+      discardSlideTrace: dplay.discardSlideTrace, // R-1b (I-122): the toss-physics oracle {steps, dist}
       orphanGrabMeshes: () => ({ phase: draw.drawPhaseState(), count: oracles.orphanGrabMeshCount(cx!) }),
       deckNudging: stackNudging, // R-1a2 (I-110): the tap-nudge state (the gate waits on it)
       // S-1b (I-104): these five were DROPPED by the S-1 extraction surgery — the full
