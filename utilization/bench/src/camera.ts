@@ -151,8 +151,15 @@ function dollyTo(dist: number): void {
   currentName = 'custom';
   status('camera → custom (dolly)');
 }
+// S-1 (I-103): the wheel gates on the harness's live-claim predicate — I-91 promised
+// "the camera is suppressed until release" while this listener never consulted the
+// claim (the K7-Q D9/M-finding: a wheel mid-drag could enter READ mode and the release
+// still submitted). Now the promise is true.
+let wheelGate: (() => boolean) | null = null;
+export function setWheelGate(f: () => boolean): void { wheelGate = f; }
 document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
+  if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
   const zoomIn = ev.deltaY < 0;
   if (mode === 'read') {
     if (zoomIn) {

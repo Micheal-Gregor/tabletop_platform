@@ -97,6 +97,12 @@ export interface Component {
   onGrabMove?(ctx: PlayAreaContext, ev: PointerEvent): void;
   /** the release; return true when the gesture CONSUMED the click (Phase 0/2 skipped). */
   onGrabEnd?(ctx: PlayAreaContext, ev: PointerEvent): boolean;
+  /** CONTRACT v3 (S-1, I-103) — THE ABORT: the spine calls this when a live claim cannot
+   *  complete normally — a rebuild arrives mid-grab, the pointer CANCELS (touch), or
+   *  onGrabEnd THROWS. The component drops its gesture gracefully (settle/glide home);
+   *  the fresh build renders truth. Rebuild safety is a PROTOCOL OBLIGATION now, not a
+   *  per-component habit (the K7-Q M4 lesson). */
+  onGrabAbort?(ctx: PlayAreaContext): void;
   /** per-frame step, in registry order. */
   tick?(ctx: PlayAreaContext, t: number): void;
   /** the component's FLAT __GAME3D__ keys (merged via assignGate). */

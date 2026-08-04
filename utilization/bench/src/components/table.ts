@@ -16,6 +16,7 @@ import { cardStack } from '../stacks.js';
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
+import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
@@ -53,6 +54,7 @@ export const table: Component = {
   build(ctx) {
     cx = ctx;
     dplay.resetDiscardPlay(); // a rebuild drops any live discard gesture/tween (K7-P D2)
+    draw.resetDraw(ctx); // S-1 (I-103): a rebuild drops a live flip/reading/routing theater — never two cards (M4)
     const v = ctx.projection();
     const active = v.seats[v.turn.seatIdx]!.id;
     const ranked = [...v.seats].sort((a, b) => b.cash - a.cash);
@@ -154,6 +156,12 @@ export const table: Component = {
     if (dplay.discardGrabbing() === 'held') return dplay.discardGrabEnd(ctx, ev);
     return draw.grabEnd(ctx, ev);
   },
+  // CONTRACT v3 (S-1, I-103): abort both grab surfaces — a held discard card glides home,
+  // a grabbed deck card settles back face down. Graceful for cancel AND rebuild.
+  onGrabAbort(_ctx) {
+    dplay.discardGrabCancel();
+    draw.abortGrab();
+  },
 
   // Phase 2: the felt → table; a region click anchors that region (I-66d); a deck click
   // fires the draw on the VIEWER'S turn, else steps the deck fidget; discard clicks step
@@ -175,14 +183,21 @@ export const table: Component = {
       // poses (no rebuild snap; the "cheap image thing" closed).
       const grp = ctx.theater.focusObject('table:discard');
       if (grp && grp.parent) {
-        fidget['discard'] = ((fidget['discard'] ?? 0) + 1) % 3;
+        // S-1 (I-103, closing K7-Q M5): the counter commits ONLY when the tween is
+        // ACCEPTED — a refused click (cards out, tween live) advances nothing and says
+        // so, so the pile can never SNAP to an unanimated state on the next rebuild.
+        const cand = ((fidget['discard'] ?? 0) + 1) % 3;
         const v2 = ctx.projection();
         const part2 = partition(v2.ownDiscard);
         const discR2 = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
-        const next = cardStack(discR2, 'discard', part2.pile.length, part2.pile, fidget['discard']);
+        const next = cardStack(discR2, 'discard', part2.pile.length, part2.pile, cand);
         grp.parent.add(next);
-        dplay.startFidgetTween(ctx, grp as THREE.Group, next);
-        ctx.status(`discard fidget → ${['neat', 'peek', 'spread five'][fidget['discard']]} (the cards move)`);
+        if (dplay.startFidgetTween(ctx, grp as THREE.Group, next)) {
+          fidget['discard'] = cand;
+          ctx.status(`discard fidget → ${['neat', 'peek', 'spread five'][cand]} (the cards move)`);
+        } else {
+          ctx.status('the pile holds still — cards are out of place or mid-move');
+        }
       }
     }
     return true;
@@ -199,39 +214,9 @@ export const table: Component = {
       // builds, 6 region quads each. The law lagged since that commit (82 vs the true 94);
       // the first fully-read battery (I-100→G-1) surfaced it. Def-driven, like the rest.
       expectedFromDefs: () => TOWN_TABLE_V2.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length + 2 * BOOKS_PANEL.regions.length,
-      /** T-1 (I-89), REWORKED at G-1 (I-101, closing K7-Q M2): the arrangement oracle now
-       *  reads the RENDER — it walks the live table group and inverts the placement
-       *  formula (quad center + geometry → def units). The def is never consulted, so a
-       *  face-revert mutant (layoutFace(TOWN_TABLE,…)) reports v1's numbers and FAILS. */
-      tableRegionRects: () => {
-        if (!tableRoot) return null;
-        const out: { id: string; x: number; y: number; w: number; h: number }[] = [];
-        for (const ch of tableRoot.children) {
-          const rid = ch.userData?.['region'] as string | undefined;
-          if (!rid) continue;
-          // a stack GROUP's footprint is its ghost (child 0, PlaneGeometry(r.w, r.h));
-          // a region QUAD carries its own PlaneGeometry(r.w, r.h).
-          const mesh = (ch as THREE.Group).isGroup ? (ch.children[0] as THREE.Mesh) : (ch as THREE.Mesh);
-          const geo = mesh?.geometry as THREE.PlaneGeometry | undefined;
-          const pw = geo?.parameters?.width, ph = geo?.parameters?.height;
-          if (typeof pw !== 'number' || typeof ph !== 'number') continue;
-          out.push({ id: rid, x: ch.position.x - pw / 2 + 50, y: 50 - ch.position.y - ph / 2, w: pw, h: ph });
-        }
-        return out;
-      },
-      /** G-1 (I-101, closing K7-Q M1): the partition law's RENDER side — live mesh counts
-       *  per family. Exactly-once = rendered ≡ derived, per family, asserted in VG8j. */
-      renderedPartition: () => {
-        const grp = ctx.theater.focusObject('table:discard');
-        let pile = 0;
-        if (grp) grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) pile++; });
-        let global = 0, session = 0;
-        ctx.scene.traverse((o: THREE.Object3D) => {
-          if (o.userData?.['family'] === 'global') global++;
-          else if (o.userData?.['family'] === 'session') session++;
-        });
-        return { pile, global, session };
-      },
+      // the render-walking oracles live in table-oracles.ts (S-1's size-gate extraction)
+      tableRegionRects: () => oracles.renderedRegionRects(tableRoot),
+      renderedPartition: () => oracles.renderedPartitionCounts(cx!),
       regionCount: () => { let n = 0; ctx.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['region']) n++; }); return n; },
       stamped: (regionId: string) => {
         let out: readonly string[] | null = null;
@@ -253,39 +238,9 @@ export const table: Component = {
       discardFlickRead: dplay.lastFlickRead,
       discardTweenTrace: dplay.discardTweenTrace, // G-1 (I-101): M6's motion teeth
       discardReturnTrace: dplay.discardReturnTrace, // G-1 (I-101): M8's glide teeth
-      /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */
-      cardFamily: (id: string) => CARD_FAMILY[id] ?? 'discard',
-      partitionView: () => {
-        const v = cx!.projection();
-        const p = partition(v.ownDiscard);
-        return { global: p.global, session: p.session, pile: p.pile, total: v.ownDiscard.length };
-      },
-      onionState: onion.onionState,
-      onionRegions: onion.onionRegions,
-      forceFlipMismatch: draw.setForceFlipMismatch,
-      stackInfo: (rid: string) => {
-        const grp = ctx.theater.focusObject(`table:${rid}`);
-        if (!grp) return null;
-        const cards: THREE.Object3D[] = [];
-        grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) cards.push(o); });
-        cards.sort((a, b) => (a.userData['idx'] as number) - (b.userData['idx'] as number));
-        return {
-          count: cards.length,
-          fidget: fidget[rid] ?? 0,
-          topFace: cards.length ? ((cards[cards.length - 1]!.userData['renderedLines'] as string[] | undefined)?.[0] ?? null) : null,
-          top: cards.slice(-5).map((o) => { const w = new THREE.Vector3(); o.getWorldPosition(w); return { x: w.x, y: w.y, z: w.z }; }),
-        };
-      },
-      /** VG8i's input-drive helper: a table region's center projected to canvas pixels. */
-      regionScreenXY: (rid: string) => {
-        const o = ctx.theater.focusObject(`table:${rid}`);
-        if (!o) return null;
-        const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
-        ctx.camera.updateMatrixWorld();
-        const v = c.project(ctx.camera);
-        const r = ctx.renderer.domElement.getBoundingClientRect();
-        return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
-      },
+      orphanGrabMeshes: () => ({ phase: draw.drawPhaseState(), count: oracles.orphanGrabMeshCount(cx!) }),
+      stackInfo: (rid: string) => oracles.stackInfoOf(cx!, rid, fidget[rid] ?? 0),
+      regionScreenXY: (rid: string) => oracles.regionScreenXYOf(cx!, rid),
     };
   },
 };

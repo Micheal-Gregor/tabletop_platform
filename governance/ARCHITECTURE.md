@@ -113,3 +113,16 @@ owner direction — the rebase surfaced its work. Reconciled against reality:
 - **COORDINATION LAW (learned the hard way just now):** ONE active build session at a
   time. Two sessions pushing main races (non-fast-forward). The newer session is the
   active thread; an older session hands off by pushing its records and STOPPING.
+
+### The Component contract (the public seam — updated WITH its changes, law #3)
+
+- **v2 (Q-2b, I-91):** `onGrabStart(ctx, hit): boolean` (pointerdown raycast claims the
+  drag) · `onGrabMove(ctx, ev)` · `onGrabEnd(ctx, ev): boolean` (true = consumed).
+- **v3 (S-1, I-103 — the K7-Q preconditions for R-1):** `onGrabAbort(ctx)` joins the
+  contract — the spine calls it when a claim cannot complete (a rebuild mid-grab, a
+  `pointercancel`, a throwing `onGrabEnd`); the component settles its gesture home.
+  Spine guarantees: claims are PER-POINTER (`Map<pointerId, Component>`, captured, a
+  `pointercancel` listener); the claim releases in a `finally` — a throw can never
+  freeze input; `buildScene` aborts every live claim except the one whose release is
+  executing; the camera WHEEL is gated on `grabActive()`. Gate: `VG8q` (5 kill-first).
+  R-1 physics rides THIS contract; component-internal multi-pointer is R-1's business.

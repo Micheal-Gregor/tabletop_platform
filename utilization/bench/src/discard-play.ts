@@ -132,9 +132,23 @@ export function discardGrabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean 
   return true;
 }
 
-/** CLICK = the 3-step fidget, ANIMATED: tween the live cards to the NEXT state's poses. */
-export function startFidgetTween(ctx: PlayAreaContext, oldGroup: THREE.Group, nextGroup: THREE.Group): void {
-  if (tween || held || pool.length) { nextGroup.parent?.remove(nextGroup); return; } // never swap under out-of-pile cards (I-95)
+/** CONTRACT v3 (S-1, I-103) — the ABORT for a HELD discard card: it goes home by the
+ *  existing return glide (never a vanish, never a snap) — graceful for pointercancel
+ *  and for a rebuild (whose purge then simply covers a returning pool card). */
+export function discardGrabCancel(): void {
+  if (!held) return;
+  const g = held;
+  held = null;
+  g.phase = 'returning'; g.t = 0; g.fromPos = g.mesh.position.clone();
+  pool.push(g);
+}
+
+/** CLICK = the 3-step fidget, ANIMATED: tween the live cards to the NEXT state's poses.
+ *  S-1 (I-103, closing K7-Q M5): returns WHETHER the tween was accepted — the caller
+ *  commits the fidget counter only on true (a refused click no longer advances state
+ *  it did not animate, so the pile can never SNAP on the next rebuild). */
+export function startFidgetTween(ctx: PlayAreaContext, oldGroup: THREE.Group, nextGroup: THREE.Group): boolean {
+  if (tween || held || pool.length) { nextGroup.parent?.remove(nextGroup); return false; } // never swap under out-of-pile cards (I-95)
   nextGroup.visible = false;
   ctx.scene.updateMatrixWorld(true);
   const oldCards: THREE.Object3D[] = [], nextCards: THREE.Object3D[] = [];
@@ -154,6 +168,7 @@ export function startFidgetTween(ctx: PlayAreaContext, oldGroup: THREE.Group, ne
   });
   tween = { pairs, next: nextGroup, old: oldGroup, t: 0 };
   tweenTrace = { frames: 0, maxMove: 0 }; // G-1 (I-101): the motion trace opens with the tween
+  return true;
 }
 
 /** per-frame: the fidget tween · every pooled card's hold/return (I-95: independent). */

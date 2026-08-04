@@ -109,6 +109,16 @@ export const seatPlay: Component = {
     return true; // the gesture consumed the click
   },
 
+  // CONTRACT v3 (S-1, I-103) — the ABORT: a cancelled/rebuilt-under grab starts the same
+  // reset glide the release would have (never a snap; the fresh build re-anchors truth).
+  onGrabAbort(_ctx) {
+    if (!grab) return;
+    const moved = grab.card.mesh.position.distanceTo(grab.card.anchor);
+    resetting = { card: grab.card, from: grab.card.mesh.position.clone(), t: 0 };
+    lastReset = { moved, returned: false, frames: 0 };
+    grab = null;
+  },
+
   tick() {
     if (!resetting) return;
     resetting.t = Math.min(1, resetting.t + 0.07);

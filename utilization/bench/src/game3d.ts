@@ -37,6 +37,15 @@ const CLIENT3D = 'bench-3d';
 
 const builtRoots: THREE.Object3D[] = [];
 
+// CONTRACT v3 (S-1, I-103) claim state — declared ABOVE buildScene (which aborts claims
+// and runs at module init). The single `grabber` became a PER-POINTER claim map: the
+// exact single-gesture-lock defect class I-95 fixed one layer down, now fixed in the
+// spine, once, before R-1 rides it (touch is an owner requirement, I-82/A17).
+const claims = new Map<number, (typeof COMPONENTS)[number]>();
+let releasing: number | null = null; // the pointer whose onGrabEnd is executing (buildScene skips it)
+let forceGrabThrow = false; // the VG8q release-on-throw drill (the forceFlipMismatch precedent)
+const grabActive = (): boolean => claims.size > 0; // the camera wheel gates on this
+
 // ── THE MANIFESTED BACKDROP (I-67h — the owner rules on the look): white underfoot
 // → pastel haze → a faint ink ring → off-white; a gradient disc, ZERO lights ──
 function manifestBackdrop(): void {
@@ -99,6 +108,14 @@ const ctx: PlayAreaContext = {
 // ── buildScene(): a LOOP over the non-persistent components (I-67g: rebuilt from a fresh
 // projection on every state change) + the chrome header (I-51d) ──
 function buildScene(): void {
+  // CONTRACT v3 (S-1, I-103): a rebuild ABORTS every live claim EXCEPT the one whose
+  // onGrabEnd is executing right now (a completing flick rebuilds mid-release by design —
+  // aborting it would kill its own flip theater; VG8j proves the skip).
+  for (const [pid, c] of claims) {
+    if (pid === releasing) continue;
+    try { c.onGrabAbort?.(ctx); } catch { /* the fresh build renders truth regardless */ }
+    claims.delete(pid);
+  }
   for (const o of builtRoots) scene.remove(o);
   builtRoots.length = 0;
   for (const c of COMPONENTS) {
@@ -118,6 +135,7 @@ buildScene();
 for (const c of COMPONENTS) if (c.persistent) c.build(ctx);
 
 scene.add(camera); // camera children render
+cam.setWheelGate(grabActive); // S-1 (I-103): a live claim suppresses the zoom ladder
 
 function endTurn(): void {
   if (!submitVerb('end-turn', {})) return;
@@ -130,33 +148,63 @@ function endTurn(): void {
 // overlay, then (past the guard) raycasts nearest→far. EXACTLY today's control flow. ──
 let dragFrom: { x: number; y: number } | null = null;
 let dragMoved = false;
-let grabber: (typeof COMPONENTS)[number] | null = null; // CONTRACT v2 (I-91): the grab claimant
 const ray = new THREE.Raycaster();
 renderer.domElement.addEventListener('pointerdown', (ev) => {
   dragFrom = { x: ev.clientX, y: ev.clientY }; dragMoved = false;
-  // THE GRAB PROTOCOL (I-91): scene mode only — raycast; the first onGrabStart=true claims
-  // the drag (camera pan/orbit suppressed until release). Read mode keeps its pan.
-  if (cam.getMode() !== 'read') {
+  // THE GRAB PROTOCOL (I-91, v3 at I-103): scene mode only — raycast; the first
+  // onGrabStart=true claims THIS POINTER (camera suppressed until its release); the
+  // pointer is CAPTURED so the release always comes home. Read mode keeps its pan.
+  if (cam.getMode() !== 'read' && !claims.has(ev.pointerId)) {
     const r0 = renderer.domElement.getBoundingClientRect();
     ray.setFromCamera(new THREE.Vector2(((ev.clientX - r0.left) / r0.width) * 2 - 1, -((ev.clientY - r0.top) / r0.height) * 2 + 1), camera);
     outer: for (const hit of ray.intersectObjects(scene.children, true)) {
       const pick = computePick(hit, ev);
-      for (const c of COMPONENTS) if (c.onGrabStart?.(ctx, pick)) { grabber = c; break outer; }
+      for (const c of COMPONENTS) if (c.onGrabStart?.(ctx, pick)) {
+        claims.set(ev.pointerId, c);
+        try { renderer.domElement.setPointerCapture(ev.pointerId); } catch { /* synthetic pointers have no capture */ }
+        break outer;
+      }
     }
   }
 });
 renderer.domElement.addEventListener('pointermove', (ev) => {
+  const claimant = claims.get(ev.pointerId);
+  if (claimant) { // the claimed drag — no camera pan; a THROW releases the claim (v3)
+    try { claimant.onGrabMove?.(ctx, ev); } catch (e) { claims.delete(ev.pointerId); throw e; }
+    return;
+  }
   if (!dragFrom) return;
   const dx = ev.clientX - dragFrom.x, dy = ev.clientY - dragFrom.y;
   if (Math.abs(dx) + Math.abs(dy) > 4) dragMoved = true;
-  if (grabber) { grabber.onGrabMove?.(ctx, ev); return; } // the claimed drag — no camera pan
   if (cam.getMode() === 'read' && dragMoved) { cam.panBy(dx, dy); dragFrom = { x: ev.clientX, y: ev.clientY }; }
+});
+// CONTRACT v3 (S-1, I-103): touch cancels CONSTANTLY — a cancelled claim ABORTS
+// gracefully (the component settles its gesture home) and always releases.
+renderer.domElement.addEventListener('pointercancel', (ev) => {
+  const claimant = claims.get(ev.pointerId);
+  if (claimant) {
+    try { claimant.onGrabAbort?.(ctx); } finally { claims.delete(ev.pointerId); }
+  }
+  dragFrom = null; dragMoved = false;
 });
 renderer.domElement.addEventListener('pointerup', (ev) => {
   const wasDrag = dragMoved; dragFrom = null; dragMoved = false;
-  if (grabber) { // the claimed gesture releases first (I-91)
-    const consumed = grabber.onGrabEnd?.(ctx, ev) ?? false;
-    grabber = null;
+  const claimant = claims.get(ev.pointerId);
+  if (claimant) { // the claimed gesture releases first (I-91)
+    let consumed = false;
+    try {
+      releasing = ev.pointerId;
+      if (forceGrabThrow) { forceGrabThrow = false; throw new Error('VG8q drill: forced onGrabEnd throw'); }
+      consumed = claimant.onGrabEnd?.(ctx, ev) ?? false;
+    } catch (e) {
+      // v3 (M3): a throwing release ABORTS the component and rethrows — the claim NEVER
+      // sticks, input and camera stay alive (the K7-Q permanent-freeze finding).
+      try { claimant.onGrabAbort?.(ctx); } catch { /* truth renders on the next build */ }
+      throw e;
+    } finally {
+      releasing = null;
+      claims.delete(ev.pointerId); // the claim ALWAYS releases (the finally IS the law)
+    }
     if (consumed) return;
   }
   // Phase 0: consumeClick in registry order (overlay closes — round modal, onion, ledger)
@@ -237,6 +285,9 @@ const gate: Record<string, unknown> = {
   lookInsideFocusBox: cam.lookInsideFocusBox,
   panProbe: cam.panProbe,
   zoomState: cam.zoomState,
+  // S-1 (I-103) contract-v3 surfaces: the live claim count + the release-on-throw drill
+  grabClaims: () => claims.size,
+  forceGrabEndThrow: () => { forceGrabThrow = true; },
 };
 for (const c of COMPONENTS) assignGate(gate, c.gate());
 (window as unknown as Record<string, unknown>)['__GAME3D__'] = gate;

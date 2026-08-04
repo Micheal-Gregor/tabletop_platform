@@ -79,6 +79,7 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(52, 78), new THREE.MeshBasicMaterial({ map: cardBack() }));
   m.position.copy(from);
   m.rotation.set(-Math.PI / 2, 0, 0);
+  m.userData['drawGrabMesh'] = true; // S-1 (I-103): the orphan oracle counts this tag at idle
   ctx.scene.add(m);
   if (dt.mesh) dt.mesh.visible = false; // the grab card IS the top card — never two
   theater = {
@@ -139,6 +140,26 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
 }
 
 function settleBack(): void { phase = 'settling'; if (theater) theater.t = 0; }
+
+/** CONTRACT v3 (S-1, I-103) — the ABORT: a live GRAB settles back face down (the weak-
+ *  flick path — graceful for pointercancel AND for a rebuild arriving mid-grab). */
+export function abortGrab(): void {
+  if (phase === 'grabbing') settleBack();
+}
+
+/** S-1 (I-103), closing K7-Q M4's theater half: a REBUILD while the flip/reading/routing
+ *  theater is live drops it cleanly — the traveler is removed, a draw-reading onion
+ *  closes, the fresh build renders the card at its true destination (never two cards).
+ *  'grabbing' and 'settling' are NOT touched: a completing flick rebuilds mid-release by
+ *  design (its theater continues), and a settling card finishes its glide harmlessly. */
+export function resetDraw(ctx: PlayAreaContext): void {
+  if (!theater || phase === 'idle' || phase === 'grabbing' || phase === 'settling') return;
+  if (phase === 'reading' && onion.onionState().open) onion.closeOnion();
+  ctx.scene.remove(theater.mesh);
+  (theater.mesh.material as THREE.Material).dispose();
+  theater = null;
+  phase = 'idle';
+}
 
 /** onion close → ROUTE the same card (real movement, no teleport) to where the derived
  *  view placed it — first open global slot · session row · or the discard top (I-92). */
