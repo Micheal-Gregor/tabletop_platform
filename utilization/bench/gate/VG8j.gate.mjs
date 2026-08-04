@@ -34,25 +34,36 @@ export async function run(h) {
     check('VG8j/stacks-count-true', d0 && c0 && d0.count === 36 && c0.count === 0 && heightTrue,
       `deck:${d0?.count} (want 36, the committed Q-1 genesis) · discard:${c0?.count} (want 0) · height-true:${heightTrue} (sample ${ys.length}, Δy ${ys.length ? (ys[ys.length - 1] - ys[0]).toFixed(2) : '?'})`);
 
-    // deck-tap-nudge (R-1a2, I-110 — the owner's STACK PROOF: "tap the deck, the top 5
-    // cards should shift slightly... an actual stack of cards and not just the image of
-    // a stack"): a plain TAP (a claimed grab, motionless release) NUDGES the top five to
-    // slightly shifted PERSISTING poses — small but real, state invariant. Kill: drop the
-    // nudge → poses unchanged → false.
+    // deck-tap-nudge (R-1a2, I-110 + R-1a3, I-111 — the owner's STACK PROOF + the
+    // third-tap RE-CENTER "so the pile doesn't get too loose"): taps 1 and 2 NUDGE the
+    // top five to shifted PERSISTING poses; tap 3 RE-CENTERS them to the neat column.
+    // Kill: drop the nudge → tap-1 poses unchanged → false; drop the recenter branch →
+    // the accumulated spread survives tap 3 → false.
     {
       const hmN = await hashes();
+      const tap = async () => {
+        const nxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+        await page.mouse.click(nxy.x, nxy.y);
+        await page.waitForFunction(() => window.__GAME3D__.deckNudging() === false, null, { timeout: 60000 }).catch(() => {});
+        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+        return (await info('deck')).top;
+      };
+      const spreadOf = (ps) => { // the column tightness: max pairwise horizontal distance
+        let m = 0;
+        for (const a of ps) for (const b of ps) m = Math.max(m, Math.hypot(a.x - b.x, a.z - b.z));
+        return m;
+      };
       const p0 = (await info('deck')).top;
-      const nxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
-      await page.mouse.click(nxy.x, nxy.y);
-      await page.waitForFunction(() => window.__GAME3D__.deckNudging() === false, null, { timeout: 60000 }).catch(() => {});
-      await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
-      const p1 = (await info('deck')).top;
-      const ds = p0.map((v, i) => Math.hypot(p1[i].x - v.x, p1[i].y - v.y, p1[i].z - v.z));
-      const maxD = Math.max(...ds);
+      const p1 = await tap(); // tap 1 — nudged
+      const maxD = Math.max(...p0.map((v, i) => Math.hypot(p1[i].x - v.x, p1[i].y - v.y, p1[i].z - v.z)));
+      const p2 = await tap(); // tap 2 — nudged again (looseness accumulates)
+      const p3 = await tap(); // tap 3 — RE-CENTERED (I-111)
+      const s2 = spreadOf(p2), s3 = spreadOf(p3);
       const hmN1 = await hashes();
-      const nOk = maxD > 0.5 && maxD < 12 && (await info('deck')).count === 36 && hmN1.m === hmN.m && hmN1.h === hmN.h;
+      const nOk = maxD > 0.5 && maxD < 12 && s3 < 2.5 && s3 < s2
+        && (await info('deck')).count === 36 && hmN1.m === hmN.m && hmN1.h === hmN.h;
       check('VG8j/deck-tap-nudge', nOk,
-        `top-5 shifted: max Δ ${maxD.toFixed(1)}u (want 0.5–12 — small but REAL) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h} — an actual stack, not the image of one`);
+        `tap1 max Δ ${maxD.toFixed(1)}u (want 0.5–12 — a REAL stack) · spread after tap2 ${s2.toFixed(1)}u → after tap3 ${s3.toFixed(1)}u (want <2.5 & tighter — the third tap RE-CENTERS) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h}`);
     }
 
     // v2-table-arrangement (T-1, I-89 — the owner's v1-board ruling as def law + the pile

@@ -88,13 +88,18 @@ export function nudgeStack(grp: THREE.Object3D | null): boolean {
   const top = cards.slice(-5);
   if (!top.length) return false;
   const rnd = lcg(0x57ac + Math.imul(++nudgeCount, 40503));
+  // R-1a3 (I-111, owner-ruled): every THIRD tap RE-CENTERS the top five to the neat
+  // column ("so the pile doesn't get too loose") — same tween, same purity.
+  const recenter = nudgeCount % 3 === 0;
   nudge = {
     t: 0,
-    items: top.map((m) => ({
-      m, fx: m.position.x, tx: m.position.x + (rnd() - 0.5) * 1.0,
-      fy: m.position.y, ty: m.position.y + (rnd() - 0.5) * 1.0,
-      fr: m.rotation.z, tr: m.rotation.z + (rnd() - 0.5) * 0.1,
-    })),
+    items: top.map((m) => recenter
+      ? { m, fx: m.position.x, tx: 0, fy: m.position.y, ty: 0, fr: m.rotation.z, tr: 0 }
+      : {
+        m, fx: m.position.x, tx: m.position.x + (rnd() - 0.5) * 1.0,
+        fy: m.position.y, ty: m.position.y + (rnd() - 0.5) * 1.0,
+        fr: m.rotation.z, tr: m.rotation.z + (rnd() - 0.5) * 0.1,
+      }),
   };
   return true;
 }
