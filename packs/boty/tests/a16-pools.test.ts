@@ -26,7 +26,7 @@ const host = () => {
 describe('A16: the pools (I-137)', () => {
   it('genesis pools are seeded, shuffled, and COUNTED in the projection (8 + 8)', () => {
     const { pv } = host();
-    expect(pv().pools).toEqual({ tradespeople: 8, equipment: 8 });
+    expect(pv().pools).toEqual({ tradespeople: 8, equipment: 8, bbb: 5, networking: 5 }); // O-3 (I-139): all four pools
   });
 
   it('hire pops the top: crew +1 (with a trade), pool −1', () => {
@@ -58,5 +58,29 @@ describe('A16: the pools (I-137)', () => {
   it('off-turn hire refuses (the onTurn rule holds the door)', () => {
     const { sub } = host();
     expect(() => sub('hire', 'pete')).toThrow(/REFUSED|turn/i);
+  });
+});
+
+describe('O-3: the card pools (I-139)', () => {
+  it('bbb + networking pools count 5 + 5 at genesis', () => {
+    const { pv } = host();
+    expect(pv().pools.bbb).toBe(5);
+    expect(pv().pools.networking).toBe(5);
+  });
+
+  it('pool-draw pops the top INTO the discard — the session family presents it locally', () => {
+    const { pv, sub } = host();
+    const before = pv().ownDiscard.length;
+    sub('pool-draw', 'moe', { pool: 'bbb' });
+    const v = pv();
+    expect(v.pools.bbb).toBe(4);
+    expect(v.ownDiscard.length).toBe(before + 1);
+    expect(v.ownDiscard[0]!.startsWith('bbb-')).toBe(true); // newest first — the drawn card tops
+  });
+
+  it('an EMPTY card pool refuses BY NAME (GX-30)', () => {
+    const { sub } = host();
+    for (let i = 0; i < 5; i++) sub('pool-draw', 'moe', { pool: 'networking' });
+    expect(() => sub('pool-draw', 'moe', { pool: 'networking' })).toThrow(/GX-30|empty/);
   });
 });

@@ -6,7 +6,7 @@
  * Edie's Electric (electrician).
  */
 import type { ContentPack, Genesis, JsonObject, PackRef } from '@tabletop/engine';
-import { Q1_FULL_SET, Q1_DECK_ADD } from './cards-q1.js'; // Q-1 (I-88) — the PACK6-only full set
+import { Q1_FULL_SET, Q1_DECK_ADD, POOL_CARDS } from './cards-q1.js'; // Q-1 (I-88) — the PACK6-only full set
 
 export const BOTY_REF: PackRef = { id: 'boty', version: '0.1.0', hash: 'boty-slice-1' };
 
@@ -134,7 +134,7 @@ export const BOTY_PACK6: ContentPack = {
   // Q-1 (I-88; owner-ruled): ONE OF EVERY CARD in the game — the full v1-inventory set
   // joins the sandbox variant's card map. P-3 (I-131): EVERY seat's deck is that full
   // set (the pack lists the catalog membership; the genesis carries each seat's order).
-  cards: { ...BOTY_PACK.cards, ...Q1_FULL_SET },
+  cards: { ...BOTY_PACK.cards, ...Q1_FULL_SET, ...POOL_CARDS }, // O-3: the pool cards join the catalog (readable in the onion)
   seats: [...BOTY_PACK.seats, ...DRAFT_SHOPS.map((s) => ({ id: s.id }))],
   decks: Object.fromEntries(
     [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((s) => [s.id, { cards: [...FULL_DECK] }]),
@@ -147,6 +147,11 @@ export const BOTY_PACK6: ContentPack = {
 const TRADES_POOL: readonly { id: string; trade: string; cost: number }[] = [
   'mechanic', 'plumber', 'electrician', 'carpenter', 'mason', 'painter', 'roofer', 'welder',
 ].map((t, i) => ({ id: `tp-${t}-${i + 1}`, trade: t, cost: 0 }));
+// O-3 (I-139): the BBB + NETWORKING pools — card decks in truth (drawn to the local row)
+const BBB_POOL: readonly { id: string; cost: number }[] =
+  ['bbb-insurance', 'bbb-training', 'bbb-accountant', 'bbb-security', 'bbb-arbitration'].map((id) => ({ id, cost: 0 }));
+const NWK_POOL: readonly { id: string; cost: number }[] =
+  ['nwk-favor', 'nwk-rush', 'nwk-slick-lawyer', 'nwk-referral', 'nwk-gala'].map((id) => ({ id, cost: 0 }));
 const EQUIP_POOL: readonly { id: string; name: string; cost: number }[] = [
   'work-van', 'scissor-lift', 'toolkit', 'welder-rig', 'scaffold', 'paint-sprayer', 'generator', 'trailer',
 ].map((n, i) => ({ id: `eq-${n}-${i + 1}`, name: n, cost: 0 }));
@@ -170,6 +175,8 @@ export const botyGenesis6: Genesis = (packRef, seats, seed) => {
     pools: {
       tradespeople: shuffledPool(String(seed), 'tradespeople', TRADES_POOL),
       equipment: shuffledPool(String(seed), 'equipment', EQUIP_POOL),
+      bbb: shuffledPool(String(seed), 'bbb', BBB_POOL), // O-3 (I-139)
+      networking: shuffledPool(String(seed), 'networking', NWK_POOL), // O-3 (I-139)
     },
     seats: [
       ...(g['seats'] as unknown[]),

@@ -16,7 +16,7 @@ import type { SlotDecl } from '../rules/contributions.js';
 import { post, transfer, ledgerLoaded } from './ledger.js';
 import { spawnVenture, routeVenture, lapseExpired, debtsOf, setDebts } from './ventures.js';
 import type { VentureSpec } from './ventures.js';
-import { assignCrew, workCrew, hireCrew, buyEquipment } from './outfit.js';
+import { assignCrew, workCrew, hireCrew, buyEquipment, drawFromPool } from './outfit.js';
 import { attachTimedFx } from './timedfx.js';
 import type { TimedFx } from './timedfx.js';
 import { tickTimedEffects } from './timedfx.js';
@@ -199,6 +199,14 @@ export function wireLibrary(core: EngineCore, registry: RuleRegistry): void {
       const { next, cost } = buyEquipment(state, intent.seat);
       return cost > 0 ? EffectEngine.apply(next as never, { fx: 'levy', scope: intent.seat, amount: cost }, { windowDepth: 0 }) : next;
     }
+  );
+
+  // O-3 (I-139): the card pools' draw door — bbb · networking → the seat's discard
+  // (the family presents it in-play). GX-30 on empty; onTurn holds the door.
+  core.registerIntent(
+    'pool:draw',
+    { args: (_s, i) => (i.args['pool'] === 'bbb' || i.args['pool'] === 'networking' ? true : "pool must be 'bbb' | 'networking'"), rules: [onTurn] },
+    (state, intent) => drawFromPool(state, intent.seat, intent.args['pool'] as 'bbb' | 'networking')
   );
 
   core.registerIntent(

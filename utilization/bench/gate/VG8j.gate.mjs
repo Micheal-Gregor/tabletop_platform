@@ -109,9 +109,9 @@ export async function run(h) {
       // A16 (I-137): tp/eq are REAL pools — their wants DERIVE from the projection's
       // counts (count-true); bbb/networking stay 6-card staged exhibits.
       const pc = await page.evaluate(() => window.__GAME3D__.poolCounts());
-      const pilesOk = tp && eq && bb && nw && tp.count === pc.tradespeople && eq.count === pc.equipment && tp.count > 0 && bb.count === 6 && nw.count === 6;
+      const pilesOk = tp && eq && bb && nw && tp.count === pc.tradespeople && eq.count === pc.equipment && tp.count > 0 && bb.count === pc.bbb && nw.count === pc.networking && bb.count > 0; // O-3 (I-139): ALL FOUR derive
       check('VG8j/v2-table-arrangement', arrOk && !!pilesOk,
-        `${arrDetail} · piles tp:${tp?.count}≡${pc?.tradespeople} eq:${eq?.count}≡${pc?.equipment} (REAL, count-true — I-137) bbb:${bb?.count} nw:${nw?.count} (want 6 staged)`);
+        `${arrDetail} · piles tp:${tp?.count}≡${pc?.tradespeople} eq:${eq?.count}≡${pc?.equipment} (REAL — I-137) bbb:${bb?.count}≡${pc?.bbb} nw:${nw?.count}≡${pc?.networking} (REAL — I-139/O-3, all four count-true)`);
     }
 
     // draw-weak-flick (Q-2b, I-91 — the owner's "if the card isn't flicked hard enough,

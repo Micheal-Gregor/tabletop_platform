@@ -30,6 +30,7 @@ const VERBS: Readonly<Record<string, VerbFactory>> = Object.freeze({
   // A16 (I-137, admission on the record): the pools' doors — module-native intents.
   'hire': (seat) => ({ type: 'crew:hire', seat, args: {} }),
   'buy-equipment': (seat) => ({ type: 'outfit:buy', seat, args: {} }),
+  'pool-draw': (seat, a) => ({ type: 'pool:draw', seat, args: { pool: a['pool'] } }), // O-3 (I-139)
   'decide': (seat, a) => ({ type: 'window:resolve', seat, args: { window: a['window'], option: a['option'] } }),
   'end-turn': (seat) => ({ type: 'turn:end', seat, args: {} }),
   'reckon': (seat) => ({ type: 'closing:reckon', seat, args: {} }),

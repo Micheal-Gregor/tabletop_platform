@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, panelTexture } from '../surfaces.js';
-import { cardStack, stackNudging, tickStackNudge } from '../stacks.js';
+import { cardStack, stackNudging, tickStackNudge, nudgeStack } from '../stacks.js';
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
@@ -99,8 +99,9 @@ export const table: Component = {
     // A16 (counts bind to state when their engine decks land; presentation stages).
     const bbR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'bbb-pile')!;
     const nwR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'networking-pile')!;
-    t.add(cardStack(bbR, 'bbb-pile', 6, null, 0));
-    t.add(cardStack(nwR, 'networking-pile', 6, null, 0));
+    // O-3 (I-139): BBB + networking are REAL card decks — count-true from the pools.
+    t.add(cardStack(bbR, 'bbb-pile', v.pools.bbb, null, 0));
+    t.add(cardStack(nwR, 'networking-pile', v.pools.networking, null, 0));
     t.rotation.x = -Math.PI / 2;
     t.scale.set(9, 7, 1);
     t.userData['focus'] = 'table';
@@ -168,6 +169,21 @@ export const table: Component = {
       // viewer's turn means an edge case (e.g. read-mode entry) — hint, don't act.
       if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('grab the top card and FLICK to flip it'); }
       else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
+    } else if (region === 'bbb-pile' || region === 'networking-pile') {
+      // O-3 (I-139): YOUR turn → draw from the pool through the doors — the card joins
+      // your LOCAL row ('BBB card drawn, buy insurance, put in local card area');
+      // off-turn → the deck's own tap-nudge (object-logic parity, I-138/O-3).
+      const v4 = ctx.projection();
+      const pool = region === 'bbb-pile' ? 'bbb' : 'networking';
+      if (v4.seats[v4.turn.seatIdx]!.id === ctx.viewSeat) {
+        if (ctx.submit('pool-draw', { pool })) {
+          ctx.rebuild();
+          ctx.status(`drawn from ${pool.toUpperCase()} — the card joins your local row`);
+        }
+      } else {
+        nudgeStack(ctx.theater.focusObject(`table:${region}`));
+        ctx.status(`the ${pool.toUpperCase()} deck — draw on your turn`);
+      }
     } else if (region === 'tradespeople-pile' || region === 'equipment-pile') {
       // A16 (I-137): YOUR turn → the pile's verb through the doors (hire / buy); a
       // refusal (empty pool, off-turn) speaks via submitVerb's status. The hire-flight
@@ -180,6 +196,7 @@ export const table: Component = {
           ctx.status(verb === 'hire' ? 'hired — a new tradesperson joins your crew' : 'bought — the equipment joins your rack');
         }
       } else {
+        nudgeStack(ctx.theater.focusObject(`table:${region}`)); // O-3: nudge parity on every pile
         ctx.status(`${region === 'tradespeople-pile' ? 'the tradesperson pool' : 'the equipment pool'} — hire on your turn`);
       }
     } else if (region === 'discard') {

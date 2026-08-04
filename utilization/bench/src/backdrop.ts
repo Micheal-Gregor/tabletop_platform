@@ -5,10 +5,12 @@
  */
 import * as THREE from 'three';
 import { scene } from './stage.js';
+import { buildCountertop } from './surface.js'; // I-139: THE COUNTERTOP — the one alignment law
 
 // ── THE MANIFESTED BACKDROP (I-67h — the owner rules on the look): white underfoot
 // → pastel haze → a faint ink ring → off-white; a gradient disc, ZERO lights ──
 export function manifestBackdrop(): void {
+  scene.add(buildCountertop()); // I-139: everything rests on this (the strata law; consumers migrate at O-5)
   const c = document.createElement('canvas');
   c.width = c.height = 1024;
   const g = c.getContext('2d')!;

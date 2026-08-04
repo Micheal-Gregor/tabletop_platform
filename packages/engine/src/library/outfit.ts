@@ -110,3 +110,20 @@ export function buyEquipment(state: State, seat: string): { next: JsonObject; co
   const next = { ...state, pools: { ...pools, equipment: pools.equipment.slice(1) }, seats };
   return { next, cost: top.cost };
 }
+
+/** O-3 (I-139): draw from a CARD pool (bbb · networking) — the top card joins the
+ *  seat's DISCARD, where the content's family presents it IN PLAY (the local row).
+ *  GX-30 on empty; the same content-as-data law as hire/buy. */
+export function drawFromPool(state: State, seat: string, pool: 'bbb' | 'networking'): JsonObject {
+  const pools = poolsOf(state) as Pools & { readonly bbb?: readonly PoolCard[]; readonly networking?: readonly PoolCard[] };
+  const list = (pools[pool] ?? []) as readonly PoolCard[];
+  const top = list[0];
+  if (!top) throw new VentureRefusal('pool', 'GX-30', `the ${pool} deck is empty — nothing to draw`);
+  const decks = state['decks'] as Record<string, { draw: readonly string[]; discard: readonly string[]; reserve: readonly string[] }>;
+  const mine = decks[seat] ?? { draw: [], discard: [], reserve: [] };
+  return {
+    ...state,
+    pools: { ...pools, [pool]: list.slice(1) },
+    decks: { ...decks, [seat]: { ...mine, discard: [top.id, ...mine.discard] } }, // newest first (the deck.ts convention)
+  };
+}

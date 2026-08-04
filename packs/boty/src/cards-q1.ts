@@ -77,7 +77,27 @@ export const Q1_DECK_ADD: readonly string[] = Object.keys(Q1_FULL_SET);
  *  IN PLAY — GLOBAL (the table's global section) or SESSION (the active seat's row) —
  *  versus the plain discard pile. The bench PARTITIONS the projection's discard by this
  *  map (derived-never-stored); it invents no state. Every card not named here: discard. */
+// O-3 (I-139): the BBB + NETWORKING pool cards — their own PHYSICAL cards (distinct
+// ids; the main deck's one-of-every-card law untouched). Drawn → the seat's discard →
+// the session family presents them in the LOCAL row ('BBB card drawn, buy insurance').
+export const POOL_CARDS: Readonly<Record<string, { fx: readonly never[]; flavor: string }>> = {
+  'bbb-insurance': { fx: [], flavor: 'buy insurance — premiums monthly; sleep nightly' },
+  'bbb-training': { fx: [], flavor: 'apprentice training — slower today, faster forever' },
+  'bbb-accountant': { fx: [], flavor: 'a proper accountant — the books balance themselves' },
+  'bbb-security': { fx: [], flavor: 'site security — the tools stay yours' },
+  'bbb-arbitration': { fx: [], flavor: 'arbitration clause — disputes stay out of court' },
+  'nwk-favor': { fx: [], flavor: 'call in a favor — someone owes you' },
+  'nwk-rush': { fx: [], flavor: 'rush the job — overtime tonight, invoice tomorrow' },
+  'nwk-slick-lawyer': { fx: [], flavor: 'the slick lawyer — every contract has a loophole' },
+  'nwk-referral': { fx: [], flavor: 'a warm referral — work finds you' },
+  'nwk-gala': { fx: [], flavor: 'the chamber gala — be seen, be hired' },
+};
+
 export const CARD_FAMILY: Readonly<Record<string, 'global' | 'session'>> = {
+  'bbb-insurance': 'session', 'bbb-training': 'session', 'bbb-accountant': 'session',
+  'bbb-security': 'session', 'bbb-arbitration': 'session',
+  'nwk-favor': 'session', 'nwk-rush': 'session', 'nwk-slick-lawyer': 'session',
+  'nwk-referral': 'session', 'nwk-gala': 'session',
   'town-levy': 'global',
   'gbl-boom': 'global',
   'gbl-recession': 'global',
