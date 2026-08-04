@@ -155,6 +155,110 @@ export async function run(h) {
       const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.pile[0] === 'job-posting';
       check('VG8j/slot-partition-law', famOk && sumOk,
         `family{gbl-boom:${fam.g} svc-marketing:${fam.s} job-posting:${fam.d} town-levy:${fam.levy}} · partition sums:${sumOk} (${pv?.pile?.length}+${pv?.global?.length}+${pv?.session?.length}=${pv?.total})`);
+
+      // ── Q-6 (I-94): THE LIVE DISCARD (the pile now holds job-posting, face up) ──
+      // discard-toss-return: a REAL slow 130-px drag pulls the top card OFF the pile
+      // (scene-attached — the same object), release → LOOSE (the couple-seconds hold,
+      // waited as STATE) → glides back to its EXACT slot in pile order; state invariant.
+      {
+        const hmT = await hashes();
+        const d0q = await info('discard');
+        const top0 = d0q.top[d0q.top.length - 1];
+        const txy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        await page.mouse.move(txy.x, txy.y);
+        await page.mouse.down();
+        await page.mouse.move(txy.x + 50, txy.y - 25);
+        await page.waitForTimeout(350); // slow input shape — below the flick threshold
+        await page.mouse.move(txy.x + 130, txy.y - 60);
+        await page.mouse.up();
+        let loose = false;
+        try { await page.waitForFunction(() => window.__GAME3D__.discardGesture() === 'loose', null, { timeout: 8000 }); loose = true; } catch { /* named below */ }
+        await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 120000 }).catch(() => {});
+        const d1q = await info('discard');
+        const top1 = d1q.top[d1q.top.length - 1];
+        const back = !!(top0 && top1) && Math.hypot(top1.x - top0.x, top1.y - top0.y, top1.z - top0.z) < 3;
+        const hmT1 = await hashes();
+        check('VG8j/discard-toss-return', loose && back && d1q.count === d0q.count && hmT1.m === hmT.m && hmT1.h === hmT.h,
+          `loose-observed:${loose} · back-at-slot:${back} (Δ ${top0 && top1 ? Math.hypot(top1.x - top0.x, top1.y - top0.y, top1.z - top0.z).toFixed(2) : '?'}) · count ${d0q.count}→${d1q.count} · state-invariant:${hmT1.m === hmT.m && hmT1.h === hmT.h}`);
+      }
+
+      // discard-flick-reads: a FAST flick on the pile card opens the reading board on
+      // THAT card (the deck's mechanics mirrored); a corner click closes (no route — the
+      // draw phase is idle); the card is home again.
+      {
+        const fxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        await page.mouse.move(fxy.x, fxy.y);
+        await page.mouse.down();
+        for (let i = 1; i <= 4; i++) await page.mouse.move(fxy.x + i * 14, fxy.y - i * 10);
+        await page.mouse.up();
+        let opened = false;
+        try { await page.waitForFunction(() => window.__GAME3D__.onionState().open === true, null, { timeout: 8000 }); opened = true; } catch { /* named below */ }
+        const oTitle = await page.evaluate(() => window.__GAME3D__.onionState().title);
+        const fr = await page.evaluate(() => window.__GAME3D__.discardFlickRead());
+        const stgQ = await page.locator('#stage canvas').boundingBox();
+        await page.mouse.click(stgQ.x + 20, stgQ.y + 20);
+        await page.waitForFunction(() => window.__GAME3D__.onionState().open === false, null, { timeout: 60000 }).catch(() => {});
+        await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 60000 }).catch(() => {});
+        check('VG8j/discard-flick-reads', opened && oTitle === 'job-posting' && !!fr && fr.cardId === 'job-posting',
+          `onion:${opened}/${oTitle} · flick-read:${fr?.cardId} — the same mechanics read the pile`);
+      }
+
+      // discard-fidget-animates: a plain CLICK cycles the 3-step fidget with the cards
+      // TWEENING to the new poses (a transition STATE is observed — never a snap).
+      {
+        const cxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        await page.mouse.click(cxy.x, cxy.y);
+        let transitioning = false;
+        try { await page.waitForFunction(() => window.__GAME3D__.discardTransitioning() === true, null, { timeout: 8000 }); transitioning = true; } catch { /* named below */ }
+        await page.waitForFunction(() => window.__GAME3D__.discardTransitioning() === false, null, { timeout: 60000 }).catch(() => {});
+        const f1 = await info('discard');
+        check('VG8j/discard-fidget-animates', transitioning && f1.fidget === 1 && f1.count === 1,
+          `transition-observed:${transitioning} (the cards MOVED, no snap) · fidget-state:${f1?.fidget} · count:${f1?.count}`);
+      }
+
+      // discard-multi-card (Q-6b, I-95 — THE OWNER'S EXACT SCENARIO: "drag some cards out
+      // of the way and then flick a card I couldn't reach before, it should pop open"):
+      // a second flick-draw fills the pile to 2 (new-van routes in); drag the TOP card
+      // away slowly → LOOSE; WHILE it is loose, grab + FLICK the card underneath → the
+      // reading board OPENS on it, one card still out. Kill: restore the single-gesture
+      // lock → the under-card flick is refused → no onion → false.
+      {
+        const d2xy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+        await page.mouse.move(d2xy.x, d2xy.y);
+        await page.mouse.down();
+        for (let i = 1; i <= 4; i++) await page.mouse.move(d2xy.x + i * 12, d2xy.y - i * 10);
+        await page.mouse.up();
+        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }).catch(() => {});
+        const stg2 = await page.locator('#stage canvas').boundingBox();
+        await page.mouse.click(stg2.x + 20, stg2.y + 20); // close → routes new-van to the pile
+        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+        const dM = await info('discard');
+        // drag the TOP card (new-van) out of the way — slow → LOOSE
+        const mxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        await page.mouse.move(mxy.x, mxy.y);
+        await page.mouse.down();
+        await page.mouse.move(mxy.x + 60, mxy.y + 30);
+        await page.waitForTimeout(350);
+        await page.mouse.move(mxy.x + 150, mxy.y + 70);
+        await page.mouse.up();
+        let loose2 = false;
+        try { await page.waitForFunction(() => window.__GAME3D__.discardGesture() === 'loose', null, { timeout: 8000 }); loose2 = true; } catch { /* named below */ }
+        // WHILE it is loose: grab + FLICK the card underneath (job-posting, now reachable)
+        await page.mouse.move(mxy.x, mxy.y);
+        await page.mouse.down();
+        for (let i = 1; i <= 4; i++) await page.mouse.move(mxy.x + i * 14, mxy.y - i * 10);
+        await page.mouse.up();
+        let popped = false;
+        try { await page.waitForFunction(() => window.__GAME3D__.onionState().open === true, null, { timeout: 8000 }); popped = true; } catch { /* named below */ }
+        const oT2 = await page.evaluate(() => window.__GAME3D__.onionState().title);
+        const poolAt = await page.evaluate(() => window.__GAME3D__.discardPool());
+        await page.mouse.click(stg2.x + 20, stg2.y + 20); // close the reading
+        await page.waitForFunction(() => window.__GAME3D__.onionState().open === false, null, { timeout: 60000 }).catch(() => {});
+        await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 180000 }).catch(() => {});
+        const dEnd = await info('discard');
+        check('VG8j/discard-multi-card', loose2 && popped && oT2 === 'job-posting' && poolAt >= 2 && dM.count === 2 && dEnd.count === 2,
+          `top-card-loose:${loose2} · under-card flick POPPED:${popped}/${oT2} (want job-posting) · cards-out-at-once:${poolAt} · pile ${dM?.count}→${dEnd?.count} (want 2→2)`);
+      }
       const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase(), z: window.__GAME3D__.zoomState() }));
       const hmClose = await hashes();
       const dClose = await info('deck');

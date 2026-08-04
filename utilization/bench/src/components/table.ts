@@ -15,6 +15,7 @@ import { layoutFace, panelTexture } from '../surfaces.js';
 import { cardStack } from '../stacks.js';
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
+import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
 
@@ -50,6 +51,7 @@ export const table: Component = {
 
   build(ctx) {
     cx = ctx;
+    dplay.resetDiscardPlay(); // a rebuild drops any live discard gesture/tween (K7-P D2)
     const v = ctx.projection();
     const active = v.seats[v.turn.seatIdx]!.id;
     const ranked = [...v.seats].sort((a, b) => b.cash - a.cash);
@@ -112,23 +114,44 @@ export const table: Component = {
     return t;
   },
 
-  // Phase 0: ANY click closes the open reading board; consumed (I-67b). Q-2 (I-90): the
-  // close starts the ROUTE — the same card travels to its destination, then idle.
+  // Phase 0: ANY click closes the open reading board; consumed (I-67b). A DRAW reading
+  // routes its card on close (Q-2/I-90); a discard flick-read just closes (Q-6/I-94).
   consumeClick(ctx) {
     if (onion.onionState().open) {
       onion.closeOnion();
-      draw.startRoute(ctx);
-      ctx.status('reading board closed — the card routes to the discard');
+      if (draw.drawPhaseState() === 'reading') {
+        draw.startRoute(ctx);
+        ctx.status('reading board closed — the card routes to its place');
+      } else {
+        ctx.status('reading board closed');
+      }
       return true;
     }
     return false;
   },
 
-  // CONTRACT v2 (Q-2b, I-91): the GRAB protocol — the deck's top card grabs on the
-  // viewer's turn; flick past the threshold to draw, too soft settles back face down.
-  onGrabStart(ctx, hit: PickInfo) { return draw.grabStart(ctx, hit); },
-  onGrabMove(ctx, ev: PointerEvent) { draw.grabMove(ctx, ev); },
-  onGrabEnd(ctx, ev: PointerEvent) { return draw.grabEnd(ctx, ev); },
+  // CONTRACT v2: the GRAB protocol — a DISCARD pile card grabs any turn (toss/flick-read,
+  // Q-6/I-94); the DECK's top card grabs on the viewer's turn (flick-to-draw, Q-2b/I-91).
+  onGrabStart(ctx, hit: PickInfo) {
+    // a pile card (region 'discard') OR a card currently OUT of the pile (the
+    // `discardLoose` marker — scene-parented, so its region tag is gone; I-95 re-grab)
+    if (hit.tags['card'] === true && (hit.region === 'discard' || hit.tags['discardLoose'] === true)) {
+      let m: THREE.Object3D | null = hit.object;
+      while (m && !m.userData?.['card']) m = m.parent;
+      const grp = ctx.theater.focusObject('table:discard');
+      if (m && grp) return dplay.discardGrabStart(ctx, m, grp, hit.event);
+      return false;
+    }
+    return draw.grabStart(ctx, hit);
+  },
+  onGrabMove(ctx, ev: PointerEvent) {
+    if (dplay.discardGrabbing() === 'held') { dplay.discardGrabMove(ctx, ev); return; }
+    draw.grabMove(ctx, ev);
+  },
+  onGrabEnd(ctx, ev: PointerEvent) {
+    if (dplay.discardGrabbing() === 'held') return dplay.discardGrabEnd(ctx, ev);
+    return draw.grabEnd(ctx, ev);
+  },
 
   // Phase 2: the felt → table; a region click anchors that region (I-66d); a deck click
   // fires the draw on the VIEWER'S turn, else steps the deck fidget; discard clicks step
@@ -146,14 +169,25 @@ export const table: Component = {
       if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('grab the top card and FLICK to flip it'); }
       else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
     } else if (region === 'discard') {
-      fidget['discard'] = ((fidget['discard'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`discard fidget → ${['neat', 'peek', 'spread five'][fidget['discard']]}`);
+      // Q-6 (I-94): the 3-step fidget, ANIMATED — the cards TWEEN to the next state's
+      // poses (no rebuild snap; the "cheap image thing" closed).
+      const grp = ctx.theater.focusObject('table:discard');
+      if (grp && grp.parent) {
+        fidget['discard'] = ((fidget['discard'] ?? 0) + 1) % 3;
+        const v2 = ctx.projection();
+        const part2 = partition(v2.ownDiscard);
+        const discR2 = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
+        const next = cardStack(discR2, 'discard', part2.pile.length, part2.pile, fidget['discard']);
+        grp.parent.add(next);
+        dplay.startFidgetTween(ctx, grp as THREE.Group, next);
+        ctx.status(`discard fidget → ${['neat', 'peek', 'spread five'][fidget['discard']]} (the cards move)`);
+      }
     }
     return true;
   },
 
-  // Q-2b (I-91): the whole draw step — momentum flip → onion display · settle-back ·
-  // route — lives in table-draw.ts; delegate.
-  tick(ctx) { draw.tickDraw(ctx); },
+  // Q-2b/Q-6: the draw step (table-draw) + the live discard (tween/hold/return); delegate.
+  tick(ctx) { draw.tickDraw(ctx); dplay.tickDiscardPlay(ctx); },
 
   gate() {
     const ctx = cx!;
@@ -175,6 +209,12 @@ export const table: Component = {
       drawTheater: () => draw.drawTheaterInfo(cx!),
       lastRoute: draw.lastRoute,
       drawGesture: draw.drawGesture,
+      /** Q-6 (I-94) live-discard oracles: the gesture phase · the fidget transition · the
+       *  last flick-read record (gates wait on these STATES, never clocks). */
+      discardGesture: dplay.discardGrabbing,
+      discardPool: dplay.discardPoolSize,
+      discardTransitioning: dplay.discardFidgetTransitioning,
+      discardFlickRead: dplay.lastFlickRead,
       /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */
       cardFamily: (id: string) => CARD_FAMILY[id] ?? 'discard',
       partitionView: () => {

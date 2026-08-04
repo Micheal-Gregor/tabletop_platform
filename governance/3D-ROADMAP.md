@@ -104,3 +104,11 @@ each object ("really perform for the players" is the owner's acceptance bar).
 | K-C books two-page (I-79) | 9297bff · k7-pass-kc-books | PASS (worst 7) · integrated 52/52 | 2026-08-03 playtest-2: **CHANGES RULED → P-2** (folder + rise-up + anchor-per-report; balance sheet unreachable via the pan-switch) |
 | K-D box (I-80) | b27b823 · k7-pass-kd-box | PASS (worst 8) · integrated 54/54 | 2026-08-03 playtest-2: no verdict (unmentioned); lid-distance flag stands |
 | K-E dice free-tumble (I-81) | 249dc4b · k7-pass-ke-dice | PASS (worst 8) · integrated 56/56 | 2026-08-03 playtest-2: **CHANGES RULED → P-1/R-1** (too big · fixed home · RAPIER physics program) |
+| P-1 dice size/home (I-83) | bfa5612 | K7-P round 1 RETURN → D1–D3 closed (I-87); battery owner-side | 2026-08-03: size sealed ("size now looks correct") |
+| P-2/2b/2c ledger folder + three-objects (I-84/85/86) | 677d1c5 | K7-P closed same-session | 2026-08-03: **SEALED** ("approved! … no botches") |
+| Q-1 full deck (I-88) | 4b48088 | static+unit verified; battery owner-side | 2026-08-03: rode the T-1 "Good." |
+| T-1 v2 table arrangement (I-89) | a74c9f2 | derived-region law auto-tracks; VG8j arrangement check | 2026-08-03: **SEALED** ("Good.") |
+| Q-2/2b flick-to-flip draw (I-90/91; contract v2 grab protocol) | 6d1ea10 | VG8j real-drag drives + weak-flick | 2026-08-03: **SEALED** ("good") |
+| Q-2c slot routing derived view (I-92) | 2987363 | VG8j slot-partition-law | 2026-08-03: **SEALED** ("good") |
+| Q-3 seat play area + crew projection (I-93) | 01e0ebe | VG8p NEW (4 checks) | 2026-08-03: rode the "go" |
+| Q-6/6b live discard + gesture pool (I-94/95) | (this commit) | VG8j +4 checks incl. discard-multi-card | 2026-08-03: **SEALED** ("good"; "other animations and the pop-up are perfect") |
