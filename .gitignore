@@ -1,3 +1,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Local agent/tooling scratch — machine-specific, never shared (I-97).
+.claude/

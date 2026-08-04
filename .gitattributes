@@ -1,0 +1,15 @@
+# LINE-ENDING LAW (I-97). The repo objects are LF. A Windows worktree that rewrites
+# the tree to CRLF produces a phantom diff across every tracked file — 169 files
+# "modified" with zero content change, which is how the 2026-08-03 resume found it.
+# The I-83 session learned this by hand (`sed -i 's/\r$//'` before `git add`);
+# this file makes the lesson structural so it cannot recur.
+* text=auto eol=lf
+
+# Binaries — never eol-normalized, never diffed as text.
+*.docx binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.JPG  binary
+*.jpeg binary
+*.ico  binary
