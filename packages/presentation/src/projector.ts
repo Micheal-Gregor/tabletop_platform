@@ -44,7 +44,10 @@ export interface SeatView {
   /** Q-3 (I-93): the CREW — public state (every player sees every shop's staff, the v1
    *  board's own truth); the 3D bench's tradespeople rows render from THIS field only
    *  (R-19: no render read outside the projector). Additive. */
-  readonly crew: readonly { readonly id: string; readonly outfit: string }[];
+  // A5 (I-128): `assignedTo` is a TRUTH-DECLARATION — the projector already passes the
+  // raw crew array through whole, so the field flowed undeclared; assignments are public
+  // in the certified SVG bench (I-59b), so declaring it is redaction-consistent.
+  readonly crew: readonly { readonly id: string; readonly outfit: string; readonly assignedTo?: { readonly venture: string } }[];
 }
 
 /** HK-10 — before render read: the object MUST be a branded projection. */

@@ -208,6 +208,16 @@ export async function run(h) {
       stamps.map((st, i) => `${i}:${st && st.back ? (st.back.some((l) => l.includes('$')) ? 'LEAK' : 'ok') : 'MISSING'}`).join(' ')
       + ` · opposed:${backsOpposed} (dots ${backDots.map((d) => (d === null ? 'null' : d.toFixed(3))).join(',')})`);
 
+    // A5 (I-128) · shop-board-data-true: every board's building-tier / jobs-list stamps
+    // TEXT-equal the fresh projection derivation (render-walk, the independent read) —
+    // teeth even at zero crew ('no jobs in queue' must be STAMPED, never absent; the
+    // K7-Q M7 vacuity lesson). KILL: remove the A5 fills from seats.ts → the walk finds
+    // no lines for the region → match false → THIS fails by name.
+    const fills = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.shopFillsTrue(i)));
+    const fillsOk = fills.every((f) => f && f.match);
+    check('VG8g2/shop-board-data-true', fillsOk,
+      fills.map((f, i) => `${i}:${f ? (f.match ? 'ok' : `MISMATCH tier"${f.got.tier}"≟"${f.want.tier}" jobs"${f.got.jobs}"≟"${f.want.jobs}"`) : 'NULL'}`).join(' · '));
+
     // far board read: face-on along the FAR normal (0, sin.25, −cos.25) + full pose law
     await page.evaluate(() => window.__GAME3D__.toggleRead('seat-4'));
     if (await waitRest('VG8g/read-far-board-face-on')) {

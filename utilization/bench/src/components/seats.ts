@@ -27,9 +27,21 @@ export const seats: Component = {
     // each board rotated to face ITS OWN player beyond its table edge.
     SEATS.forEach((s, i) => {
       const seat = v.seats.find((x) => x.id === s)!;
+      // A5 (I-128): DATA PARITY with the certified SVG bench's shop fills (game.ts:211) —
+      // building-tier carries the crew count, jobs-list the real `crew ⇒ venture`
+      // assignments (public per I-59b), AR/AP labels, active-aware actions — all from
+      // THE PROJECTION (S-6: never raw state; assignedTo declared at the projector, I-128).
+      const crewMine = v.crew.filter((m) => m.outfit === s);
+      const jobs = crewMine.filter((m) => m.assignedTo !== undefined).map((m) => `${m.id} ⇒ ${m.assignedTo!.venture}`);
       const b = layoutFace(SHOP_BOARD, 0xffffff, {
         identity: [`${s}${s === active ? ' ★' : ''} · [trade]`],
         counters: [`$${seat.cash} · ♥${seat.favor}`],
+        'art-banner': [`${s}'s shop`],
+        'building-tier': [`[building · tier — · next increment] · ${crewMine.length} crew`],
+        'jobs-list': [jobs.length ? jobs.join(' · ') : 'no jobs in queue'],
+        ar: ['AR — owed to you'],
+        ap: ['AP — you owe'],
+        actions: [s === active ? '' : '—'],
       });
       b.scale.set(2.6, 2.6, 1);
       const far = i >= 3;
@@ -91,6 +103,31 @@ export const seats: Component = {
         const fn = new THREE.Vector3(0, 0, 1).applyQuaternion(fq);
         const bn = new THREE.Vector3(0, 0, 1).applyQuaternion(bq);
         return fn.dot(bn);
+      },
+      /** A5 (I-128) shop-fills oracle: a RENDER-WALK of board i's stamped lines (the
+       *  independent read, K7-P D5) vs a FRESH projection derivation — TEXT-equal, so
+       *  the check has teeth even at zero crew ('no jobs in queue' MUST be stamped). */
+      shopFillsTrue: (i: number) => {
+        const grp = ctx.theater.focusObject(`seat-${i}`);
+        if (!grp) return null;
+        const got: Record<string, string> = {};
+        grp.traverse((o: THREE.Object3D) => {
+          const rg = o.userData?.['region'] as string | undefined;
+          const rl = o.userData?.['renderedLines'] as string[] | undefined;
+          if (rg && rl && !o.userData?.['back']) got[rg] = rl.join('|');
+        });
+        const v = ctx.projection();
+        const s = SEATS[i]!;
+        const mine = v.crew.filter((m) => m.outfit === s);
+        const jobs = mine.filter((m) => m.assignedTo !== undefined).map((m) => `${m.id} ⇒ ${m.assignedTo!.venture}`);
+        const wantJobs = jobs.length ? jobs.join(' · ') : 'no jobs in queue';
+        const wantTier = `[building · tier — · next increment] · ${mine.length} crew`;
+        return {
+          got: { tier: got['building-tier'] ?? null, jobs: got['jobs-list'] ?? null, ar: got['ar'] ?? null, ap: got['ap'] ?? null },
+          want: { tier: wantTier, jobs: wantJobs },
+          match: got['building-tier'] === wantTier && got['jobs-list'] === wantJobs
+            && got['ar'] === 'AR — owed to you' && got['ap'] === 'AP — you owe',
+        };
       },
       /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
       boardScreenXY: (i: number) => {
