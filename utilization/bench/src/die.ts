@@ -12,20 +12,12 @@
  *     caller passes in (the K7-v1x D2 law — theater never outruns truth). A bar button
  *     opens it; a stage click advances preamble -> round-card -> dismiss.
  *
- * (2) THE DIE (owner-ruled 2026-08-03 — a SEEDED ROLLING EXHIBIT; K-E free-tumble fix,
- *     I-81, SUPERSEDES the caged dice-region spot of I-73): a cube with 1-6 pip faces
- *     that sits ON TOP of the table surface and is FREE to tumble across the table's WHOLE
- *     area. rollDie() plays a seeded toss (arc up + tumble + a horizontal glide) that
- *     TRAVELS across the surface and settles at a SEEDED landing point anywhere within the
- *     live table bounds, with the SEEDED face upright. HK-11 (displayed up-face ≡
- *     seeded) fires through beginFlourish/completeFlourish with the 'die-throw' flourish;
- *     on a mismatch TRUTH WINS — the die re-settles to the seeded face and the verdict
- *     flags it. A COMMITTED forced-mismatch drill (forceDieMismatch, the VG7d/I-67c
- *     precedent) keeps the path falsifiable. The seed is the BENCH-deterministic LCG
- *     (stacks.ts lcg) — the die is an EXHIBIT: the slice carries NO engine die verb, so
- *     the die touches NO game state and asserts nothing false. FIDGET: when it is NOT the
- *     viewer's turn, a touch does a lazy dead roll to a deterministic side, NO state
- *     change (the die never reaches the engine, so purity is structural).
+ * (2) THE DIE — R-1a (I-109) SUPERSEDES the K-E scripted tumble: the toss is ONE real
+ *     RAPIER simulation (die-physics.ts, the owner's shaker ported), recorded invisibly
+ *     and REPLAYED with the reconcile offset composed on every frame, so the die settles
+ *     SHOWING THE SEEDED FACE (HK-11 by construction; the forced-mismatch drill carries).
+ *     GRAB-FLICK (contract v3) runs a LIVE sim — pure fidget theater, no reconcile. The
+ *     HOME/return-glide law (P-1, I-83) and toss-only-from-idle (K7-P D3) carry unchanged.
  *
  * Diffused light only (LAW); unskinned (D-1).
  *
@@ -38,6 +30,8 @@ import { beginFlourish, completeFlourish } from '@tabletop/presentation';
 import { camera } from './stage.js';
 import { lcg } from './stacks.js';
 import { pipTexture } from './die-pips.js'; // P-1/I-83 size-gate extraction (verbatim move)
+import * as phys from './die-physics.js'; // R-1a (I-109): the RAPIER wrapper — record & replay
+void phys.initDicePhysics(); // fire the wasm init at module load (a pre-ready click refuses)
 
 // ── THE ROUND SEQUENCE (I-55a) — extracted to die-round.ts (I-78), re-exported here so
 //    this module's public exports (and components/die.ts) are byte-for-byte unaffected. ──
@@ -57,7 +51,7 @@ const FACE_NORMALS: ReadonlyArray<{ v: number; n: THREE.Vector3 }> = [
   { v: 4, n: new THREE.Vector3(0, 0, -1) },
 ];
 const UP = new THREE.Vector3(0, 1, 0);
-/** The quaternion that brings the face carrying value v to world-up (shortest rotation). */
+/** the quat bringing face v to world-up. */
 function faceUpQuat(v: number): THREE.Quaternion {
   const f = FACE_NORMALS.find((x) => x.v === v)!;
   return new THREE.Quaternion().setFromUnitVectors(f.n, UP);
@@ -67,11 +61,7 @@ const DIE_SIZE = 45; // P-1 (I-83): halved from 90 — "way too big for the boar
 const DIE_SEED = 0x1a4d1e; // the bench LCG seed (stacks.ts lcg) — determinism, no engine
 let dieRollCount = 0;
 
-// pipTexture — extracted VERBATIM to die-pips.ts (P-1/I-83 size-gate extraction).
-
-/** The table's world footprint + surface-top y — the die tumbles FREE across THIS whole
- *  area (K-E, I-81 — SUPERSEDES I-73's caged dice-region spot), never confined to a
- *  sub-square. DERIVED from the live table bbox (components/die.ts), not a magic square. */
+/** The table area the die tumbles across (K-E, I-81) — derived live, never magic. */
 export type TableRect = { minX: number; maxX: number; minZ: number; maxZ: number; topY: number };
 let tableRect: TableRect | null = null;
 const TABLE_MARGIN = DIE_SIZE; // a margin so the whole cube settles ON the table, not over its edge
@@ -85,29 +75,18 @@ let dieHomePos: THREE.Vector3 | null = null;
 let restHold = 0; // frames the settled result stays readable before the return glide
 let returnFrom: THREE.Vector3 | null = null;
 let returnT = 0;
-type DieAnim = {
-  t: number;
-  from: THREE.Quaternion;
-  to: THREE.Quaternion;
-  axis: THREE.Vector3;
-  spins: number;
-  inst: ReturnType<typeof beginFlourish> | null; // null = a fidget dead roll (no HK-11)
-  seeded: number;
-  displayedTarget: number; // the face the toss settles on (the lie, under the drill)
-  fromPos: THREE.Vector3; // where the toss starts — the die's current rest spot
-  toPos: THREE.Vector3; // the SEEDED landing point WITHIN the table area (K-E)
+type DieReplay = { // the recording + cursor (1 step/2 ticks) · offset = the RECONCILE · inst null = fidget
+  frames: phys.SimFrame[]; i: number; half: boolean; offset: THREE.Quaternion;
+  inst: ReturnType<typeof beginFlourish> | null; seeded: number; displayedTarget: number;
 };
-let dieAnim: DieAnim | null = null;
-let diePhase: 'idle' | 'rolling' | 'rest' | 'returning' = 'idle';
+let dieReplay: DieReplay | null = null;
+let lastSimTrace: { steps: number; frames: number; settleFace: number; offsetApplied: boolean } | null = null; // the VG8r oracle
+let diePhase: 'idle' | 'rolling' | 'rolling-live' | 'dragging' | 'rest' | 'returning' = 'idle'; // R-1a: +dragging/rolling-live (additive)
 let dieVerdict: { mismatch: boolean; displayed: number; seeded: number } | null = null;
 let forceDieMismatch = false; // the committed forced-mismatch drill — one-shot
 
-/** Build the die ONCE as a top-level scene object resting ON TOP of the table surface,
- *  FREE to tumble across the table's WHOLE area (K-E, I-81). It is NOT a table child (the
- *  table's 9×7 scale would distort the cube) and NOT rebuilt on state change — reinforcing
- *  that the die touches no game state. `table` is the live table bbox (from components/
- *  die.ts): the cube's UNDERSIDE sits on the table top, its initial rest is the table
- *  centre, and its rolls settle at SEEDED points anywhere within the area. */
+/** Build the die ONCE, resting ON TOP of the table, FREE over the whole area (K-E);
+ *  NOT a table child, NOT rebuilt on state (it touches no game state). */
 export function buildDie(scene: THREE.Scene, table: TableRect | null, home: { x: number; z: number } | null = null): void {
   if (die) { scene.remove(die); die = null; }
   const geo = new THREE.BoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE);
@@ -142,45 +121,18 @@ export function dieUpFace(): number {
 /** The six pip-face values (for the die-face-count law). */
 export const dieFaces = (): number[] => [...DIE_FACE_VALUES].sort((a, b) => a - b);
 
-/** A splitmix32 avalanche → a uniform fraction in [0,1). The raw LCG's consecutive outputs
- *  from a linear counter lie on a lattice LINE (poor 2D coverage); hashing decorrelates the
- *  x and z fractions so the landings FILL the table AREA, not a diagonal. */
-function mix32(z0: number): number {
-  let z = (z0 + 0x9e3779b9) >>> 0;
-  z = Math.imul(z ^ (z >>> 16), 0x21f0aaad) >>> 0;
-  z = Math.imul(z ^ (z >>> 15), 0x735a2d97) >>> 0;
-  z = (z ^ (z >>> 15)) >>> 0;
-  return z / 4294967296;
-}
-
-/** A SEEDED landing point WITHIN the table AREA (K-E) — one LCG draw seeds two avalanche
- *  hashes (an x-fraction and a z-fraction) so the same seed replays to the same spot AND
- *  the points fill the whole area; the margin keeps the whole cube on the table. */
-function seededLanding(rnd: () => number): THREE.Vector3 {
-  const r = tableRect;
-  if (!r) return die ? die.position.clone() : new THREE.Vector3(0, dieBaseY, 0);
-  const u = Math.floor(rnd() * 4294967296) >>> 0; // one LCG draw → the landing seed
-  const fx = mix32((u ^ 0x9e3779b9) >>> 0);
-  const fz = mix32((u + 0x6d2b79f5) >>> 0);
-  const x = r.minX + TABLE_MARGIN + fx * (r.maxX - r.minX - 2 * TABLE_MARGIN);
-  const z = r.minZ + TABLE_MARGIN + fz * (r.maxZ - r.minZ - 2 * TABLE_MARGIN);
-  return new THREE.Vector3(x, dieBaseY, z);
-}
-
-function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number, displayedTarget: number, landing: THREE.Vector3): void {
-  if (!die || diePhase !== 'idle') return; // toss ONLY from idle-at-home (K7-P D3 — I-83's law enforced)
-  dieAnim = {
-    t: 0,
-    from: die.quaternion.clone(),
-    to: faceUpQuat(displayedTarget),
-    axis: new THREE.Vector3(0.6, 0.2, 0.8).normalize(),
-    spins: inst ? 3 : 1, // a seeded toss tumbles more; a fidget dead roll is lazy
-    inst,
-    seeded,
-    displayedTarget,
-    fromPos: die.position.clone(),
-    toPos: landing,
-  };
+function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number, displayedTarget: number, u: number): void {
+  if (!die || diePhase !== 'idle' || !tableRect) return; // toss ONLY from idle-at-home (K7-P D3)
+  if (!phys.dicePhysicsReady()) return; // pre-ready: refuse (status set by the caller path)
+  // R-1a (I-109): ONE real simulation, invisibly, to settle — then the reconcile offset
+  // maps the SIM's top face to the DISPLAYED target. Physics never decides; the seeded
+  // truth (or the drill's lie) is chosen before a single frame renders.
+  const sim = phys.simulateToss(tableRect, { x: die.position.x, z: die.position.z }, u);
+  const nT = FACE_NORMALS.find((f) => f.v === displayedTarget)!.n;
+  const nF = FACE_NORMALS.find((f) => f.v === sim.settleFace)!.n;
+  const offset = new THREE.Quaternion().setFromUnitVectors(nT, nF); // offset·n_T = n_F — a cube symmetry
+  lastSimTrace = { steps: sim.steps, frames: sim.frames.length, settleFace: sim.settleFace, offsetApplied: displayedTarget !== sim.settleFace };
+  dieReplay = { frames: sim.frames, i: 0, half: false, offset, inst, seeded, displayedTarget };
   diePhase = 'rolling';
 }
 
@@ -193,7 +145,8 @@ export function rollDie(): void {
   dieRollCount++;
   const seeded = 1 + Math.floor(rnd() * 6);
   const displayedTarget = forceDieMismatch ? (seeded % 6) + 1 : seeded; // a wrong face for the drill
-  startRoll(beginFlourish('die-throw', String(seeded), '♪ die throw'), seeded, displayedTarget, seededLanding(rnd));
+  const u = Math.floor(rnd() * 4294967296) >>> 0; // the SAME stream draw that fed seededLanding — now the impulse seed (I-109(4))
+  startRoll(beginFlourish('die-throw', String(seeded), '♪ die throw'), seeded, displayedTarget, u);
 }
 
 /** deadRoll — the FIDGET (NOT the viewer's turn): a lazy dead roll to a DETERMINISTIC
@@ -203,7 +156,8 @@ export function deadRoll(): void {
   const rnd = lcg(DIE_SEED + 0x5eed + Math.imul(dieRollCount, 40503));
   dieRollCount++;
   const side = 1 + Math.floor(rnd() * 6);
-  startRoll(null, side, side, seededLanding(rnd));
+  const u = Math.floor(rnd() * 4294967296) >>> 0;
+  startRoll(null, side, side, u); // the fidget reconciles to its own deterministic side — no HK-11, no verdict
 }
 
 /** The per-frame die step — arc up (sin) + tumble, settling EXACTLY on the target face;
@@ -233,37 +187,89 @@ export function tickDie(): void {
     }
     return;
   }
-  if (!dieAnim) return;
-  dieAnim.t = Math.min(1, dieAnim.t + (dieAnim.inst ? 0.045 : 0.06));
-  const t = dieAnim.t;
-  const ease = t * t * (3 - 2 * t);
-  // TRAVEL across the table: a horizontal glide from the toss spot to the SEEDED landing
-  // point (the die is FREE to tumble over the WHOLE surface — K-E, not caged) + an arc up.
-  die.position.x = dieAnim.fromPos.x + (dieAnim.toPos.x - dieAnim.fromPos.x) * ease;
-  die.position.z = dieAnim.fromPos.z + (dieAnim.toPos.z - dieAnim.fromPos.z) * ease;
-  die.position.y = dieBaseY + Math.sin(t * Math.PI) * (dieAnim.inst ? 130 : 55); // arc up
-  // tumble: the settle slerp plus extra whole spins that resolve to identity at t=1, so
-  // the final orientation is EXACTLY the target face-up quaternion.
-  const settle = new THREE.Quaternion().slerpQuaternions(dieAnim.from, dieAnim.to, ease);
-  const spin = new THREE.Quaternion().setFromAxisAngle(dieAnim.axis, (1 - ease) * dieAnim.spins * 2 * Math.PI);
-  die.quaternion.copy(spin).multiply(settle);
-  if (t >= 1) {
-    die.position.set(dieAnim.toPos.x, dieBaseY, dieAnim.toPos.z); // land on the seeded spot, ON the table
-    die.quaternion.copy(dieAnim.to); // land exactly on the settle target
-    if (dieAnim.inst) {
-      const displayed = dieUpFace(); // the toss's up-face (the lie, under the drill)
-      const verdict = completeFlourish(dieAnim.inst, String(displayed)); // HK-11 — truth wins (R-20)
-      dieVerdict = { mismatch: verdict.mismatch !== null, displayed, seeded: dieAnim.seeded };
-      if (verdict.mismatch) die.quaternion.copy(faceUpQuat(Number(verdict.result))); // TRUTH WINS: show seeded
-      forceDieMismatch = false; // the drill is one-shot
+  if (diePhase === 'rolling-live') { // R-1a grab-flick: the LIVE sim, one step per tick
+    const st = phys.dragStep();
+    if (!st || !tableRect) { diePhase = 'idle'; return; }
+    const w = phys.feltToWorld(tableRect, st.frame.px, st.frame.py, st.frame.pz);
+    die.position.set(w.x, w.y, w.z);
+    die.quaternion.set(st.frame.qx, st.frame.qy, st.frame.qz, st.frame.qw); // no reconcile — pure fidget theater
+    if (st.settled) { diePhase = 'rest'; restHold = 45; }
+    return;
+  }
+  if (!dieReplay || !tableRect) return;
+  // R-1a (I-109): consume the RECORDING at half pace (1 sim step / 2 ticks) — the theater
+  // is a replay of one real simulation, the reconcile offset composed on every frame.
+  if (diePhase === 'rolling') {
+    const r = dieReplay;
+    r.half = !r.half;
+    if (r.half && r.i < r.frames.length - 1) r.i++;
+    const f = r.frames[r.i]!;
+    const w = phys.feltToWorld(tableRect, f.px, f.py, f.pz);
+    die.position.set(w.x, w.y, w.z);
+    die.quaternion.set(f.qx, f.qy, f.qz, f.qw).multiply(r.offset); // mesh = bodyQ · offset
+    if (r.i >= r.frames.length - 1) {
+      if (r.inst) {
+        const displayed = dieUpFace(); // reads the COMPOSED quat — the reconcile's product
+        const verdict = completeFlourish(r.inst, String(displayed)); // HK-11 — truth wins (R-20)
+        dieVerdict = { mismatch: verdict.mismatch !== null, displayed, seeded: r.seeded };
+        if (verdict.mismatch) die.quaternion.copy(faceUpQuat(Number(verdict.result))); // TRUTH WINS: show seeded
+        forceDieMismatch = false; // the drill is one-shot
+      }
+      dieReplay = null;
+      diePhase = 'rest';
+      restHold = 45; // the settled result stays readable, then the return glide (I-83)
     }
-    dieAnim = null;
-    diePhase = 'rest';
-    restHold = 45; // the settled result stays readable, then the return glide (I-83)
   }
 }
 
-export const diePhaseState = (): 'idle' | 'rolling' | 'rest' | 'returning' => diePhase;
+// ── R-1a GRAB-FLICK (contract v3; the shaker's kinematic drag) — pure fidget theater ──
+let dragSamples: { x: number; z: number; t: number }[] = [];
+export function dieGrabStart(): boolean {
+  if (!die || diePhase !== 'idle' || !tableRect || !phys.dicePhysicsReady()) return false;
+  if (!phys.dragBegin(tableRect, { x: die.position.x, z: die.position.z })) return false;
+  dragSamples = [{ x: die.position.x, z: die.position.z, t: performance.now() }];
+  diePhase = 'dragging';
+  return true;
+}
+export function dieGrabMove(worldX: number, worldZ: number): void {
+  if (diePhase !== 'dragging' || !die || !tableRect) return;
+  phys.dragMove(worldX, worldZ);
+  const st = phys.dragStep();
+  if (st) {
+    const w = phys.feltToWorld(tableRect, st.frame.px, st.frame.py, st.frame.pz);
+    die.position.set(w.x, w.y, w.z);
+    die.quaternion.set(st.frame.qx, st.frame.qy, st.frame.qz, st.frame.qw);
+  }
+  dragSamples.push({ x: worldX, z: worldZ, t: performance.now() });
+  if (dragSamples.length > 6) dragSamples.shift();
+}
+/** release: <6 world-units of travel = a plain CLICK — put the die back and FALL THROUGH
+ *  (false) so onPick still rolls (every VG8m drive preserved); a real drag FLICKS. */
+export function dieGrabEnd(): boolean {
+  if (diePhase !== 'dragging' || !die) return false;
+  const a = dragSamples[0]!, z = dragSamples[dragSamples.length - 1]!;
+  const dist = Math.hypot(z.x - a.x, z.z - a.z);
+  if (dist < 6) {
+    phys.dragCancel();
+    if (dieHomePos) die.position.set(dieHomePos.x, dieBaseY, dieHomePos.z);
+    diePhase = 'idle';
+    return false; // the click falls through — Phase 2 onPick rolls (I-109(5))
+  }
+  const dt = Math.max(1, z.t - a.t);
+  phys.dragEnd(((z.x - a.x) / dt) * 1000, ((z.z - a.z) / dt) * 1000); // units/ms → units/s (dragEnd ÷M2W → m/s)
+  diePhase = 'rolling-live';
+  return true;
+}
+/** contract v3 abort (cancel / rebuild / throw): drop the session, glide home. */
+export function dieGrabAbort(): void {
+  if (diePhase !== 'dragging' && diePhase !== 'rolling-live') return;
+  phys.dragCancel();
+  diePhase = 'rest';
+  restHold = 1; // straight into the return glide
+}
+export const dieSimTrace = () => lastSimTrace;
+
+export const diePhaseState = (): 'idle' | 'rolling' | 'rolling-live' | 'dragging' | 'rest' | 'returning' => diePhase;
 export const dieVerdictState = () => dieVerdict;
 export const setForceDieMismatch = (v: boolean): void => { forceDieMismatch = v; };
 /** The die's rest STATE — centre x/z, base y, and its bbox UNDERSIDE y (a GEOMETRY-STATE

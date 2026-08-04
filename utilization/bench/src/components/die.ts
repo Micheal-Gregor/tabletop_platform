@@ -16,6 +16,7 @@ import {
   buildDie, rollDie, deadRoll, tickDie, dieScreenXY, diePhaseState, dieVerdictState,
   dieUpFace, dieFaces, setForceDieMismatch, advanceRoundModal, roundModalState,
   dieRestInfo, dieTableRect, dieHome,
+  dieGrabStart, dieGrabMove, dieGrabEnd, dieGrabAbort, dieSimTrace, // R-1a (I-109)
 } from '../die.js';
 import type { TableRect } from '../die.js';
 
@@ -86,8 +87,34 @@ export const die: Component = {
     return false;
   },
 
+  // R-1a (I-109) — GRAB-FLICK (contract v3): the die claims from idle; kinematic follow
+  // on the table plane; a real flick → a LIVE sim (pure fidget theater, no reconcile);
+  // a motionless release FALLS THROUGH so a plain click still rolls (the VG8m drives).
+  onGrabStart(_ctx, hit: PickInfo) {
+    if (!hit.tags['die']) return false;
+    return dieGrabStart();
+  },
+  onGrabMove(ctx, ev: PointerEvent) {
+    const rect = dieTableRect();
+    if (!rect) return;
+    const r = ctx.renderer.domElement.getBoundingClientRect();
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -rect.topY);
+    const p = new THREE.Vector3();
+    if (ray.ray.intersectPlane(plane, p)) dieGrabMove(p.x, p.z);
+  },
+  onGrabEnd(ctx, _ev: PointerEvent) {
+    const flicked = dieGrabEnd();
+    if (flicked) ctx.status('die flicked — real physics, a fidget (no game effect)');
+    return flicked; // false = the click falls through to onPick (the roll)
+  },
+  onGrabAbort(_ctx) {
+    dieGrabAbort();
+  },
+
   tick() {
-    tickDie(); // A4 (I-73): the seeded toss / dead-roll animation step (HK-11 at settle)
+    tickDie(); // A4 (I-73) + R-1a: the replay / live-sim step (HK-11 at settle)
   },
 
   gate() {
@@ -108,6 +135,9 @@ export const die: Component = {
        *  spans a large fraction of the WHOLE table, not the old dice sub-square). */
       dieRestInfo,
       dieTableRect,
+      /** R-1a (I-109) physics oracles: the last burst-sim's trace (steps · frames ·
+       *  settleFace · whether the reconcile offset was non-identity). VG8r's surface. */
+      dieSimTrace,
       /** P-1 (I-83) home surfaces: the derived dice-region home the die starts from and
        *  returns to (die-returns-home asserts rest position ≈ home after a full cycle). */
       dieHome,
