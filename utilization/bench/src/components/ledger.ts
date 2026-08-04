@@ -33,9 +33,19 @@ export const ledgerComponent: Component = {
     const book = ledger.ledgerBook(ctx.viewSeat, ctx.projection());
     const board = ctx.theater.focusObject('seat-0');
     if (board) {
+      // L-5b (I-132): the SEAT FRAME LAW — the ledger sits PARALLEL TO ITS BOARD (the
+      // owner: 'position of the ledger at each seat needs to be parallel to the board
+      // seat'). Position + yaw derive from the board's OWN quaternion: left end of the
+      // seat line (lateral −225), a step toward the player (normal +130) — the same
+      // offsets the axis-aligned pose had, expressed in the board's frame.
       board.updateWorldMatrix(true, true);
-      const bb = new THREE.Box3().setFromObject(board);
-      book.position.set(bb.min.x - 95, 2, bb.getCenter(new THREE.Vector3()).z + 130); // left of the board, in front
+      const c = new THREE.Box3().setFromObject(board).getCenter(new THREE.Vector3());
+      const q = board.getWorldQuaternion(new THREE.Quaternion());
+      const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+      n.y = 0; n.normalize(); // toward the player, horizontal
+      const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
+      book.position.copy(c).addScaledVector(lat, -225).addScaledVector(n, 130).setY(2);
+      book.rotation.y = Math.atan2(n.x, n.z); // parallel to the board
     } else {
       book.position.set(-420, 2, 560); // defensive fallback (caught by the left-edge gate)
     }
@@ -116,13 +126,22 @@ export const ledgerComponent: Component = {
       ledgerFolderForm: ledger.ledgerFolderForm,
       /** the FOLDER's world-top y — the RISE oracle (the pages must stand ABOVE it). */
       ledgerFolderY: () => (bookRoot ? new THREE.Box3().setFromObject(bookRoot).max.y : null),
-      /** Q-3 (I-93): the LEFT-EDGE oracle — folder centre-x vs the live seat-0 board. */
+      /** Q-3 (I-93; RE-DERIVED at I-132): the LEFT-EDGE oracle — 'left' in the BOARD'S
+       *  OWN FRAME (lateral coordinate < the board's left edge), since the seat frames
+       *  rotate with the corners now. The world-x form was placement-specific; the LAW
+       *  (the books sit left of your board) is frame-relative. */
       ledgerLeftOfBoard: () => {
         const board = cx!.theater.focusObject('seat-0');
         if (!bookRoot || !board) return null;
-        const fx = new THREE.Box3().setFromObject(bookRoot).getCenter(new THREE.Vector3()).x;
-        const bminx = new THREE.Box3().setFromObject(board).min.x;
-        return { folderX: fx, boardMinX: bminx, left: fx < bminx };
+        board.updateWorldMatrix(true, true);
+        const c = new THREE.Box3().setFromObject(board).getCenter(new THREE.Vector3());
+        const q = board.getWorldQuaternion(new THREE.Quaternion());
+        const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+        n.y = 0; n.normalize();
+        const lat = new THREE.Vector3(n.z, 0, -n.x);
+        const f = new THREE.Box3().setFromObject(bookRoot).getCenter(new THREE.Vector3());
+        const latCoord = f.clone().sub(c).dot(lat);
+        return { folderLat: latCoord, boardLeftLat: -130, left: latCoord < -130 };
       },
       /** a standing page's world bbox width/height — the PORTRAIT (report-sized) oracle. */
       ledgerPageBBox: (kind: 'pnl' | 'balance') => {

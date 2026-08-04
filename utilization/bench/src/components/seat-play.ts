@@ -25,13 +25,19 @@ let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycast
 let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } | null = null;
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 
-function seatFront(ctx: PlayAreaContext, i: number): { c: THREE.Vector3; dir: number } | null {
+/** L-5b (I-132): THE SEAT FRAME — 'the rows for the cards … needs to be parallel to the
+ *  board seat'. Everything at a seat lays out in the BOARD'S OWN frame: `n` = the
+ *  board's horizontal normal (toward the player), `lat` = its side axis, `yaw` its
+ *  heading. Rows step toward the table along −n; cards yaw with the board. */
+function seatFrame(ctx: PlayAreaContext, i: number): { c: THREE.Vector3; n: THREE.Vector3; lat: THREE.Vector3; yaw: number } | null {
   const b = ctx.theater.focusObject(`seat-${i}`);
   if (!b) return null;
   b.updateWorldMatrix(true, true);
-  const bb = new THREE.Box3().setFromObject(b);
-  const c = bb.getCenter(new THREE.Vector3());
-  return { c, dir: c.z > 0 ? -1 : 1 }; // toward the table
+  const c = new THREE.Box3().setFromObject(b).getCenter(new THREE.Vector3());
+  const q = b.getWorldQuaternion(new THREE.Quaternion());
+  const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+  n.y = 0; n.normalize();
+  return { c, n, lat: new THREE.Vector3(n.z, 0, -n.x), yaw: Math.atan2(n.x, n.z) };
 }
 
 export const seatPlay: Component = {
@@ -53,7 +59,7 @@ export const seatPlay: Component = {
     const session = v.ownDiscard.filter((id) => CARD_FAMILY[id] === 'session');
     for (let i = 0; i < v.seats.length; i++) {
       const seat = v.seats[i]!;
-      const sf = seatFront(ctx, i);
+      const sf = seatFrame(ctx, i);
       if (!sf) continue;
       // L-4 (I-131): THE ROW PLAN — pure data in, rows out (unit-tested). Trades = the
       // public crew (pairs STAGED at zero until the attach verbs land, I-82f); the
@@ -77,7 +83,7 @@ export const seatPlay: Component = {
         let cum = 0;
         row.items.forEach((it) => {
           const w = widths[row.items.indexOf(it)]! * scale;
-          const cxp = sf.c.x - (natural * scale) / 2 + cum + w / 2;
+          const latOff = -(natural * scale) / 2 + cum + w / 2; // along the board's side axis
           cum += w;
           const isLocal = it.kind === 'local';
           const label = it.kind === 'equipment' ? it.id.split(':')[0]! : it.id;
@@ -85,12 +91,16 @@ export const seatPlay: Component = {
             new THREE.PlaneGeometry(it.kind === 'pair' ? 62 : 44, isLocal ? 60 : 66),
             new THREE.MeshBasicMaterial({ map: panelTexture([label, `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
           );
+          // L-5b (I-132): the SEAT FRAME LAW — position in the board's frame (lateral +
+          // toward-table steps), orientation yawed WITH the board (corner rows run at 45°).
+          const pos = sf.c.clone().addScaledVector(sf.lat, latOff).addScaledVector(sf.n, -zOff);
           if (isLocal || it.kind === 'equipment') {
-            mesh.rotation.x = -Math.PI / 2; // flat on the felt
-            mesh.position.set(cxp, 2.5, sf.c.z + sf.dir * zOff);
+            mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2))); // flat, footprint parallel
+            mesh.position.set(pos.x, 2.5, pos.z);
           } else {
-            mesh.position.set(cxp, 34, sf.c.z + sf.dir * zOff); // standing
-            if (sf.dir < 0) mesh.rotation.y = Math.PI; // far rows face the table
+            mesh.rotation.y = sf.yaw; // standing, facing the player like the board
+            mesh.position.set(pos.x, 34, pos.z);
           }
           const key = `${it.kind === 'pair' ? 'crew' : it.kind === 'trades' ? 'crew' : it.kind === 'equipment' ? 'asset' : 'local'}:${it.id}`;
           mesh.userData = { seatPlayCard: key, focus: `seat-${i}` };
@@ -106,17 +116,19 @@ export const seatPlay: Component = {
         const ledger = ctx.theater.focusObject('ledger');
         if (ledger) {
           ledger.updateWorldMatrix(true, true);
-          const lb = new THREE.Box3().setFromObject(ledger);
-          const lc = lb.getCenter(new THREE.Vector3());
-          const away = lc.z > 0 ? 1 : -1; // below the books = away from the table
+          const lc = new THREE.Box3().setFromObject(ledger).getCenter(new THREE.Vector3());
           const n = Math.min(3, v.ownDiscard.length);
           for (let k = 0; k < n; k++) {
             const mesh = new THREE.Mesh(
               new THREE.PlaneGeometry(40, 60),
               new THREE.MeshBasicMaterial({ color: 0x5a4a3a, side: THREE.DoubleSide }), // face DOWN — a back, no data (redaction)
             );
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.position.set(lc.x + k * 6, 2 + k * 0.8, lc.z + away * 95 + k * 4);
+            // L-5b (I-132): below the books = a step AWAY from the table along the seat
+            // frame's normal; the stagger runs along the side axis; footprint parallel.
+            mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
+            const hp = lc.clone().addScaledVector(sf.n, 95 + k * 4).addScaledVector(sf.lat, k * 6);
+            mesh.position.set(hp.x, 2 + k * 0.8, hp.z);
             mesh.userData = { seatPlayCard: `hand:${k}`, focus: `seat-${i}`, hand: true };
             cards.push({ key: `hand:${k}`, mesh, anchor: mesh.position.clone() });
             g.add(mesh);
@@ -192,9 +204,11 @@ export const seatPlay: Component = {
         return v.seats.map((s, i) => {
           const want = v.crew.filter((m) => m.outfit === s.id).length;
           const got = cards.filter((c) => c.key.startsWith('crew:') && c.mesh.userData['focus'] === `seat-${i}`).length;
-          const sf = seatFront(ctx, i);
+          const sf = seatFrame(ctx, i);
           const row = cards.find((c) => c.key.startsWith('crew:') && c.mesh.userData['focus'] === `seat-${i}`);
-          const inFront = !!(row && sf) && Math.abs(row.mesh.position.z) < Math.abs(sf.c.z); // between board and table
+          // L-5b (I-132): in-front is FRAME-relative — the row sits on the TABLE side of
+          // the board (its offset along the board normal is negative).
+          const inFront = !!(row && sf) && row.mesh.position.clone().sub(sf.c).dot(sf.n) < 0;
           return { seat: s.id, want, got, inFront };
         });
       },
@@ -229,11 +243,12 @@ export const seatPlay: Component = {
       handInfo: () => {
         const hand = cards.filter((c) => c.mesh.userData['hand']);
         const ledger = ctx.theater.focusObject('ledger');
-        if (!ledger) return { count: hand.length, belowBooks: false };
-        const lb = new THREE.Box3().setFromObject(ledger);
-        const lc = lb.getCenter(new THREE.Vector3());
-        // below the books = FARTHER from the table plane (|z| larger) than the ledger
-        const belowBooks = hand.length === 0 || hand.every((c) => Math.abs(c.mesh.position.z) > Math.abs(lc.z));
+        const sf = seatFrame(ctx, 0); // the viewer's seat frame
+        if (!ledger || !sf) return { count: hand.length, belowBooks: false };
+        const lc = new THREE.Box3().setFromObject(ledger).getCenter(new THREE.Vector3());
+        // L-5b (I-132): below the books = a POSITIVE step along the seat frame's normal
+        // (away from the table) from the ledger — frame-relative, corner-safe.
+        const belowBooks = hand.length === 0 || hand.every((c) => c.mesh.position.clone().sub(lc).dot(sf.n) > 0);
         return { count: hand.length, belowBooks, want: Math.min(3, ctx.projection().ownDiscard.length) };
       },
       seatPlayCardXY: (key: string) => {

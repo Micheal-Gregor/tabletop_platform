@@ -47,7 +47,7 @@ export const box: Component = {
     const b = buildBox({ bw, bd });
     // PLACEMENT — to the RIGHT of the whole table: the base LEFT edge sits a clear gap past
     // the table's RIGHT edge (left edge = tb.rightX + gap). Aligned to the table's z-centre.
-    const gap = 50;
+    const gap = 170; // L-5b (I-132, owner: 'moved a little further away from the table top') — was 50
     b.position.set(tb.rightX + gap + bw / 2, 0, tb.centerZ);
     return b;
   },

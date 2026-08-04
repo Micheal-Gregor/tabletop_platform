@@ -50,10 +50,14 @@ export const seats: Component = {
       // read-pose gate pins — untouched by construction). The seat-front rows, ledger,
       // and hand all DERIVE from the live board bbox, so they follow the corners free.
       const CORNER = 470;
+      // L-5b (I-132): the MID seats sit ON THE LINE of the adjacent corner boards'
+      // closest edges — 'pulled back… full visibility of table'. DERIVED: a corner
+      // board (half-width 130 world) yawed 45° reaches CORNER + 130·sin45° in z.
+      const MID_Z = CORNER + 130 * Math.SQRT1_2; // ≈ 562 — the corner near-edge line
       const yawOf = [-Math.PI / 4, 0, Math.PI / 4, Math.PI + Math.PI / 4, Math.PI, Math.PI - Math.PI / 4] as const;
       const posOf: readonly [number, number][] = [
-        [-CORNER, CORNER], [0, 420], [CORNER, CORNER],
-        [-CORNER, -CORNER], [0, -420], [CORNER, -CORNER],
+        [-CORNER, CORNER], [0, MID_Z], [CORNER, CORNER],
+        [-CORNER, -CORNER], [0, -MID_Z], [CORNER, -CORNER],
       ];
       b.position.set(posOf[i]![0], 130, posOf[i]![1]);
       b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawOf[i]!)

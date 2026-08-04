@@ -230,7 +230,8 @@ export async function run(h) {
       && yawNear(poses[3].yawDeg, -135) && yawNear(poses[5].yawDeg, 135)
       && Math.abs(poses[0].x) > 440 && Math.abs(poses[0].z) > 440
       && Math.abs(poses[5].x) > 440 && Math.abs(poses[5].z) > 440
-      && poses[1].x === 0 && poses[4].x === 0;
+      && poses[1].x === 0 && poses[4].x === 0
+      && Math.abs(poses[1].z) > 550 && Math.abs(poses[4].z) > 550; // L-5b (I-132): mids pulled back to the corner near-edge line (≈562)
     check('VG8g3/corner-seats-45', cornersOk,
       poses.map((p, i) => `${i}:${p ? `${p.yawDeg.toFixed(0)}°@(${p.x.toFixed(0)},${p.z.toFixed(0)})` : 'NULL'}`).join(' · ') + ' (want -45/0/45/-135/180/135 — I-131)');
 

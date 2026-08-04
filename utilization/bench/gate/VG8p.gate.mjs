@@ -57,9 +57,11 @@ export async function run(h) {
   }
   check('VG8p/seatplay-grab-reset', resetOk, resetDetail);
 
-  // ledger-left-edge: the folder sits LEFT of the seat-0 board (derived, not the old
-  // magic point). Kill: restore (-420,2,560) → centre-x ≥ board min-x → false.
+  // ledger-left-edge (RE-DERIVED at I-132): 'left' in the seat-0 board's OWN FRAME —
+  // the folder's lateral coordinate sits past the board's left edge (corner-safe; the
+  // world-x form was placement-specific, the LAW is left-of-your-board). Kill: restore
+  // an axis-aligned magic point on a corner seat → lateral ≥ −130 → false.
   const leftOk = await G(() => window.__GAME3D__.ledgerLeftOfBoard());
   check('VG8p/ledger-left-edge', !!leftOk && leftOk.left === true,
-    `folder centre-x ${leftOk?.folderX?.toFixed?.(0)} < seat-0 board min-x ${leftOk?.boardMinX?.toFixed?.(0)} : ${leftOk?.left}`);
+    `folder lateral ${leftOk?.folderLat?.toFixed?.(0)} < board-left ${leftOk?.boardLeftLat} : ${leftOk?.left} (the seat frame law, I-132)`);
 }
