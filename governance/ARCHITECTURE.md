@@ -126,3 +126,12 @@ owner direction — the rebase surfaced its work. Reconciled against reality:
   freeze input; `buildScene` aborts every live claim except the one whose release is
   executing; the camera WHEEL is gated on `grabActive()`. Gate: `VG8q` (5 kill-first).
   R-1 physics rides THIS contract; component-internal multi-pointer is R-1's business.
+
+### Dependencies (updated WITH their excursions — the D17 lesson)
+
+- **`@dimforge/rapier3d-compat@0.19.3`** (R-1a, I-109; noted here at I-115 after K7-R
+  found this section owed): the bench's physics engine — the owner's dice-shaker version,
+  wasm INLINED (no fetch; async `init()` at die.ts module load; every draw path gates on
+  `dicePhysicsReady()` BEFORE consuming the LCG stream). Bundled by esbuild into
+  game3d.js (1.3→3.5 mb — accepted; bundle budgets are a skin-era concern). The bench
+  ONLY — engine/presentation/packs never import it (HK-6 enforces).

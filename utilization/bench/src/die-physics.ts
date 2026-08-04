@@ -124,7 +124,7 @@ export function simulateToss(r: TableRect, startWorld: { x: number; z: number },
 
 // ── THE LIVE DRAG SESSION (the shaker's kinematic drag → flick) — grab-flick fidget ──
 let live: { world: RAPIER.World; body: RAPIER.RigidBody; rect: TableRect; flying: boolean } | null = null;
-let flightTrace: { maxAbsX: number; maxAbsZ: number; escaped: boolean } | null = null; // R-1a2: the hard-flick kill's oracle
+let flightTrace: { maxAbsX: number; maxAbsZ: number; escaped: boolean; rawSpeed: number; effSpeed: number } | null = null; // R-1a2 + I-115/M5: speeds recorded — the cap kill is deterministic
 export const liveFlightTrace = () => flightTrace;
 export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): boolean {
   if (!ready || live) return false;
@@ -133,7 +133,7 @@ export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): bool
   body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
   body.setTranslation({ x: s.px, y: 0.04, z: s.pz }, true);
   live = { world, body, rect: r, flying: false };
-  flightTrace = { maxAbsX: 0, maxAbsZ: 0, escaped: false };
+  flightTrace = { maxAbsX: 0, maxAbsZ: 0, escaped: false, rawSpeed: 0, effSpeed: 0 };
   return true;
 }
 export function dragMove(worldX: number, worldZ: number): void {
@@ -157,6 +157,7 @@ export function dragEnd(velWorldX: number, velWorldZ: number): void {
   const raw = Math.hypot(vx, vz);
   if (raw > FLICK_CAP) { const k = FLICK_CAP / raw; vx *= k; vz *= k; }
   const sp = Math.hypot(vx, vz);
+  if (flightTrace) { flightTrace.rawSpeed = raw; flightTrace.effSpeed = sp; } // I-115/M5
   live.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
   live.body.setLinvel({ x: vx, y: 0.25 + Math.min(sp * 0.2, 0.45), z: vz }, true);
   live.body.setAngvel({ x: -vz * 200, y: (sp * 40) * 0.5, z: vx * 200 }, true);

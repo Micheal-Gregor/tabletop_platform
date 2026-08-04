@@ -1,33 +1,16 @@
 /**
- * DIE — A4 (I-73): the ROUND-CARD SEQUENCE + a SEEDED ROLLING EXHIBIT die. This is the
- * A4 increment's own bench-local module; game3d.ts holds only a THIN registration
- * (buildScene anchor, a bar button, the interaction branches, the tick step).
- *
- * (1) THE ROUND SEQUENCE (I-55a): ROUND_PREAMBLE then ROUND_CARD rendered as card()
- *     modals through a camera-parented reading board — the onion.ts card-modal pattern
- *     re-applied (a distinct modal from the draw onion, which cannot be edited) under the
- *     I-70 OPAQUE discipline: the card faces move INTO the transparent pass at opacity 1
- *     with renderOrder ABOVE the veil, so the card covers the 55% veil instead of being
- *     darkened by it. The lead-off callout is DERIVED from the projected active seat the
- *     caller passes in (the K7-v1x D2 law — theater never outruns truth). A bar button
- *     opens it; a stage click advances preamble -> round-card -> dismiss.
- *
- * (2) THE DIE — R-1a (I-109) SUPERSEDES the K-E scripted tumble: the toss is ONE real
- *     RAPIER simulation (die-physics.ts, the owner's shaker ported), recorded invisibly
- *     and REPLAYED with the reconcile offset composed on every frame, so the die settles
- *     SHOWING THE SEEDED FACE (HK-11 by construction; the forced-mismatch drill carries).
- *     GRAB-FLICK (contract v3) runs a LIVE sim — pure fidget theater, no reconcile. The
- *     HOME/return-glide law (P-1, I-83) and toss-only-from-idle (K7-P D3) carry unchanged.
- *
- * Diffused light only (LAW); unskinned (D-1).
- *
- * (K-B, I-78) THE ROUND SEQUENCE (I-55a) lives in the subordinate module `die-round.ts`
- * (a behavior-identical extraction to keep this file under the ≤300-line size gate); its
- * symbols are re-exported below so die.ts's public surface is unchanged.
+ * DIE — A4 (I-73) + R-1a (I-109…I-115): the ROUND-CARD SEQUENCE (lives in die-round.ts,
+ * I-78 extraction — see its header for the modal/opaque law) + the RAPIER die. THE TOSS
+ * is ONE real simulation (die-physics.ts, the owner's shaker), recorded invisibly and
+ * REPLAYED with the reconcile offset composed on every frame — the die settles SHOWING
+ * THE SEEDED FACE (HK-11 by construction; the forced-mismatch drill carries; physics
+ * NEVER decides). GRAB-FLICK (contract v3) runs a LIVE sim — pure fidget theater, no
+ * reconcile; the samples live in the POINTER frame with the grab offset preserved
+ * (I-115/M4). Readiness gates every draw BEFORE the LCG (I-115/M6). The HOME/return
+ * glide (P-1) and toss-only-from-idle (K7-P D3) carry. Diffused light only; unskinned.
  */
 import * as THREE from 'three';
 import { beginFlourish, completeFlourish } from '@tabletop/presentation';
-import { camera } from './stage.js';
 import { lcg } from './stacks.js';
 import { pipTexture } from './die-pips.js'; // P-1/I-83 size-gate extraction (verbatim move)
 import * as phys from './die-physics.js'; // R-1a (I-109): the RAPIER wrapper — record & replay
@@ -138,25 +121,29 @@ function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number
 /** rollDie — the SEEDED toss (viewer's turn). The seeded face is the bench LCG's; HK-11
  *  fires at settle. Under the forced-mismatch drill the toss settles on a DIFFERENT face
  *  (the lie) — the verdict flags it and truth wins (the die re-settles to seeded). */
-export function rollDie(): void {
-  if (!die || diePhase !== 'idle') return; // toss only from idle-at-home (K7-P D3)
+export function rollDie(): boolean {
+  // I-115/M6: readiness BEFORE any LCG draw — a pre-ready click burns NOTHING (the
+  // byte-identical stream is safe) and the caller can status HONESTLY on the boolean.
+  if (!die || diePhase !== 'idle' || !tableRect || !phys.dicePhysicsReady()) return false;
   const rnd = lcg(DIE_SEED + Math.imul(dieRollCount, 2654435761));
   dieRollCount++;
   const seeded = 1 + Math.floor(rnd() * 6);
   const displayedTarget = forceDieMismatch ? (seeded % 6) + 1 : seeded; // a wrong face for the drill
   const u = Math.floor(rnd() * 4294967296) >>> 0; // the SAME stream draw that fed seededLanding — now the impulse seed (I-109(4))
   startRoll(beginFlourish('die-throw', String(seeded), '♪ die throw'), seeded, displayedTarget, u);
+  return true;
 }
 
 /** deadRoll — the FIDGET (NOT the viewer's turn): a lazy dead roll to a DETERMINISTIC
  *  side, no HK-11, no verdict, and structurally no state (die.ts never touches the engine). */
-export function deadRoll(): void {
-  if (!die || diePhase !== 'idle') return; // fidget also tosses only from idle-at-home (K7-P D3)
+export function deadRoll(): boolean {
+  if (!die || diePhase !== 'idle' || !tableRect || !phys.dicePhysicsReady()) return false; // I-115/M6
   const rnd = lcg(DIE_SEED + 0x5eed + Math.imul(dieRollCount, 40503));
   dieRollCount++;
   const side = 1 + Math.floor(rnd() * 6);
   const u = Math.floor(rnd() * 4294967296) >>> 0;
   startRoll(null, side, side, u); // the fidget reconciles to its own deterministic side — no HK-11, no verdict
+  return true;
 }
 
 /** The per-frame die step — arc up (sin) + tumble, settling EXACTLY on the target face;
@@ -223,16 +210,20 @@ export function tickDie(): void {
 
 // ── R-1a GRAB-FLICK (contract v3; the shaker's kinematic drag) — pure fidget theater ──
 let dragSamples: { x: number; z: number; t: number }[] = [];
-export function dieGrabStart(): boolean {
+let grabOff = { x: 0, z: 0 }; // I-115/M4: die − pointer at grab — preserved through the drag (no teleport)
+export function dieGrabStart(px: number, pz: number): boolean {
   if (!die || diePhase !== 'idle' || !tableRect || !phys.dicePhysicsReady()) return false;
   if (!phys.dragBegin(tableRect, { x: die.position.x, z: die.position.z })) return false;
-  dragSamples = [{ x: die.position.x, z: die.position.z, t: performance.now() }];
+  // I-115/M4 (K7-R): the samples live in the POINTER's frame — travel means TRAVEL, so a
+  // human click with jitter measures ~0 and falls through to the roll (touch included).
+  grabOff = { x: die.position.x - px, z: die.position.z - pz };
+  dragSamples = [{ x: px, z: pz, t: performance.now() }];
   diePhase = 'dragging';
   return true;
 }
 export function dieGrabMove(worldX: number, worldZ: number): void {
   if (diePhase !== 'dragging' || !die || !tableRect) return;
-  phys.dragMove(worldX, worldZ);
+  phys.dragMove(worldX + grabOff.x, worldZ + grabOff.z);
   const st = phys.dragStep();
   if (st) {
     const w = phys.feltToWorld(tableRect, st.frame.px, st.frame.py, st.frame.pz);
@@ -286,13 +277,10 @@ export function dieHome(): { x: number; z: number } | null {
 }
 /** The live table area the die is free to tumble across (K-E) — for the gate's free-tumble math. */
 export function dieTableRect(): TableRect | null { return tableRect; }
-/** The die's center projected to canvas pixels — the gate's real-input helper. */
-export function dieScreenXY(renderer: THREE.WebGLRenderer): { x: number; y: number } | null {
+/** the die's live world position — the adapter's projection source (I-115). */
+export function diePos(): { x: number; y: number; z: number } | null {
   if (!die) return null;
   const v = new THREE.Vector3();
   die.getWorldPosition(v);
-  camera.updateMatrixWorld();
-  v.project(camera);
-  const r = renderer.domElement.getBoundingClientRect();
-  return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+  return { x: v.x, y: v.y, z: v.z };
 }

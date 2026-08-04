@@ -55,15 +55,17 @@ export async function run(h) {
       };
       const p0 = (await info('deck')).top;
       const p1 = await tap(); // tap 1 — nudged
-      const maxD = Math.max(...p0.map((v, i) => Math.hypot(p1[i].x - v.x, p1[i].y - v.y, p1[i].z - v.z)));
+      const ds1 = p0.map((v, i) => Math.hypot(p1[i].x - v.x, p1[i].y - v.y, p1[i].z - v.z));
+      const maxD = Math.max(...ds1);
+      const topMoved = ds1[ds1.length - 1] > 0.3; // I-115/M1: the TAPPED card ITSELF must move (the I-112 regression's kill)
       const p2 = await tap(); // tap 2 — nudged again (looseness accumulates)
       const p3 = await tap(); // tap 3 — RE-CENTERED (I-111)
       const s2 = spreadOf(p2), s3 = spreadOf(p3);
       const hmN1 = await hashes();
-      const nOk = maxD > 0.5 && maxD < 12 && s3 < 2.5 && s3 < s2
+      const nOk = maxD > 0.5 && maxD < 12 && topMoved && s3 < 2.5 && s3 < s2
         && (await info('deck')).count === 36 && hmN1.m === hmN.m && hmN1.h === hmN.h;
       check('VG8j/deck-tap-nudge', nOk,
-        `tap1 max Δ ${maxD.toFixed(1)}u (want 0.5–12 — a REAL stack) · spread after tap2 ${s2.toFixed(1)}u → after tap3 ${s3.toFixed(1)}u (want <2.5 & tighter — the third tap RE-CENTERS) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h}`);
+        `tap1 max Δ ${maxD.toFixed(1)}u (want 0.5–12) · TOP card moved:${topMoved} (Δ ${ds1[ds1.length - 1]?.toFixed?.(1)}u — the tapped card itself, I-115/M1) · spread after tap2 ${s2.toFixed(1)}u → tap3 ${s3.toFixed(1)}u (want <2.5 & tighter) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h}`);
     }
 
     // v2-table-arrangement (T-1, I-89 — the owner's v1-board ruling as def law + the pile
@@ -153,7 +155,9 @@ export async function run(h) {
     const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
     await page.mouse.move(dxy.x, dxy.y);
     await page.mouse.down();
-    for (let i = 1; i <= 4; i++) await page.mouse.move(dxy.x + i * 12, dxy.y - i * 10);
+    // I-115/M2: this drive flicks LEFT — the counter-clockwise half of the I-113 ruling,
+    // previously uncovered (the drill later flicks RIGHT, so both directions assert).
+    for (let i = 1; i <= 4; i++) await page.mouse.move(dxy.x - i * 12, dxy.y - i * 10);
     await page.mouse.up();
     // K7-A2 D1 (re-cut at D7): a SECOND deck click lands GENUINELY mid-flight — wait on
     // STATE (drawPhase left 'idle') PLUS one rendered frame (matrixWorld fresh), never
@@ -170,13 +174,13 @@ export async function run(h) {
     // 150u horizontal for THIS drive. The restored flight-to-camera mutant (y rockets by
     // hundreds) still dies by name.
     const th = await page.evaluate(() => window.__GAME3D__.drawTheater());
-    const fd = await page.evaluate(() => window.__GAME3D__.drawFlipDir()); // I-113: this drive drags RIGHT → +1
+    const fd = await page.evaluate(() => window.__GAME3D__.drawFlipDir()); // I-113/I-115: this drive drags LEFT → −1 (flipDir inits 0 — the unsigned mutant reads 0 and dies)
     let flipAtPile = false, flipDetail = 'NO-THEATER (missed the flip window)';
     if (th && th.card && th.deck) {
       const lift = th.card.y - th.deck.y;
       const horiz = Math.hypot(th.card.x - th.deck.x, th.card.z - th.deck.z);
-      flipAtPile = lift < 60 && horiz < 150 && fd === 1;
-      flipDetail = `phase ${th.phase} · lift ${lift.toFixed(1)} (<60 — table level, no camera flight) · horiz ${horiz.toFixed(1)} (<150) · flipDir ${fd} (want +1 — flicked RIGHT flips clockwise, I-113)`;
+      flipAtPile = lift < 60 && horiz < 150 && fd === -1;
+      flipDetail = `phase ${th.phase} · lift ${lift.toFixed(1)} (<60 — table level, no camera flight) · horiz ${horiz.toFixed(1)} (<150) · flipDir ${fd} (want −1 — flicked LEFT flips counter-clockwise, I-113/I-115)`;
     }
     check('VG8j/draw-flip-not-fly', flipAtPile, flipDetail);
     // one theater at a time (K7-A2 D1 carried into Q-2b): a second interaction mid-flip
@@ -191,6 +195,10 @@ export async function run(h) {
     } else {
       const o1 = await page.evaluate(() => window.__GAME3D__.onionState());
       const oa = await page.evaluate(() => window.__GAME3D__.onionRegions()); // A3/I-69: anatomy while the board is OPEN
+      // I-115/M3 (the leg I-113 recorded but never wrote — now real): at 'reading' the
+      // traveler's FACE (the underside slot) points UP. MUT: restore the I-112 unflipped
+      // end pose → the back shows → drawFaceUp ≈ −1 → false.
+      const fUp = await page.evaluate(() => window.__GAME3D__.drawFaceUp());
       const d1 = await info('deck');
       const c1 = await info('discard');
       const hm1 = await hashes();
@@ -219,10 +227,11 @@ export async function run(h) {
       const consumed = hmClose.m === hm1.m && hmClose.h === hm1.h && dClose.count === d1.count && dClose.fidget === d1.fidget;
       check('VG8j/draw-theater-hk11',
         o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
+        && fUp !== null && fUp > 0.9
         && d1.count === d0.count - 1 && c1.count === 1 && c1.topFace === 'job-posting'
         && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
         && closed.o === false && closed.p === 'idle' && consumed,
-        `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} (double-click made ONE) · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
+        `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · faceUpAtEnd:${fUp?.toFixed?.(2)} (want >0.9 — I-115/M3) · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
 
       // slot-partition-law (Q-2c, I-92): the family DATA is pinned (a map regression fails
       // here) and the DERIVED VIEW sums — pile + global + session ≡ ownDiscard. At this
@@ -340,14 +349,15 @@ export async function run(h) {
         try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
         catch { f2 = false; }
         const o2 = f2 ? await page.evaluate(() => window.__GAME3D__.onionState()) : null;
+        const fd2 = f2 ? await page.evaluate(() => window.__GAME3D__.drawFlipDir()) : null; // I-115/M2: the drill drives RIGHT → +1
         await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
         await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
         const c2 = await info('discard');
         const ownDiscardTrue = c2.count === 2 && c2.topFace === 'new-van'; // K7-A2 D3: the VIEWER'S ownDiscard, both cards
         check('VG8j/forced-mismatch-truth-wins',
           f2 && o2 && o2.verdict && o2.verdict.mismatch === true && o2.verdict.displayed === 'WRONG-CARD'
-          && o2.verdict.seeded === 'new-van' && o2.title === 'new-van' && ownDiscardTrue,
-          f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins) · own-discard:${c2.count}/${c2.topFace}` : 'second flight never landed (timeout)');
+          && o2.verdict.seeded === 'new-van' && o2.title === 'new-van' && ownDiscardTrue && fd2 === 1,
+          f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins) · own-discard:${c2.count}/${c2.topFace} · flipDir:${fd2} (want +1 — flicked RIGHT, I-115/M2)` : 'second flight never landed (timeout)');
       }
 
       // discard-multi-card (Q-6b, I-95 — THE OWNER'S EXACT SCENARIO: "drag some cards out

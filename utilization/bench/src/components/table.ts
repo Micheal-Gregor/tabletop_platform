@@ -256,6 +256,7 @@ export const table: Component = {
       deckTopUuid: () => oracles.stackTopUuidOf(cx!, 'deck'), // I-112: the identity oracle
       drawGrabUuid: draw.drawGrabUuid, // I-112: the grabbed mesh's uuid (null at idle)
       drawFlipDir: draw.drawFlipDir, // I-113: the flick's direction (+1 cw · −1 ccw)
+      drawFaceUp: draw.drawFaceUp, // I-115/M3: the traveler's face-up truth (≈+1 face-up)
       regionScreenXY: (rid: string) => oracles.regionScreenXYOf(cx!, rid),
     };
   },

@@ -14,8 +14,9 @@ export async function run(h) {
   await gotoStage('game3d.html');
   await G(() => window.__GAME3D__.glideTo('table'));
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-  // physics init is async wasm — wait on READINESS as state (ms in practice)
-  await page.waitForFunction(() => window.__GAME3D__.dieSimTrace !== undefined, null, { timeout: 8000 }).catch(() => {});
+  // I-115/M6: the readiness wait is REAL now — dicePhysicsReady() is the physics state,
+  // not a gate-surface key that exists from construction (K7-R's no-op finding).
+  await page.waitForFunction(() => window.__GAME3D__.dicePhysicsReady() === true, null, { timeout: 15000 }).catch(() => {});
 
   const rollOnce = async () => {
     const xy = await G(() => window.__GAME3D__.dieScreenXY());
@@ -91,13 +92,40 @@ export async function run(h) {
     await page.mouse.down();
     for (let i = 1; i <= 3; i++) await page.mouse.move(xy.x + i * 200, xy.y - i * 60);
     await page.mouse.up();
+    // I-115/M5: 'rolling-live' asserted (kills K7-R's stale-trace path) and the SPEEDS
+    // asserted — raw proves the drive was violent, eff proves the cap applied. The
+    // uncapped mutant now fails DETERMINISTICALLY (eff = raw > 3.2), never a timing flip.
+    let live3b = false;
+    try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rolling-live', null, { timeout: 8000 }); live3b = true; } catch { /* named below */ }
     await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'idle', null, { timeout: 120000 }).catch(() => {});
     const tr = await G(() => window.__GAME3D__.dieFlightTrace());
     const rest = await G(() => window.__GAME3D__.dieRestInfo());
     const home = await G(() => window.__GAME3D__.dieHome());
     const homeOk = !!rest && !!home && Math.hypot(rest.x - home.x, rest.z - home.z) < 10;
-    check('VG8r/die-hard-flick-contained', !!tr && tr.escaped === false && homeOk,
-      `flight escaped:${tr?.escaped} (want false — the cap + the rails hold) · maxAbs ${tr?.maxAbsX?.toFixed?.(3)}/${tr?.maxAbsZ?.toFixed?.(3)} m · home:${homeOk} — flick as hard as you like`);
+    const speedsOk = !!tr && tr.rawSpeed > 3.2 && tr.effSpeed <= 3.21;
+    check('VG8r/die-hard-flick-contained', !!tr && live3b && tr.escaped === false && speedsOk && homeOk,
+      `rolling-live:${live3b} (fresh trace) · flight escaped:${tr?.escaped} (want false) · raw ${tr?.rawSpeed?.toFixed?.(1)} m/s → capped ${tr?.effSpeed?.toFixed?.(2)} (want raw>3.2 & eff≤3.21 — the cap PROVEN applied) · maxAbs ${tr?.maxAbsX?.toFixed?.(3)}/${tr?.maxAbsZ?.toFixed?.(3)} m · home:${homeOk}`);
+  }
+
+  // 3c · die-offcentre-click-rolls (I-115/M4 — K7-R: a HUMAN click lands off-centre and
+  // jitters one pointermove; Playwright's mouse.click never emits that move, so this leg
+  // drives the human shape SYNTHETICALLY, 15 px off the die's centre + a 2 px move.
+  // With the pointer-frame travel fix the tap measures ~0 and ROLLS. Kill: restore the
+  // die-centre distance frame → the off-centre click reads >6u → treated as a drag →
+  // no 'rolling' → false.
+  {
+    const xy = await G(() => window.__GAME3D__.dieScreenXY());
+    await G(({ x, y }) => {
+      const el = document.querySelector('#stage canvas');
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 97, clientX: x + 15, clientY: y + 6, bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointermove', { pointerId: 97, clientX: x + 17, clientY: y + 7, bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 97, clientX: x + 17, clientY: y + 7, bubbles: true }));
+    }, xy);
+    let rolledOff = false;
+    try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rolling', null, { timeout: 8000 }); rolledOff = true; } catch { /* named below */ }
+    await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'idle', null, { timeout: 120000 }).catch(() => {});
+    check('VG8r/die-offcentre-click-rolls', rolledOff,
+      `off-centre click (+15px, one 2px move — the HUMAN shape) rolled:${rolledOff} — travel means TRAVEL, not distance-from-centre (I-115/M4)`);
   }
 
   // 4 · die-grab-click-falls-through: a PLAIN CLICK on the die (a claimed grab whose

@@ -13,13 +13,13 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import {
-  buildDie, rollDie, deadRoll, tickDie, dieScreenXY, diePhaseState, dieVerdictState,
+  buildDie, rollDie, deadRoll, tickDie, diePos, diePhaseState, dieVerdictState,
   dieUpFace, dieFaces, setForceDieMismatch, advanceRoundModal, roundModalState,
   dieRestInfo, dieTableRect, dieHome,
   dieGrabStart, dieGrabMove, dieGrabEnd, dieGrabAbort, dieSimTrace, // R-1a (I-109)
 } from '../die.js';
 import type { TableRect } from '../die.js';
-import { liveFlightTrace } from '../die-physics.js'; // R-1a2 (I-110): the hard-flick kill's oracle
+import { liveFlightTrace, dicePhysicsReady } from '../die-physics.js'; // R-1a2 + I-115/M6: the oracles
 
 export { openRoundSequence } from '../die.js';
 
@@ -81,8 +81,10 @@ export const die: Component = {
   onPick(ctx, hit: PickInfo) {
     if (hit.tags['die']) {
       const vd = ctx.projection();
-      if (vd.seats[vd.turn.seatIdx]!.id === ctx.viewSeat) { rollDie(); ctx.status('rolling the die — ♪ die throw'); }
-      else { deadRoll(); ctx.status('die fidget — a dead roll (not your turn)'); }
+      // I-115/M6: the status follows the TRUTH of the boolean — never 'rolling' while
+      // nothing rolls (the I-107 lesson, upheld here after K7-R found it reopened).
+      if (vd.seats[vd.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status(rollDie() ? 'rolling the die — ♪ die throw' : 'the die waits — physics warming up'); }
+      else { ctx.status(deadRoll() ? 'die fidget — a dead roll (not your turn)' : 'the die waits — physics warming up'); }
       return true;
     }
     return false;
@@ -93,7 +95,8 @@ export const die: Component = {
   // a motionless release FALLS THROUGH so a plain click still rolls (the VG8m drives).
   onGrabStart(_ctx, hit: PickInfo) {
     if (!hit.tags['die']) return false;
-    return dieGrabStart();
+    // I-115/M4: the raycast intersection IS the pointer's world point — one frame, real travel.
+    return dieGrabStart(hit.point.x, hit.point.z);
   },
   onGrabMove(ctx, ev: PointerEvent) {
     const rect = dieTableRect();
@@ -128,7 +131,17 @@ export const die: Component = {
       dieUpFace,
       dieFaces,
       forceDieMismatch: setForceDieMismatch,
-      dieScreenXY: () => dieScreenXY(ctx.renderer),
+      /** the die's centre projected to canvas pixels — an ADAPTER concern (I-115). */
+      dieScreenXY: () => {
+        const p = diePos();
+        if (!p) return null;
+        const v = new THREE.Vector3(p.x, p.y, p.z);
+        ctx.camera.updateMatrixWorld();
+        v.project(ctx.camera);
+        const r = ctx.renderer.domElement.getBoundingClientRect();
+        return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+      },
+      dicePhysicsReady: dicePhysicsReady, // I-115/M6: VG8r's opening wait becomes REAL (explicit form — the guard's grammar)
       roundModalState,
       /** K-E (I-81) free-tumble surfaces: the die's rest STATE (centre x/z + bbox underside
        *  y, so on-table is asserted as geometry — the underside ≈ the table top) and the

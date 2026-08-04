@@ -13,7 +13,7 @@ import type { PlayAreaContext, PickInfo } from './component.js';
 import { fortuneFaceTexture } from './surfaces.js';
 import { nudgeStack } from './stacks.js';
 import * as onion from './onion.js';
-import { CARD_FAMILY } from '../../../packs/boty/src/index.js'; // Q-2c (I-92): the family data
+import { routeDestFor, findCardMesh, stackTop } from './draw-route.js'; // R-1a6 (I-115): the owed extraction
 
 export type DrawPhase = 'idle' | 'grabbing' | 'flipping' | 'reading' | 'routing' | 'settling';
 let phase: DrawPhase = 'idle';
@@ -36,31 +36,6 @@ let theater: {
 let lastRouteRec: { dest: string; endX: number; endY: number; endZ: number; targetX: number; targetY: number; targetZ: number } | null = null;
 let lastGesture: { verdict: 'flicked' | 'weak'; velocity: number } | null = null;
 let forceMismatch = false; // the committed forced-mismatch drill — one-shot
-
-/** the DERIVED VIEW's destination for the card (I-90/I-92; derived-never-stored). */
-const routeDestFor = (cardId: string): 'global' | 'session' | 'discard' => CARD_FAMILY[cardId] ?? 'discard';
-
-/** the card's OWN rendered mesh in the derived view — the route target + reveal handle. */
-function findCardMesh(ctx: PlayAreaContext, cardId: string, dest: 'global' | 'session' | 'discard'): { mesh: THREE.Object3D | null; pos: THREE.Vector3 } {
-  if (dest === 'discard') return stackTop(ctx, 'discard');
-  let found: THREE.Object3D | null = null;
-  ctx.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['slotCard'] === cardId && o.userData?.['family'] === dest) found = o; });
-  if (!found) return stackTop(ctx, 'discard'); // defensive: the view didn't render it — the pile is truth
-  return { mesh: found, pos: (found as THREE.Object3D).getWorldPosition(new THREE.Vector3()) };
-}
-
-/** a stack's TOP card mesh (world). */
-function stackTop(ctx: PlayAreaContext, rid: string): { mesh: THREE.Object3D | null; pos: THREE.Vector3 } {
-  const grp = ctx.theater.focusObject(`table:${rid}`);
-  if (!grp) return { mesh: null, pos: new THREE.Vector3() };
-  const cards: THREE.Object3D[] = [];
-  grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) cards.push(o); });
-  cards.sort((a, b) => (a.userData['idx'] as number) - (b.userData['idx'] as number));
-  const top = cards[cards.length - 1] ?? null;
-  const pos = top ? top.getWorldPosition(new THREE.Vector3())
-    : new THREE.Box3().setFromObject(grp).getCenter(new THREE.Vector3());
-  return { mesh: top, pos };
-}
 
 /** GRAB: claims only on the deck, the VIEWER'S turn, theater idle (contract v2). */
 export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
@@ -86,7 +61,7 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
     mesh: m, from, t: 0, bound, settleFrom: null, homeGroup, homeLocal, swappedFace: null, inst: null, seeded: '', flipped: false,
     hiddenTop: null, routeFrom: null, routeTo: null, dest: null, destPos: null,
     angle: 0, samples: [{ x: hit.event.clientX, y: hit.event.clientY, t: performance.now() }],
-    flipDir: 1, flipSpeed: 0.06, flipLift: 16,
+    flipDir: 0, flipSpeed: 0.06, flipLift: 16, // flipDir 0 until the flick SIGNS it (I-115/M2 — the tautology killed)
   };
   phase = 'grabbing';
   ctx.status('grabbed the top card — flick to flip it');
@@ -153,13 +128,16 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
     lastGesture = { verdict: 'flicked', velocity: vel };
     ctx.status(`flicked (${vel.toFixed(2)} px/ms) — the card flips · ♪ card flip`);
   } else {
-    settleBack();
     lastGesture = { verdict: 'weak', velocity: vel };
     const travel = Math.hypot(z.x - a.x, z.y - a.y);
-    if (travel < 6) { // R-1a2 (I-110): a TAP — the stack PROVES itself (top-5 nudge)
+    if (travel < 6) { // I-110 TAP + R-1a6 (I-115, K7-R M1): REATTACH the real top FIRST —
+      // a tap barely lifted it; instant re-attach puts ALL 36 in the group, so the nudge
+      // moves the card the owner is actually tapping (I-112 had silently excluded it).
+      finishTheater(ctx, true);
       nudgeStack(ctx.theater.focusObject('table:deck'));
       ctx.status('the stack shifts — grab the top card and FLICK to flip it');
     } else {
+      settleBack();
       ctx.status(`too soft (${vel.toFixed(2)} px/ms < ${FLICK_T}) — the card settles back face down`);
     }
   }
@@ -291,6 +269,9 @@ export const lastRoute = () => lastRouteRec;
 export const drawGesture = () => (lastGesture ? { ...lastGesture, threshold: FLICK_T } : null);
 export const drawGrabUuid = (): string | null => (theater ? theater.mesh.uuid : null); // I-112: the identity oracle
 export const drawFlipDir = (): number | null => (theater && (phase === 'flipping' || phase === 'reading' || phase === 'routing') ? theater.flipDir : null); // I-113
+/** I-115 (K7-R M3): the traveler's FACE-UP truth — the local −z (the fortune face,
+ *  slot 5) through the live quaternion; ≈+1 face-up, ≈−1 the I-112 back-showing bug. */
+export const drawFaceUp = (): number | null => (theater ? new THREE.Vector3(0, 0, -1).applyQuaternion(theater.mesh.quaternion).y : null);
 export function drawTheaterInfo(ctx: PlayAreaContext) {
   if (!theater) return null;
   const dp = stackTop(ctx, 'deck').pos;
