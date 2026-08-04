@@ -17,7 +17,7 @@ import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
-import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
+import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
@@ -194,7 +194,11 @@ export const table: Component = {
   gate() {
     const ctx = cx!;
     return {
-      expectedFromDefs: () => TOWN_TABLE_V2.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length,
+      // G-1b (I-102): the VG8a count law caught up with P-2c — the TWO persistent ledger
+      // sheets (the three-objects law, 677d1c5) are genesis-time layoutFace(BOOKS_PANEL)
+      // builds, 6 region quads each. The law lagged since that commit (82 vs the true 94);
+      // the first fully-read battery (I-100→G-1) surfaced it. Def-driven, like the rest.
+      expectedFromDefs: () => TOWN_TABLE_V2.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length + 2 * BOOKS_PANEL.regions.length,
       /** T-1 (I-89), REWORKED at G-1 (I-101, closing K7-Q M2): the arrangement oracle now
        *  reads the RENDER — it walks the live table group and inverts the placement
        *  formula (quad center + geometry → def units). The def is never consulted, so a
