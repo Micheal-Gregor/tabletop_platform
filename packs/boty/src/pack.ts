@@ -6,6 +6,7 @@
  * Edie's Electric (electrician).
  */
 import type { ContentPack, Genesis, JsonObject, PackRef } from '@tabletop/engine';
+import { Q1_FULL_SET, Q1_DECK_ADD } from './cards-q1.js'; // Q-1 (I-88) — the PACK6-only full set
 
 export const BOTY_REF: PackRef = { id: 'boty', version: '0.1.0', hash: 'boty-slice-1' };
 
@@ -80,7 +81,7 @@ export const botyGenesis: Genesis = () =>
 // renaming is a data edit, not a supersession. Their decks reuse EXISTING fx-less
 // cards only: content adds NO law, and the new seats carry no EFX until the owner
 // authors their cards.
-export const BOTY6_REF: PackRef = { id: 'boty', version: '0.1.0', hash: 'boty-6up-1' };
+export const BOTY6_REF: PackRef = { id: 'boty', version: '0.1.0', hash: 'boty-6up-2' }; // Q-1 (I-88): the full-inventory deck
 
 const DRAFT_SHOPS = [
   { id: 'sal', trade: 'carpenter' }, // DRAFT — Sal's Lumber
@@ -90,9 +91,13 @@ const DRAFT_SHOPS = [
 
 export const BOTY_PACK6: ContentPack = {
   ...BOTY_PACK,
+  // Q-1 (I-88; owner-ruled): ONE OF EVERY CARD in the game — the full v1-inventory set
+  // joins the sandbox variant's card map; moe's deck carries the whole set (3 + 33 = 36).
+  cards: { ...BOTY_PACK.cards, ...Q1_FULL_SET },
   seats: [...BOTY_PACK.seats, ...DRAFT_SHOPS.map((s) => ({ id: s.id }))],
   decks: {
     ...BOTY_PACK.decks,
+    moe: { cards: [...BOTY_PACK.decks['moe']!.cards, ...Q1_DECK_ADD] },
     sal: { cards: ['job-posting', 'gc-flavor'] },
     faye: { cards: ['job-posting', 'gc-flavor'] },
     russ: { cards: ['job-posting', 'gc-flavor'] },
@@ -109,6 +114,9 @@ export const botyGenesis6: Genesis = (packRef, seats, seed) => {
     ],
     decks: {
       ...(g['decks'] as Record<string, unknown>),
+      // Q-1 (I-88): moe's genesis draw mirrors the PACK6 deck — the full set appended
+      // UNDER the original three (draw[0] stays the top; the first draws are unchanged).
+      moe: { draw: ['job-posting', 'new-van', 'crossroads', ...Q1_DECK_ADD], discard: [], reserve: [] },
       sal: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
       faye: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
       russ: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },

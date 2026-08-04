@@ -1,7 +1,7 @@
 // VG8j — A2: DECK + DRAW + THE READING BOARD (I-67; kill-first). The I-62b and I-63h
 // standing obligations fire HERE — the first state-advancing increment. Emits VG8k
 // (fortune anatomy) + VG8l (opaque reading card). SELF-SEEDING: navigates a fresh
-// game3d.html (clean genesis — moe active, deck 3/discard 0 per the committed pack), then
+// game3d.html (clean genesis — moe active, deck 36/discard 0 per the committed Q-1 pack), then
 // glides to the table, so it PASSES in isolation. Uses the bag's waitRest/info/hashes.
 export const suite = '3d';
 export const id = 'VG8j';
@@ -16,17 +16,49 @@ export async function run(h) {
     const stg3 = await page.locator('#stage canvas').boundingBox();
     await page.mouse.move(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
 
-    // COUNT-TRUE at genesis: the committed pack says moe's deck holds 3, discard 0 —
-    // the expectation is the PACK's, not the page's.
+    // COUNT-TRUE at genesis: the committed pack says moe's deck holds 36 — the Q-1 full
+    // set (I-88: one of every card, 3 + 33), discard 0 — the expectation is the PACK's,
+    // not the page's (a wrong pack edit fails HERE by name).
     const d0 = await info('deck');
     const c0 = await info('discard');
     const hm0 = await hashes();
-    // A2b (owner: "the decks not visible"): the pile has PHYSICAL height — the top card
-    // sits measurably above the bottom one (≥0.8 world units per card between them)
+    // A2b (owner: "the decks not visible"): the pile has PHYSICAL height. stackInfo
+    // samples the TOP FIVE cards, so the law is per-card spacing over the sample:
+    // strictly stacked, ≥0.8 world units per card (I-88 re-anchor — the old whole-pile
+    // formula was valid only while count ≤ 5).
     const ys = d0 ? d0.top.map((t) => t.y) : [];
-    const heightTrue = ys.length === 3 && (ys[2] - ys[0]) >= (d0.count - 1) * 0.8;
-    check('VG8j/stacks-count-true', d0 && c0 && d0.count === 3 && c0.count === 0 && heightTrue,
-      `deck:${d0?.count} (want 3, the committed genesis) · discard:${c0?.count} (want 0) · height-true:${heightTrue} (Δy ${ys.length ? (ys[2] - ys[0]).toFixed(2) : '?'})`);
+    const wantSample = d0 ? Math.min(5, d0.count) : 0;
+    const heightTrue = ys.length === wantSample && ys.length >= 2
+      && ys.every((y, i) => i === 0 || y > ys[i - 1])
+      && (ys[ys.length - 1] - ys[0]) >= (ys.length - 1) * 0.8;
+    check('VG8j/stacks-count-true', d0 && c0 && d0.count === 36 && c0.count === 0 && heightTrue,
+      `deck:${d0?.count} (want 36, the committed Q-1 genesis) · discard:${c0?.count} (want 0) · height-true:${heightTrue} (sample ${ys.length}, Δy ${ys.length ? (ys[ys.length - 1] - ys[0]).toFixed(2) : '?'})`);
+
+    // v2-table-arrangement (T-1, I-89 — the owner's v1-board ruling as def law + the pile
+    // exhibits): season art-banner TOP-LEFT · GLOBAL CARDS IN PLAY to its RIGHT (top band)
+    // · standings UNDER the season · deck/discard/tradespeople/equipment in their pile row
+    // · AND the two A16 pile stacks exist as 6-card staged exhibits at their regions.
+    // Kill: a def regression (move/remove a region) or a missing pile fails BY NAME.
+    {
+      const tp = await info('tradespeople-pile');
+      const eq = await info('equipment-pile');
+      const lay = await page.evaluate(() => window.__GAME3D__.tableRegionRects());
+      let arrOk = false, arrDetail = 'NO-REGION-RECTS-SURFACE';
+      if (lay) {
+        const r = Object.fromEntries(lay.map((x) => [x.id, x]));
+        const season = r['art-banner'], glob = r['global-play'], stand = r['standings'];
+        const row = ['deck', 'discard', 'tradespeople-pile', 'equipment-pile'].map((id) => r[id]);
+        const seasonTL = season && season.x <= 4 && season.y <= 4;
+        const globRight = glob && season && glob.x >= season.x + season.w && glob.y <= 4;
+        const standUnder = stand && season && stand.x === season.x && stand.y >= season.y + season.h;
+        const rowOk = row.every((x) => x) && row.every((x, i) => i === 0 || x.x > row[i - 1].x) && row.every((x) => x.y === row[0].y);
+        arrOk = !!(seasonTL && globRight && standUnder && rowOk);
+        arrDetail = `season-top-left:${!!seasonTL} · global-right-of-season:${!!globRight} · standings-under-season:${!!standUnder} · pile-row:${!!rowOk}`;
+      }
+      const pilesOk = tp && eq && tp.count === 6 && eq.count === 6;
+      check('VG8j/v2-table-arrangement', arrOk && !!pilesOk,
+        `${arrDetail} · tradespeople-pile:${tp?.count} equipment-pile:${eq?.count} (want 6·6 staged exhibits)`);
+    }
 
     // THE DRAW — a REAL click on the deck; the gate then WAITS ON STATE (drawPhase)
     const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
@@ -59,7 +91,7 @@ export async function run(h) {
       const consumed = hmClose.m === hm1.m && hmClose.h === hm1.h && dClose.count === d1.count && dClose.fidget === d1.fidget;
       check('VG8j/draw-theater-hk11',
         o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
-        && d1.count === 2 && c1.count === 1 && c1.topFace === 'job-posting'
+        && d1.count === d0.count - 1 && c1.count === 1 && c1.topFace === 'job-posting'
         && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
         && closed.o === false && closed.p === 'idle' && consumed,
         `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} (double-click made ONE) · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
