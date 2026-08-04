@@ -14,7 +14,9 @@ import { seats } from './seats.js';
 import { seatPlay } from './seat-play.js';
 import { box } from './box.js';
 import { windowsPrompt } from './windows-prompt.js';
+import { medal } from './medal.js';
 
-// A8 (I-129): windows-prompt builds AFTER table (its pose derives from the live table
-// bbox) and dispatches disjointly (winId/optIdx tags are its alone — the K-A D1 law).
-export const COMPONENTS: readonly Component[] = [die, table, seats, seatPlay, ledgerComponent, box, windowsPrompt];
+// A8 (I-129): windows-prompt builds AFTER table; onion-layer since I-130. L-3 (I-130):
+// the medal builds AFTER table (its pose derives from the live medal region). Both
+// dispatch disjointly (winId/optIdx · medal tags — the K-A D1 law).
+export const COMPONENTS: readonly Component[] = [die, table, seats, seatPlay, ledgerComponent, box, windowsPrompt, medal];

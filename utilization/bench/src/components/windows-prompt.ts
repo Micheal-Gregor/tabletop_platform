@@ -1,39 +1,37 @@
 /**
- * WINDOWS-PROMPT component (A8, I-129) — OPEN windows as physical AMBER prompt cards at
- * the `windows` table region (the certified SVG anatomy, game.ts:127-132). The decider
- * law (I-82/A8 broadcast law, data-local half): your decision → clickable options →
- * `decide {window, option}` through the SAME doors (emit → window:resolve, a REAL verb)
- * → rebuild; not your decision → MUTED card + top indicator + 'awaiting {decider}…',
- * options never clickable. Colors are the SVG's .prompt/.dim as data (#fff8e6/#c90).
- * Without this surface the game soft-locks: crossroads opens a gated window and HK-5
- * refuses end-turn until it is decided (the W-1 exposure this component closes).
+ * WINDOWS-PROMPT component (A8, I-129; RE-ANCHORED at I-130) — OPEN windows as physical
+ * AMBER prompt cards ON THE ONION LAYER: camera-parented, front and center ("Prompts can
+ * absolutely exist on an onion layer above the board — that is my preference", owner
+ * 2026-08-04). The `windows` table region is GONE (suppressed at the def); the prompt is
+ * a transient overlay citizen like the reading board — it occupies no table layout and
+ * leaves when decided. Decider law unchanged (I-82/A8, data-local half): your decision →
+ * clickable options → `decide {window, option}` through the SAME doors → rebuild; not
+ * yours → MUTED + top indicator + 'awaiting {decider}…', options never clickable.
+ * Colors stay the SVG's .prompt/.dim as data (#fff8e6/#c90). Without this surface the
+ * game soft-locks (crossroads + HK-5 — the W-1 exposure this component closes).
  */
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { panelTexture } from '../surfaces.js';
-import { TOWN_TABLE_V2 } from '../../../../packs/boty/src/index.js';
+import { camera } from '../stage.js';
 
 let cx: PlayAreaContext | null = null;
 let built: { id: string; kind: string; decider: string; mine: boolean; options: readonly string[] }[] = [];
+let overlay: THREE.Group | null = null; // I-130: CAMERA-parented (the onion layer) — self-managed, never in builtRoots
 
 const AMBER = 0xfff8e6, AMBER_EDGE = 0xcc9900, MUTED = 0xeae6da; // the SVG .prompt / muted (broadcast law)
 
 export const windowsPrompt: Component = {
   id: 'windows-prompt',
-  placement: { kind: 'bound', surface: 'table', region: 'windows' },
+  placement: { kind: 'free', surface: 'overlay' }, // I-130: an onion-layer citizen — no table region
 
   build(ctx) {
     cx = ctx;
     built = [];
+    if (overlay) { camera.remove(overlay); overlay = null; } // the previous overlay leaves with its state (rebuild = fresh truth)
     const v = ctx.projection();
     const open = v.windows.filter((w) => w.status === 'open');
     if (!open.length) return null;
-    const wr = TOWN_TABLE_V2.regions.find((r) => r.id === 'windows')!;
-    const t = ctx.theater.focusObject('table');
-    if (!t) return null;
-    t.updateWorldMatrix(true, true);
-    const tb = new THREE.Box3().setFromObject(t);
-    const sx = (tb.max.x - tb.min.x) / 100, sz = (tb.max.z - tb.min.z) / 100;
     const grp = new THREE.Group();
     open.forEach((w, i) => {
       const mine = w.decider === ctx.viewSeat;
@@ -67,18 +65,22 @@ export const windowsPrompt: Component = {
           card.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(78, 16)), new THREE.LineBasicMaterial({ color: 0x888888 })).translateY(opt.position.y).translateZ(0.41));
         });
       }
-      // world pose: standing at the region, tilted like a table tent, fanned by index
-      card.scale.set(1.6, 1.6, 1);
-      card.position.set(
-        tb.min.x + (wr.x + wr.w / 2) * sx + i * 40,
-        tb.max.y + 78,
-        tb.min.z + (wr.y + wr.h / 2) * sz,
-      );
-      card.rotation.x = -0.35;
+      // ONION-LAYER pose (I-130): front and center before the camera, fanned by index;
+      // every material joins the overlay paint pass (depthTest off, renderOrder 88 —
+      // above the whole 3D scene, UNDER an open reading card at 90/92 so a draw's
+      // theater still covers a pending prompt until it closes).
+      card.traverse((o) => {
+        const mat = (o as THREE.Mesh).material as (THREE.Material & { opacity: number; transparent: boolean }) | undefined;
+        if (mat && 'opacity' in mat) { mat.transparent = true; mat.depthTest = false; mat.depthWrite = false; o.renderOrder = 88; }
+      });
+      card.scale.set(0.55, 0.55, 1);
+      card.position.set((i - (open.length - 1) / 2) * 60, 0, 2);
       grp.add(card);
     });
-    ctx.register(grp);
-    return null; // self-registered
+    grp.position.z = -130; // the onion's own distance — the same layer, front and center
+    overlay = grp;
+    camera.add(grp);
+    return null; // camera-parented, self-managed (the onion pattern, never builtRoots)
   },
 
   // Phase 2: an option hit → the decide verb through the doors; rebuild renders truth.

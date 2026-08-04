@@ -61,16 +61,17 @@ export const table: Component = {
     const standings = ranked.map((s) => `${s.id === active ? '★ ' : ''}${s.id}  $${s.cash}`);
     const moves = ctx.moves(); // I-52-registered class (display-only)
     const log = moves.slice(-4).map((m) => `${m.seat} · ${m.type}`);
-    const openWindows = v.windows.filter((w) => w.status === 'open').length;
     // the table: flat on the ground, fills stamped from the projection; deck+discard
     // regions are STACK OBJECTS, not quads (I-67a) — the geometry is the count
     const t = layoutFace(TOWN_TABLE_V2, 0xeef3ee, {
       standings: ['THE TABLE', ...standings],
       log: ['TABLE LOG', ...(log.length ? log : ['(no moves yet)'])],
-      windows: ['windows', openWindows ? `${openWindows} open — prompts at A8` : 'none open'],
+      // I-130: the `windows` region is REMOVED (suppressed at the def) — prompts live on
+      // the onion layer now; its fill left with it. The medal region gets its label.
       'art-banner': [`[art: ${SEASONS[(v.turn.round - 1) % 4]} — Maple Hollow]`], // the SEASON block, top-left (T-1)
       'global-play': ['GLOBAL CARDS IN PLAY'], // Q-2c: the slots fill left-to-right below the label
-    }, ['deck', 'discard', 'tradespeople-pile', 'equipment-pile']);
+      medal: ['BOTY — Business of the Year'], // I-130: the medal exhibit's footprint label
+    }, ['deck', 'discard', 'tradespeople-pile', 'equipment-pile', 'bbb-pile', 'networking-pile']);
     const deckR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'deck')!;
     const discR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
     t.add(cardStack(deckR, 'deck', v.decks[active]?.drawCount ?? 0, null, fidget['deck']));
@@ -111,6 +112,12 @@ export const table: Component = {
     const eqR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'equipment-pile')!;
     t.add(cardStack(tpR, 'tradespeople-pile', 6, null, 0));
     t.add(cardStack(eqR, 'equipment-pile', 6, null, 0));
+    // I-130: the TWO NEW staged decks (BBB · Networking) — row C, same staging law as
+    // A16 (counts bind to state when their engine decks land; presentation stages).
+    const bbR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'bbb-pile')!;
+    const nwR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'networking-pile')!;
+    t.add(cardStack(bbR, 'bbb-pile', 6, null, 0));
+    t.add(cardStack(nwR, 'networking-pile', 6, null, 0));
     t.rotation.x = -Math.PI / 2;
     t.scale.set(9, 7, 1);
     t.userData['focus'] = 'table';

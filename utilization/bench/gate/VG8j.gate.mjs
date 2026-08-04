@@ -68,30 +68,43 @@ export async function run(h) {
         `tap1 max Δ ${maxD.toFixed(1)}u (want 0.5–12) · TOP card moved:${topMoved} (Δ ${ds1[ds1.length - 1]?.toFixed?.(1)}u — the tapped card itself, I-115/M1) · spread after tap2 ${s2.toFixed(1)}u → tap3 ${s3.toFixed(1)}u (want <2.5 & tighter) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h}`);
     }
 
-    // v2-table-arrangement (T-1, I-89 — the owner's v1-board ruling as def law + the pile
-    // exhibits): season art-banner TOP-LEFT · GLOBAL CARDS IN PLAY to its RIGHT (top band)
-    // · standings UNDER the season · deck/discard/tradespeople/equipment in their pile row
-    // · AND the two A16 pile stacks exist as 6-card staged exhibits at their regions.
-    // Kill: a def regression (move/remove a region) or a missing pile fails BY NAME.
+    // v2-table-arrangement (T-1, I-89; RE-PINNED at I-130 — the owner's re-row ruling):
+    // season TOP-LEFT · GLOBAL row to its right · standings under the season · ROW A =
+    // deck, discard … DICE FAR RIGHT · ROW B below = tradespeople + equipment · ROW C
+    // below = BBB + networking (the two NEW staged decks) · the MEDAL region holds the
+    // freed bottom-right · the windows region is GONE (suppressed — prompts are onion
+    // citizens). All four pile stacks stand as 6-card staged exhibits.
+    // Kill: a def regression (move/remove/resurrect a region) or a missing pile fails BY NAME.
     {
       const tp = await info('tradespeople-pile');
       const eq = await info('equipment-pile');
+      const bb = await info('bbb-pile');
+      const nw = await info('networking-pile');
       const lay = await page.evaluate(() => window.__GAME3D__.tableRegionRects());
       let arrOk = false, arrDetail = 'NO-REGION-RECTS-SURFACE';
       if (lay) {
         const r = Object.fromEntries(lay.map((x) => [x.id, x]));
         const season = r['art-banner'], glob = r['global-play'], stand = r['standings'];
-        const row = ['deck', 'discard', 'tradespeople-pile', 'equipment-pile'].map((id) => r[id]);
         const seasonTL = season && season.x <= 4 && season.y <= 4;
         const globRight = glob && season && glob.x >= season.x + season.w && glob.y <= 4;
         const standUnder = stand && season && stand.x === season.x && stand.y >= season.y + season.h;
-        const rowOk = row.every((x) => x) && row.every((x, i) => i === 0 || x.x > row[i - 1].x) && row.every((x) => x.y === row[0].y);
-        arrOk = !!(seasonTL && globRight && standUnder && rowOk);
-        arrDetail = `season-top-left:${!!seasonTL} · global-right-of-season:${!!globRight} · standings-under-season:${!!standUnder} · pile-row:${!!rowOk}`;
+        const rowA = r['deck'] && r['discard'] && r['dice']
+          && r['discard'].x > r['deck'].x && r['dice'].x > r['discard'].x + r['discard'].w // dice FAR RIGHT
+          && Math.abs(r['dice'].y - r['deck'].y) <= 8 && r['discard'].y === r['deck'].y;
+        const rowB = r['tradespeople-pile'] && r['equipment-pile']
+          && r['tradespeople-pile'].y > r['deck'].y + r['deck'].h
+          && r['equipment-pile'].y === r['tradespeople-pile'].y && r['equipment-pile'].x > r['tradespeople-pile'].x;
+        const rowC = r['bbb-pile'] && r['networking-pile']
+          && r['bbb-pile'].y > r['tradespeople-pile'].y + r['tradespeople-pile'].h
+          && r['networking-pile'].y === r['bbb-pile'].y && r['networking-pile'].x > r['bbb-pile'].x;
+        const medalBR = r['medal'] && r['medal'].x >= 60 && r['medal'].y >= 50;
+        const windowsGone = !r['windows'];
+        arrOk = !!(seasonTL && globRight && standUnder && rowA && rowB && rowC && medalBR && windowsGone);
+        arrDetail = `season-top-left:${!!seasonTL} · global-right:${!!globRight} · standings-under:${!!standUnder} · rowA(dice-far-right):${!!rowA} · rowB(trades+equip):${!!rowB} · rowC(bbb+networking):${!!rowC} · medal-bottom-right:${!!medalBR} · windows-GONE:${windowsGone}`;
       }
-      const pilesOk = tp && eq && tp.count === 6 && eq.count === 6;
+      const pilesOk = tp && eq && bb && nw && tp.count === 6 && eq.count === 6 && bb.count === 6 && nw.count === 6;
       check('VG8j/v2-table-arrangement', arrOk && !!pilesOk,
-        `${arrDetail} · tradespeople-pile:${tp?.count} equipment-pile:${eq?.count} (want 6·6 staged exhibits)`);
+        `${arrDetail} · piles tp:${tp?.count} eq:${eq?.count} bbb:${bb?.count} nw:${nw?.count} (want 6×4 staged exhibits)`);
     }
 
     // draw-weak-flick (Q-2b, I-91 — the owner's "if the card isn't flicked hard enough,
@@ -510,8 +523,8 @@ export async function run(h) {
 
       // A8 (I-129) · window-prompt-decides: moe's THIRD draw is crossroads BY THE SEED
       // (genesis deck [job-posting, new-van, crossroads, …]) — its open_window fires and
-      // HK-5 would refuse the end-turn below until DECIDED. The prompt must render at the
-      // windows region (amber, mine, options ≡ projection), the option click must submit
+      // HK-5 would refuse the end-turn below until DECIDED. The prompt must render on the
+      // ONION LAYER (I-130; amber, mine, options ≡ projection), the option click must submit
       // the REAL decide verb (moves+1), and the prompt must leave with the window.
       // KILL: unregister the component → no prompt (match false / XY null) → fails;
       // cut the decide wiring → the window stays open → THIS times out by name AND the

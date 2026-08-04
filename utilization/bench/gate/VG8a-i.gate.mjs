@@ -218,6 +218,16 @@ export async function run(h) {
     check('VG8g2/shop-board-data-true', fillsOk,
       fills.map((f, i) => `${i}:${f ? (f.match ? 'ok' : `MISMATCH tier"${f.got.tier}"≟"${f.want.tier}" jobs"${f.got.jobs}"≟"${f.want.jobs}"`) : 'NULL'}`).join(' · '));
 
+    // L-3 (I-130) · medal-in-region: the 3D BOTY medal STANDS in the freed bottom-right
+    // medal region — parts built, resting ON the table, centre INSIDE the region rect
+    // (geometry state, never pixels). The re-rowed table (dice far right · BBB +
+    // networking staged decks · windows REMOVED) is covered by the region-count law
+    // above (VG8a re-derives from the changed defs on both sides). KILL: unregister the
+    // medal component → medalInfo null → fails by name.
+    const med = await page.evaluate(() => window.__GAME3D__.medalInfo());
+    check('VG8h2/medal-in-region', !!med && med.parts >= 10 && med.onTable && med.inRegion,
+      med ? `parts:${med.parts} (want ≥10 — disc+ribbon form) · on-table:${med.onTable} · in-region:${med.inRegion} — the BOTY medal holds the freed corner (I-130)` : 'NULL — no medal in the scene');
+
     // far board read: face-on along the FAR normal (0, sin.25, −cos.25) + full pose law
     await page.evaluate(() => window.__GAME3D__.toggleRead('seat-4'));
     if (await waitRest('VG8g/read-far-board-face-on')) {

@@ -116,22 +116,30 @@ export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
  * tradespeople · equipment) · the dice spot · windows. A SEPARATE CHILD so the certified
  * TOWN_TABLE (SVG bench, V-9, pins) is untouched; same parent, same declared overlay door.
  */
+// I-130 (owner-ruled 2026-08-04): the table re-rows — deck+discard with the DICE at the
+// far right of the same row; tradesperson+equipment the row below; BBB+networking (two
+// NEW staged decks) the row below that; the `windows` region REMOVED ALTOGETHER (prompts
+// live on the onion layer now); the freed bottom-right hosts the MEDAL exhibit region
+// (role `art` — the governed vocabulary is closed; an exhibit IS an art placement).
 export const TOWN_V2_OVERLAY: LayoutOverlay = {
   id: 'boty:town-table-v2',
   override: [
     { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 68, h: 22 }, // GLOBAL CARDS IN PLAY — right of the season
     { id: 'deck', role: 'deck', x: 30, y: 28, w: 12, h: 24 },
     { id: 'discard', role: 'discard', x: 46, y: 28, w: 12, h: 24 },
-    { id: 'dice', role: 'dice', x: 32, y: 58, w: 16, h: 16, z: 1 }, // the dice spot (P-1's home follows the region)
-    { id: 'windows', role: 'prompt-zone', x: 56, y: 56, w: 36, h: 24, z: 2 },
+    { id: 'dice', role: 'dice', x: 78, y: 32, w: 16, h: 16, z: 1 }, // FAR RIGHT of the deck's row (I-130; P-1's home follows the region)
   ],
   add: [
     { id: 'art-banner', role: 'art', x: 2, y: 2, w: 26, h: 22 }, // the SEASON image block, top-left
     { id: 'standings', role: 'standings', x: 2, y: 28, w: 26, h: 32 }, // player summary, under the season
     { id: 'log', role: 'table-log', x: 2, y: 64, w: 26, h: 32 },
-    { id: 'tradespeople-pile', role: 'deck', x: 62, y: 28, w: 12, h: 24 }, // A16 — staged exhibit until the engine deck lands
-    { id: 'equipment-pile', role: 'deck', x: 78, y: 28, w: 12, h: 24 }, // A16 — staged exhibit until the engine deck lands
+    { id: 'tradespeople-pile', role: 'deck', x: 30, y: 56, w: 12, h: 20 }, // row B (I-130) — staged exhibit until the engine deck lands
+    { id: 'equipment-pile', role: 'deck', x: 46, y: 56, w: 12, h: 20 }, // row B (I-130) — staged exhibit until the engine deck lands
+    { id: 'bbb-pile', role: 'deck', x: 30, y: 79, w: 12, h: 18 }, // row C (I-130) — NEW staged deck
+    { id: 'networking-pile', role: 'deck', x: 46, y: 79, w: 12, h: 18 }, // row C (I-130) — NEW staged deck
+    { id: 'medal', role: 'art', x: 64, y: 56, w: 30, h: 40 }, // the BOTY MEDAL exhibit (I-130) — the freed bottom-right
   ],
+  suppress: ['windows'], // I-130: removed altogether — prompts are onion-layer citizens now
 };
 export const TOWN_TABLE_V2: LayoutDef = extendLayout(TABLE_PARENT, TOWN_V2_OVERLAY);
 
