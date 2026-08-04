@@ -75,6 +75,35 @@ export async function run(h) {
       `claims-after-throw:${claimsAfter} (want 0) · orphan-mesh:${orphan.count}@${orphan.phase} · throw-drew-nothing:${invariant} · NEXT-draw-works:${drew} (moves ${hm1.m}→${hm2.m}, deck ${d2?.count}) — one throw can never freeze the bench`);
   }
 
+  // 6 · grab-move-throw-aborts (S-1c, I-107 — K7-S MAJOR-1's kill): the spine THROWS in
+  // place of onGrabMove; the claim must release AND the component must be ABORTED (the
+  // card settles home, the surface stays grabbable). Kill: restore the release-without-
+  // abort catch → phase sticks at 'grabbing', grabStart refuses forever, the follow-up
+  // weak gesture never records a verdict.
+  {
+    await G(() => window.__GAME3D__.forceGrabMoveThrow());
+    const dxy = await G(() => window.__GAME3D__.regionScreenXY('deck'));
+    await page.mouse.move(dxy.x, dxy.y);
+    await page.mouse.down();
+    await page.mouse.move(dxy.x + 30, dxy.y - 20); // ← the move THROWS (uncaught, by design)
+    const claimsAfter = await G(() => window.__GAME3D__.grabClaims());
+    await page.mouse.up();
+    await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+    const orphan = await G(() => window.__GAME3D__.orphanGrabMeshes());
+    // the aliveness proof: a fresh WEAK gesture completes and records its verdict
+    await page.mouse.move(dxy.x, dxy.y);
+    await page.mouse.down();
+    await page.mouse.move(dxy.x + 3, dxy.y - 2);
+    await page.waitForTimeout(400);
+    await page.mouse.move(dxy.x + 6, dxy.y - 4);
+    await page.mouse.up();
+    await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+    const g6 = await G(() => window.__GAME3D__.drawGesture());
+    check('VG8q/grab-move-throw-aborts',
+      claimsAfter === 0 && orphan.count === 0 && orphan.phase === 'idle' && !!g6 && g6.verdict === 'weak',
+      `claims-after-move-throw:${claimsAfter} (want 0) · orphan:${orphan.count}@${orphan.phase} · next-gesture-verdict:${g6?.verdict} (want weak) — the move path mirrors the release path`);
+  }
+
   // 3 · grab-cancel-releases: a SYNTHETIC pointer (id 77 — touch's stand-in) grabs the
   // pile card, drags it out, then CANCELS (what touch does constantly). The abort must
   // release the claim and glide the card home. Kill: remove the pointercancel listener
@@ -97,6 +126,35 @@ export async function run(h) {
     check('VG8q/grab-cancel-releases',
       held.claims === 1 && held.g === 'held' && released === 0 && back.count === 1,
       `held:${held.claims}/${held.g} → cancel → claims:${released} (want 0) · card home, pile ${back?.count} — touch cancels are survivable`);
+  }
+
+  // 7 · fidget-refused-holds-counter (S-1c, I-107 — K7-S MAJOR-2's kill, the M5 check
+  // G-1 owed): drag the pile card out SLOWLY → LOOSE; WHILE it is loose, CLICK the
+  // (now-empty) pile — the fidget must REFUSE: counter INVARIANT, no transition, so the
+  // pile can never SNAP to an unanimated state on the next rebuild. Kill: make
+  // startFidgetTween return true unconditionally (K7-S mutation (c)) → the counter
+  // advances on the refused click → false.
+  {
+    const f0 = (await info('discard')).fidget;
+    const txy = await G(() => window.__GAME3D__.regionScreenXY('discard'));
+    await page.mouse.move(txy.x, txy.y);
+    await page.mouse.down();
+    await page.mouse.move(txy.x + 50, txy.y - 25);
+    await page.waitForTimeout(400);
+    await page.mouse.move(txy.x + 90, txy.y - 45);
+    await page.waitForTimeout(400);
+    await page.mouse.move(txy.x + 130, txy.y - 60);
+    await page.mouse.up();
+    let loose = false;
+    try { await page.waitForFunction(() => window.__GAME3D__.discardGesture() === 'loose', null, { timeout: 8000 }); loose = true; } catch { /* named below */ }
+    await page.mouse.click(txy.x, txy.y); // the REFUSED fidget click — a card is out
+    const f1 = (await info('discard')).fidget;
+    const trans = await G(() => window.__GAME3D__.discardTransitioning());
+    await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 120000 }).catch(() => {});
+    const f2 = (await info('discard')).fidget;
+    check('VG8q/fidget-refused-holds-counter',
+      loose && f1 === f0 && f2 === f0 && trans === false,
+      `card-loose:${loose} · refused-click counter ${f0}→${f1}→${f2} (want invariant) · no-transition:${trans === false} — a refused fidget advances NOTHING (M5's kill, at last)`);
   }
 
   // 4 · grab-per-pointer: the REAL mouse holds a crew card (seat-play's claim) WHILE a

@@ -24,6 +24,7 @@ import type { PlayAreaContext, PickInfo } from './component.js';
 import { assignGate } from './component.js';
 import { COMPONENTS } from './components/registry.js';
 import { openRoundSequence } from './components/die.js';
+import { manifestBackdrop } from './backdrop.js'; // S-1c (I-107): the verbatim size-gate extraction
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
@@ -44,30 +45,10 @@ const builtRoots: THREE.Object3D[] = [];
 const claims = new Map<number, (typeof COMPONENTS)[number]>();
 let releasing: number | null = null; // the pointer whose onGrabEnd is executing (buildScene skips it)
 let forceGrabThrow = false; // the VG8q release-on-throw drill (the forceFlipMismatch precedent)
+let forceMoveThrow = false; // S-1c (I-107): the VG8q move-throw drill — K7-S MAJOR-1's kill
 const grabActive = (): boolean => claims.size > 0; // the camera wheel gates on this
 
-// ── THE MANIFESTED BACKDROP (I-67h — the owner rules on the look): white underfoot
-// → pastel haze → a faint ink ring → off-white; a gradient disc, ZERO lights ──
-function manifestBackdrop(): void {
-  const c = document.createElement('canvas');
-  c.width = c.height = 1024;
-  const g = c.getContext('2d')!;
-  const grad = g.createRadialGradient(512, 512, 60, 512, 512, 512);
-  grad.addColorStop(0, '#ffffff');
-  grad.addColorStop(0.45, '#f7f2f8'); // warm pastel haze
-  grad.addColorStop(0.62, '#eef4f5'); // cool pastel haze
-  grad.addColorStop(0.8, '#e4e3de'); // the light ink ring
-  grad.addColorStop(1, '#f4f3ee'); // off-white — the play area manifested
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 1024, 1024);
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(2600, 64), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }));
-  disc.rotation.x = -Math.PI / 2;
-  disc.position.y = -2;
-  disc.userData['backdrop'] = true;
-  scene.add(disc);
-  scene.background = new THREE.Color(0xf4f3ee);
-}
-manifestBackdrop();
+manifestBackdrop(); // the owner-ruled backdrop (I-67h) — the function lives in backdrop.ts (S-1c)
 
 // ── the harness write path (submitVerb): the verb through the same doors (I-67f) ──
 function submitVerb(verb: string, args: Record<string, unknown>): boolean {
@@ -169,8 +150,18 @@ renderer.domElement.addEventListener('pointerdown', (ev) => {
 });
 renderer.domElement.addEventListener('pointermove', (ev) => {
   const claimant = claims.get(ev.pointerId);
-  if (claimant) { // the claimed drag — no camera pan; a THROW releases the claim (v3)
-    try { claimant.onGrabMove?.(ctx, ev); } catch (e) { claims.delete(ev.pointerId); throw e; }
+  if (claimant) { // the claimed drag — no camera pan; a THROW aborts AND releases (S-1c
+    // closes K7-S MAJOR-1: the move path now mirrors the release path — before this,
+    // a throwing onGrabMove released the claim but stranded the component permanently,
+    // and resetDraw's deliberate 'grabbing' skip meant not even a rebuild recovered it).
+    try {
+      if (forceMoveThrow) { forceMoveThrow = false; throw new Error('VG8q drill: forced onGrabMove throw'); }
+      claimant.onGrabMove?.(ctx, ev);
+    } catch (e) {
+      try { claimant.onGrabAbort?.(ctx); } catch { /* truth renders on the next build */ }
+      claims.delete(ev.pointerId);
+      throw e;
+    }
     return;
   }
   if (!dragFrom) return;
@@ -192,6 +183,8 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   const claimant = claims.get(ev.pointerId);
   if (claimant) { // the claimed gesture releases first (I-91)
     let consumed = false;
+    const prev = releasing; // S-1c (K7-S MINOR-5): save/restore — a nested synthetic
+    // release can no longer null out an outer release's rebuild-skip mid-flight.
     try {
       releasing = ev.pointerId;
       if (forceGrabThrow) { forceGrabThrow = false; throw new Error('VG8q drill: forced onGrabEnd throw'); }
@@ -202,7 +195,7 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
       try { claimant.onGrabAbort?.(ctx); } catch { /* truth renders on the next build */ }
       throw e;
     } finally {
-      releasing = null;
+      releasing = prev;
       claims.delete(ev.pointerId); // the claim ALWAYS releases (the finally IS the law)
     }
     if (consumed) return;
@@ -285,9 +278,10 @@ const gate: Record<string, unknown> = {
   lookInsideFocusBox: cam.lookInsideFocusBox,
   panProbe: cam.panProbe,
   zoomState: cam.zoomState,
-  // S-1 (I-103) contract-v3 surfaces: the live claim count + the release-on-throw drill
+  // S-1 (I-103) contract-v3 surfaces: the live claim count + the throw drills
   grabClaims: () => claims.size,
   forceGrabEndThrow: () => { forceGrabThrow = true; },
+  forceGrabMoveThrow: () => { forceMoveThrow = true; }, // S-1c (I-107): MAJOR-1's kill
 };
 for (const c of COMPONENTS) assignGate(gate, c.gate());
 (window as unknown as Record<string, unknown>)['__GAME3D__'] = gate;
