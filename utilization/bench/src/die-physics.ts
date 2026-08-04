@@ -210,11 +210,16 @@ export function dragMove(worldX: number, worldZ: number): void {
  *  R-1a2 (I-110, the owner's escape ruling): the speed is CAPPED at the tuned roll
  *  ceiling and the lift bounded — max arc ≈ 9u, structurally under the 162u rails. */
 const FLICK_CAP = 3.2; // m/s — "I would put a cap on acceleration" (owner, 2026-08-04)
+const FLICK_FLOOR = 1.6; // m/s — R-1c (I-126): "some players will not accept a dice roll
+// where the dice hasn't been shaken enough" — a weak-but-real flick is scaled UP to the
+// floor (direction preserved; the spin derives from the components, so tumble energy
+// floors with it). Between floor and cap the gesture stays fully responsive.
 export function dragEnd(velWorldX: number, velWorldZ: number): void {
   if (!live) return;
   let vx = velWorldX / M2W, vz = velWorldZ / M2W;
   const raw = Math.hypot(vx, vz);
   if (raw > FLICK_CAP) { const k = FLICK_CAP / raw; vx *= k; vz *= k; }
+  else if (raw > 1e-9 && raw < FLICK_FLOOR) { const k = FLICK_FLOOR / raw; vx *= k; vz *= k; } // the floor (I-126)
   const sp = Math.hypot(vx, vz);
   if (flightTrace) { flightTrace.rawSpeed = raw; flightTrace.effSpeed = sp; } // I-115/M5
   live.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);

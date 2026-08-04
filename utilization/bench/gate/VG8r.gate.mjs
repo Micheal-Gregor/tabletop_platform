@@ -107,6 +107,33 @@ export async function run(h) {
       `rolling-live:${live3b} (fresh trace) · flight escaped:${tr?.escaped} (want false) · raw ${tr?.rawSpeed?.toFixed?.(1)} m/s → capped ${tr?.effSpeed?.toFixed?.(2)} (want raw>3.2 & eff≤3.21 — the cap PROVEN applied) · maxAbs ${tr?.maxAbsX?.toFixed?.(3)}/${tr?.maxAbsZ?.toFixed?.(3)} m · home:${homeOk}`);
   }
 
+  // 3d · die-weak-flick-floored (R-1c, I-126 — the owner's legitimacy ruling: "some
+  // players will not accept a dice roll where the dice hasn't been shaken enough"): a
+  // SLOW-but-real drag (travel ≥ the 6u flick window, speed far under the floor) must
+  // launch at the 1.6 m/s FLOOR — the trace shows raw < 1.6 AND eff ≥ 1.59 (the cap
+  // kill's mirror; headless-proven 3.17 revs floored vs 0.30 bare). Kill: remove the
+  // floor → eff ≡ raw < 1.59 → fails DETERMINISTICALLY, never a timing flip.
+  {
+    const xy = await G(() => window.__GAME3D__.dieScreenXY());
+    await page.mouse.move(xy.x, xy.y);
+    await page.mouse.down();
+    await page.mouse.move(xy.x + 10, xy.y + 4);
+    await page.waitForTimeout(150);
+    await page.mouse.move(xy.x + 18, xy.y + 7);
+    await page.waitForTimeout(150);
+    await page.mouse.up();
+    let live3d = false;
+    try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rolling-live', null, { timeout: 8000 }); live3d = true; } catch { /* named below */ }
+    await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'idle', null, { timeout: 120000 }).catch(() => {});
+    const tr = await G(() => window.__GAME3D__.dieFlightTrace());
+    const rest = await G(() => window.__GAME3D__.dieRestInfo());
+    const home = await G(() => window.__GAME3D__.dieHome());
+    const homeOk = !!rest && !!home && Math.hypot(rest.x - home.x, rest.z - home.z) < 10;
+    const flooredOk = !!tr && tr.rawSpeed < 1.6 && tr.effSpeed >= 1.59 && tr.effSpeed <= 3.21;
+    check('VG8r/die-weak-flick-floored', live3d && flooredOk && !!tr && tr.escaped === false && homeOk,
+      `rolling-live:${live3d} · raw ${tr?.rawSpeed?.toFixed?.(2)} m/s → floored ${tr?.effSpeed?.toFixed?.(2)} (want raw<1.6 & eff≥1.59 — the FLOOR proven applied) · escaped:${tr?.escaped} · home:${homeOk} — every flick tumbles like it means it (I-126)`);
+  }
+
   // 3c · die-offcentre-click-rolls (I-115/M4, drive CORRECTED at I-116: a HUMAN click
   // lands off-centre and jitters one pointermove; Playwright's mouse.click never emits
   // that move, so this leg drives the human shape SYNTHETICALLY. The first drive (+15/+6)
