@@ -15,7 +15,7 @@ import * as THREE from 'three';
 import { beginFlourish, completeFlourish } from '@tabletop/presentation';
 import type { PlayAreaContext, PickInfo } from './component.js';
 import { fortuneFaceTexture } from './surfaces.js';
-import { cardBack, nudgeStack } from './stacks.js';
+import { nudgeStack } from './stacks.js';
 import * as onion from './onion.js';
 import { CARD_FAMILY } from '../../../packs/boty/src/index.js'; // Q-2c (I-92): the family data
 
@@ -26,6 +26,8 @@ const TILT_MAX = Math.PI * 0.45; // below the face-reveal angle: face-down stays
 
 let theater: {
   mesh: THREE.Mesh; from: THREE.Vector3; t: number;
+  homeGroup: THREE.Object3D | null; homeLocal: { pos: THREE.Vector3; quat: THREE.Quaternion } | null; // I-112: the REAL card's home
+  swappedFace: THREE.Material | null; // I-112: the fortune face we added to the box (ours to dispose)
   bound: { minX: number; maxX: number; minZ: number; maxZ: number } | null; // R-1a2 (I-110): the drag-follow clamp
   settleFrom: THREE.Vector3 | null; // R-1a2: the weak settle glides HOME from here
   inst: ReturnType<typeof beginFlourish> | null; seeded: string; flipped: boolean;
@@ -77,19 +79,22 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   if (active !== ctx.viewSeat) return false; // not your turn — the fidget keeps the click
   if ((v.decks[active]?.drawCount ?? 0) < 1) return false;
   const dt = stackTop(ctx, 'deck');
+  if (!dt.mesh) return false;
   const from = dt.pos.clone();
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(52, 78), new THREE.MeshBasicMaterial({ map: cardBack() }));
-  m.position.copy(from);
-  m.rotation.set(-Math.PI / 2, 0, 0);
+  // R-1a4 (I-112, owner-caught): the grabbed card IS the real top box — scene.attach (the
+  // Q-6/P-2c three-objects pattern), world pose baked, same size, same edges. No plane is
+  // built and nothing is hidden on the deck side; the box survives rebuilds scene-parented.
+  const m = dt.mesh as THREE.Mesh;
+  const homeGroup = m.parent;
+  const homeLocal = { pos: m.position.clone(), quat: m.quaternion.clone() };
+  ctx.scene.attach(m);
   m.userData['drawGrabMesh'] = true; // S-1 (I-103): the orphan oracle counts this tag at idle
-  ctx.scene.add(m);
-  if (dt.mesh) dt.mesh.visible = false; // the grab card IS the top card — never two
   let bound: { minX: number; maxX: number; minZ: number; maxZ: number } | null = null;
   const tbl = ctx.theater.focusObject('table');
   if (tbl) { const bb = new THREE.Box3().setFromObject(tbl); bound = { minX: bb.min.x + 30, maxX: bb.max.x - 30, minZ: bb.min.z + 40, maxZ: bb.max.z - 40 }; }
   theater = {
-    mesh: m, from, t: 0, bound, settleFrom: null, inst: null, seeded: '', flipped: false,
-    hiddenTop: dt.mesh, routeFrom: null, routeTo: null, dest: null, destPos: null,
+    mesh: m, from, t: 0, bound, settleFrom: null, homeGroup, homeLocal, swappedFace: null, inst: null, seeded: '', flipped: false,
+    hiddenTop: null, routeFrom: null, routeTo: null, dest: null, destPos: null,
     angle: 0, samples: [{ x: hit.event.clientX, y: hit.event.clientY, t: performance.now() }],
   };
   phase = 'grabbing';
@@ -179,8 +184,9 @@ export function abortGrab(): void {
 export function resetDraw(ctx: PlayAreaContext): void {
   if (!theater || phase === 'idle' || phase === 'grabbing' || phase === 'settling') return;
   if (phase === 'reading' && onion.onionState().open) onion.closeOnion();
+  delete theater.mesh.userData['drawGrabMesh'];
   ctx.scene.remove(theater.mesh);
-  (theater.mesh.material as THREE.Material).dispose();
+  if (theater.swappedFace) theater.swappedFace.dispose();
   theater = null;
   phase = 'idle';
 }
@@ -196,11 +202,18 @@ export function startRoute(ctx: PlayAreaContext): void {
   phase = 'routing';
 }
 
-function finishTheater(ctx: PlayAreaContext): void {
+function finishTheater(ctx: PlayAreaContext, reattach = false): void {
   if (!theater) return;
-  if (theater.hiddenTop) theater.hiddenTop.visible = true;
-  ctx.scene.remove(theater.mesh);
-  (theater.mesh.material as THREE.Material).dispose();
+  if (theater.hiddenTop) theater.hiddenTop.visible = true; // the DESTINATION reveal (I-112: the source is never hidden)
+  delete theater.mesh.userData['drawGrabMesh'];
+  if (reattach && theater.homeGroup && theater.homeGroup.parent) {
+    // I-112: the weak settle puts THE SAME CARD back at its exact slot (the discard pattern)
+    (theater.homeGroup as THREE.Group).attach(theater.mesh);
+    if (theater.homeLocal) { theater.mesh.position.copy(theater.homeLocal.pos); theater.mesh.quaternion.copy(theater.homeLocal.quat); }
+  } else {
+    ctx.scene.remove(theater.mesh); // the route's traveler retires — the fresh build's card is the truth
+  }
+  if (theater.swappedFace) theater.swappedFace.dispose();
   theater = null;
   phase = 'idle';
 }
@@ -218,8 +231,12 @@ export function tickDraw(ctx: PlayAreaContext): void {
     if (pT >= 0.5 && !theater.flipped) {
       theater.flipped = true; // the midpoint face-swap — always post-release + post-submit
       const displayed = forceMismatch ? 'WRONG-CARD' : theater.seeded;
-      (theater.mesh.material as THREE.Material).dispose();
-      theater.mesh.material = new THREE.MeshBasicMaterial({ map: fortuneFaceTexture(displayed) });
+      // I-112: the box's UNDERSIDE slot (−z, index 5) receives the face — after the π flip
+      // it ends UP-FACING and the original back faces down. Never the shared side material.
+      const face = new THREE.MeshBasicMaterial({ map: fortuneFaceTexture(displayed) });
+      const mats = theater.mesh.material as THREE.Material[];
+      mats[5] = face;
+      theater.swappedFace = face;
     }
     if (pT >= 1) {
       theater.mesh.position.copy(theater.from);
@@ -245,7 +262,7 @@ export function tickDraw(ctx: PlayAreaContext): void {
       sf.z + (theater.from.z - sf.z) * theater.t);
     theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
     theater.mesh.rotateY(theater.angle * back + Math.sin(theater.t * Math.PI * 3) * 0.05 * back); // the nudge wiggle
-    if (theater.t >= 1) finishTheater(ctx); // face down on the pile — nothing happened (no draw)
+    if (theater.t >= 1) finishTheater(ctx, true); // the SAME card, back on the pile — nothing happened (I-112)
     return;
   }
   if (phase === 'routing' && theater.routeFrom && theater.routeTo) {
@@ -271,6 +288,7 @@ export const drawPhaseState = (): DrawPhase => phase;
 export const setForceFlipMismatch = (v: boolean): void => { forceMismatch = v; };
 export const lastRoute = () => lastRouteRec;
 export const drawGesture = () => (lastGesture ? { ...lastGesture, threshold: FLICK_T } : null);
+export const drawGrabUuid = (): string | null => (theater ? theater.mesh.uuid : null); // I-112: the identity oracle
 export function drawTheaterInfo(ctx: PlayAreaContext) {
   if (!theater) return null;
   const dp = stackTop(ctx, 'deck').pos;

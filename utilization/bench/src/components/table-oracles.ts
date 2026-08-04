@@ -76,3 +76,14 @@ export function regionScreenXYOf(ctx: PlayAreaContext, rid: string): { x: number
   const r = ctx.renderer.domElement.getBoundingClientRect();
   return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
 }
+
+/** I-112: a stack's TOP card uuid — the three-objects identity oracle (the P-2c
+ *  precedent: a faked traveler cannot share the real card's uuid). */
+export function stackTopUuidOf(ctx: PlayAreaContext, rid: string): string | null {
+  const grp = ctx.theater.focusObject(`table:${rid}`);
+  if (!grp) return null;
+  const cards: THREE.Object3D[] = [];
+  grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) cards.push(o); });
+  cards.sort((a, b) => (a.userData['idx'] as number) - (b.userData['idx'] as number));
+  return cards.length ? cards[cards.length - 1]!.uuid : null;
+}

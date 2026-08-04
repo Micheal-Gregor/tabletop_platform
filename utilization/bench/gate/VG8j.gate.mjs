@@ -123,6 +123,7 @@ export async function run(h) {
     // the card never leaves the deck → false.
     {
       const hmF = await hashes();
+      const u0 = await page.evaluate(() => window.__GAME3D__.deckTopUuid()); // I-112: the identity baseline
       const fxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
       await page.mouse.move(fxy.x, fxy.y);
       await page.mouse.down();
@@ -132,14 +133,19 @@ export async function run(h) {
       await page.waitForTimeout(400);
       const thF = await page.evaluate(() => window.__GAME3D__.drawTheater());
       const wander = thF && thF.card && thF.deck ? Math.hypot(thF.card.x - thF.deck.x, thF.card.z - thF.deck.z) : 0;
+      const ug = await page.evaluate(() => window.__GAME3D__.drawGrabUuid()); // I-112: mid-drag identity
       await page.mouse.move(fxy.x + 124, fxy.y + 57);
       await page.mouse.up(); // slow → weak → the settle GLIDES back to the deck
       await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
       const gF = await page.evaluate(() => window.__GAME3D__.drawGesture());
       const dF = await info('deck');
+      const u1 = await page.evaluate(() => window.__GAME3D__.deckTopUuid()); // I-112: home again — the SAME card
       const hmF1 = await hashes();
-      check('VG8j/draw-drag-follows', wander > 30 && gF?.verdict === 'weak' && dF.count === 36 && hmF1.m === hmF.m && hmF1.h === hmF.h,
-        `mid-drag wander ${wander.toFixed(0)}u from the deck (want >30 — the card FOLLOWS) · verdict:${gF?.verdict} · deck 36 · state-invariant:${hmF1.m === hmF.m && hmF1.h === hmF.h} — dragged around, flicked nowhere, home again`);
+      // I-112 (the P-2c uuid precedent): the grabbed mesh IS the former top card, and after
+      // the weak release the deck's top is the SAME OBJECT again — a faked traveler cannot pass.
+      const identity = !!u0 && ug === u0 && u1 === u0;
+      check('VG8j/draw-drag-follows', wander > 30 && identity && gF?.verdict === 'weak' && dF.count === 36 && hmF1.m === hmF.m && hmF1.h === hmF.h,
+        `mid-drag wander ${wander.toFixed(0)}u (want >30 — the card FOLLOWS) · IDENTITY:${identity} (grabbed ≡ former top ≡ re-attached top — the three-objects law) · verdict:${gF?.verdict} · deck 36 · state-invariant:${hmF1.m === hmF.m && hmF1.h === hmF.h}`);
     }
 
     // THE DRAW — Q-2b (I-91): a REAL GRAB + FLICK on the deck's top card (down → fast

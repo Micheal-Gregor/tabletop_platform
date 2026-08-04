@@ -253,6 +253,8 @@ export const table: Component = {
       onionRegions: onion.onionRegions,
       forceFlipMismatch: draw.setForceFlipMismatch,
       stackInfo: (rid: string) => oracles.stackInfoOf(cx!, rid, fidget[rid] ?? 0),
+      deckTopUuid: () => oracles.stackTopUuidOf(cx!, 'deck'), // I-112: the identity oracle
+      drawGrabUuid: draw.drawGrabUuid, // I-112: the grabbed mesh's uuid (null at idle)
       regionScreenXY: (rid: string) => oracles.regionScreenXYOf(cx!, rid),
     };
   },
