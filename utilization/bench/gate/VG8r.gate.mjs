@@ -107,25 +107,26 @@ export async function run(h) {
       `rolling-live:${live3b} (fresh trace) · flight escaped:${tr?.escaped} (want false) · raw ${tr?.rawSpeed?.toFixed?.(1)} m/s → capped ${tr?.effSpeed?.toFixed?.(2)} (want raw>3.2 & eff≤3.21 — the cap PROVEN applied) · maxAbs ${tr?.maxAbsX?.toFixed?.(3)}/${tr?.maxAbsZ?.toFixed?.(3)} m · home:${homeOk}`);
   }
 
-  // 3c · die-offcentre-click-rolls (I-115/M4 — K7-R: a HUMAN click lands off-centre and
-  // jitters one pointermove; Playwright's mouse.click never emits that move, so this leg
-  // drives the human shape SYNTHETICALLY, 15 px off the die's centre + a 2 px move.
-  // With the pointer-frame travel fix the tap measures ~0 and ROLLS. Kill: restore the
-  // die-centre distance frame → the off-centre click reads >6u → treated as a drag →
-  // no 'rolling' → false.
+  // 3c · die-offcentre-click-rolls (I-115/M4, drive CORRECTED at I-116: a HUMAN click
+  // lands off-centre and jitters one pointermove; Playwright's mouse.click never emits
+  // that move, so this leg drives the human shape SYNTHETICALLY. The first drive (+15/+6)
+  // OVERSHOT the die's ~35px screen footprint — the ray MISSED and nothing was exercised
+  // (the 88/89 run; the owner's hand-clicks worked). Now +8/+3: safely ON the die yet
+  // ≈8.4 world units off-centre — still > the old 6u die-centre frame, so the kill holds.
+  // Kill: restore the die-centre distance frame → ~8u reads as a drag → no 'rolling'.
   {
     const xy = await G(() => window.__GAME3D__.dieScreenXY());
     await G(({ x, y }) => {
       const el = document.querySelector('#stage canvas');
-      el.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 97, clientX: x + 15, clientY: y + 6, bubbles: true }));
-      el.dispatchEvent(new PointerEvent('pointermove', { pointerId: 97, clientX: x + 17, clientY: y + 7, bubbles: true }));
-      el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 97, clientX: x + 17, clientY: y + 7, bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 97, clientX: x + 8, clientY: y + 3, bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointermove', { pointerId: 97, clientX: x + 10, clientY: y + 4, bubbles: true }));
+      el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 97, clientX: x + 10, clientY: y + 4, bubbles: true }));
     }, xy);
     let rolledOff = false;
     try { await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'rolling', null, { timeout: 8000 }); rolledOff = true; } catch { /* named below */ }
     await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'idle', null, { timeout: 120000 }).catch(() => {});
     check('VG8r/die-offcentre-click-rolls', rolledOff,
-      `off-centre click (+15px, one 2px move — the HUMAN shape) rolled:${rolledOff} — travel means TRAVEL, not distance-from-centre (I-115/M4)`);
+      `off-centre click (+8px on the die, one 2px move — the HUMAN shape) rolled:${rolledOff} — travel means TRAVEL, not distance-from-centre (I-115/M4, drive fixed I-116)`);
   }
 
   // 4 · die-grab-click-falls-through: a PLAIN CLICK on the die (a claimed grab whose
