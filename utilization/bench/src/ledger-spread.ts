@@ -1,154 +1,229 @@
 /**
- * LEDGER-SPREAD — the OPEN two-page book spread (K-C, I-79; SUPERSEDES the batch-1
- * single-panel overlay of I-74). When the closed book flips open it becomes a two-page
- * spread standing in the scene: the P&L on the LEFT page, the Balance Sheet on the RIGHT
- * page — both SCENE-PLACED and FOCUSABLE (each page registered in focusGroups so the
- * camera read-ladder can target it), NOT a camera-parented overlay. Zooming in enters
- * READ mode of the SELECTED report (P&L is the default); a LEFT/RIGHT pan gesture in read
- * mode switches the read focus to the OTHER report's page — the SAME camera read/pan
- * discipline every other object reuses, via camera.ts (readView/readState/…). Every
- * transition — the closed→spread OPEN, the zoom-to-read, and the left/right SWITCH — is a
- * SMOOTH animation (per-frame lerp / the camera glide; waits on STATE, never clocks —
- * I-60f). Each page is OPAQUE (opacity 1, depth-writing) so it is not see-through (the
- * I-70 discipline; with no veil in the scene-placed design the plain-opaque page IS the
- * honest not-see-through page). This module owns the pages' geometry, the open animation,
- * and the read/switch; ledger.ts orchestrates (computes the fills) and re-exports.
+ * LEDGER SHEETS — P-2c (I-86): THE THREE-OBJECTS LAW (owner-ruled 2026-08-03; SUPERSEDES
+ * I-85's cosmetic peek-sheet mechanism). The folder and the TWO REPORT SHEETS are three
+ * PERSISTENT interacting objects: the sheets are built ONCE, WITH the folder, as its
+ * CHILDREN — real page groups (portrait paper + layoutFace fills) tucked inside with
+ * their RIGHT edges peeking past the shorter front flap. DEPLOY reparents them to the
+ * scene (`scene.attach` — world transform preserved, no jump) and lerps pos/quat/scale
+ * from the recorded in-folder HOME pose to the standing display pose; RETRACT lerps back
+ * to that home pose and `folder.attach`es them again. The SAME objects, the whole cycle
+ * — never rebuilt, never swapped; VG8n asserts their UUIDs + parentage walk.
+ *
+ * The fills are stamped at build (genesis projection) and RE-STAMPED IN PLACE at each
+ * open (the face content updates; the sheet object persists). ANCHOR-PER-REPORT (sealed):
+ * clicking a deployed sheet selects it and zooms to its reading view. Pages are OPAQUE
+ * (I-70); waits are STATE, never clocks (I-60f).
  */
 import * as THREE from 'three';
 import { scene, focusGroups } from './stage.js';
-import { readView, readState, gliding, getMode, setLastFocus, sceneView, lookAtPoint } from './camera.js';
+import { readView, readState, getMode, setLastFocus, sceneView } from './camera.js';
 import { layoutFace } from './surfaces.js';
 import { BOOKS_PANEL } from '../../../packs/boty/src/index.js';
 
 export type PageKind = 'pnl' | 'balance';
 type Fills = Readonly<Record<string, readonly string[]>>;
+type Pose = { pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3 };
 
-// ── the spread's geometry constants ──
-const SCALE = 2.4; // the 0..100 layoutFace units → world (a readable page)
-const GAP = 160; // each page's x-offset from the spread anchor at full-open (centres 2·GAP apart)
-const SWITCH_T = 70; // the pan-toward-the-other-page threshold (< the page half-width clamp, so reachable)
+// ── geometry constants ──
+const DISPLAY_SCALE = 2.4; // the standing display size (the sealed read law)
+const HOME_SCALE = 1.22; // tucked inside the 150×200 folder (138×177 — right edge peeks)
+const GAP = 160; // display x-offset from the spread anchor
+const PAPER_W = 112, PAPER_H = 145; // report-sized (portrait) paper — P-2b, carried
 
-// ── module state (null when the book is CLOSED) ──
-let anchor = new THREE.Vector3();
-let pnlPage: THREE.Group | null = null;
-let balPage: THREE.Group | null = null;
+// ── the three-objects state ──
+let folderGrp: THREE.Group | null = null;
+let sheets: Record<PageKind, THREE.Group | null> = { pnl: null, balance: null };
 let faces: Record<PageKind, THREE.Group | null> = { pnl: null, balance: null };
-let open = false;
-let openAmt = 0; // 0 = closed (pages overlap at the anchor) → 1 = fully spread (the OPEN animation)
-let selected: PageKind = 'pnl'; // the report zoom-to-read enters (P&L default; a switch moves it)
+let homePose: Record<PageKind, Pose | null> = { pnl: null, balance: null };
+let anchor = new THREE.Vector3();
+let phase: 'in-folder' | 'deploying' | 'displayed' | 'returning' = 'in-folder';
+let amt = 0; // 0 = home (in the folder) → 1 = display pose
+let selected: PageKind = 'pnl';
+const UP_QUAT = new THREE.Quaternion(); // standing upright, facing +z (the display orientation)
 
 const focusId = (k: PageKind): string => `ledger-${k}`;
+const ease = (t: number): number => t * t * (3 - 2 * t);
 
-// ── one PAGE = the measured BOOKS_PANEL as a face (I-56) + an OPAQUE backing sheet, so the
-// page renders a solid, not-see-through sheet (the I-70 discipline; no veil to sort over in
-// the scene-placed design). Registered in focusGroups so the read-ladder can target it. ──
-function buildPage(k: PageKind, fills: Fills): THREE.Group {
-  const page = new THREE.Group();
-  const back = new THREE.Mesh(
-    new THREE.PlaneGeometry(112, 112),
-    new THREE.MeshBasicMaterial({ color: 0xf3ecda, transparent: false }), // opaque page stock (depth-writing → occludes the table)
-  );
-  back.position.z = -0.5;
-  page.add(back);
+/** stamp (or RE-stamp) a sheet's face from fills — the face content changes, the sheet
+ *  OBJECT persists (the three-objects law's honest refresh). */
+export function stampSheet(k: PageKind, fills: Fills): void {
+  const sh = sheets[k];
+  if (!sh) return;
+  const old = faces[k];
+  if (old) sh.remove(old);
   const face = layoutFace(BOOKS_PANEL, 0xffffff, fills); // regions from the def only (I-60a)
-  page.add(face);
   faces[k] = face;
-  page.userData['ledgerPage'] = k;
-  page.userData['focus'] = focusId(k);
-  focusGroups[focusId(k)] = page; // FOCUSABLE — the camera read-ladder targets each page
-  scene.add(page);
-  return page;
+  sh.add(face);
 }
 
-/** the smooth OPEN pose (lerped by openAmt): the pages swing apart from the anchor (closed,
- *  overlapping) to ±GAP (spread) and ease up to full scale — the closed→spread animation. */
-function applyOpenPose(amt: number): void {
-  if (!pnlPage || !balPage) return;
-  const s = SCALE * (0.7 + 0.3 * amt);
-  pnlPage.scale.setScalar(s);
-  balPage.scale.setScalar(s);
-  pnlPage.position.set(anchor.x - GAP * amt, anchor.y, anchor.z); // LEFT page (world-x < right)
-  balPage.position.set(anchor.x + GAP * amt, anchor.y, anchor.z); // RIGHT page
-}
-
-/** OPEN the spread at the anchor (front of the viewing seat's board): build both pages, start
- *  the open animation, and select the P&L (left) as the default read report. */
-export function openSpread(pnlFills: Fills, balanceFills: Fills, at: THREE.Vector3): void {
-  closeSpread();
-  anchor = at.clone();
-  pnlPage = buildPage('pnl', pnlFills);
-  balPage = buildPage('balance', balanceFills);
-  open = true;
-  openAmt = 0;
-  selected = 'pnl';
-  applyOpenPose(openAmt);
-  setLastFocus(focusId('pnl')); // zoom-in enters the SELECTED (P&L) page's read view
-}
-
-/** CLOSE: remove the pages, drop their focus registrations, and leave read mode (the pages
- *  can no longer be a read target). Any anchor is reset so a later zoom does not chase a dead page. */
-export function closeSpread(): void {
-  if (getMode() === 'read' && readState().focus.startsWith('ledger-')) sceneView(); // leave the (now-gone) page
+/** build the two PERSISTENT sheet objects INSIDE the folder (called once, at folder build).
+ *  In-folder pose: flat, stacked, staggered slightly RIGHT so their right edges peek past
+ *  the shorter front flap (the owner's picture). */
+export function buildSheets(folder: THREE.Group, pnlFills: Fills, balanceFills: Fills): void {
+  // K7-P D2: a rebuild while sheets are DEPLOYED must not orphan them — purge any previous
+  // sheet objects from whatever parent they have, drop their read anchors, leave read mode
+  // if it was on a (now-gone) sheet, and reset the phase machine before building fresh.
+  if (getMode() === 'read' && readState().focus.startsWith('ledger-')) sceneView();
   for (const k of ['pnl', 'balance'] as const) {
-    const p = k === 'pnl' ? pnlPage : balPage;
-    if (p) scene.remove(p);
-    delete focusGroups[focusId(k)];
+    const old = sheets[k];
+    if (old) old.parent?.remove(old);
+    sheets[k] = null;
     faces[k] = null;
+    homePose[k] = null;
+    delete focusGroups[focusId(k)];
   }
-  pnlPage = balPage = null;
-  open = false;
-  openAmt = 0;
+  folderGrp = folder;
+  const specs: ReadonlyArray<{ k: PageKind; fills: Fills; x: number; y: number; z: number }> = [
+    { k: 'balance', fills: balanceFills, x: 6, y: -2, z: 2.2 }, // under, peeking furthest right
+    { k: 'pnl', fills: pnlFills, x: 2, y: 2, z: 3.4 }, // on top
+  ];
+  for (const s of specs) {
+    const sheet = new THREE.Group();
+    const back = new THREE.Mesh(
+      new THREE.PlaneGeometry(PAPER_W, PAPER_H),
+      new THREE.MeshBasicMaterial({ color: 0xf3ecda, transparent: false }), // opaque page stock (I-70)
+    );
+    back.position.z = -0.5;
+    sheet.add(back);
+    sheet.userData['ledgerPage'] = s.k;
+    sheet.userData['focus'] = focusId(s.k);
+    sheet.position.set(s.x, s.y, s.z);
+    sheet.scale.setScalar(HOME_SCALE);
+    sheets[s.k] = sheet;
+    folder.add(sheet);
+    stampSheet(s.k, s.fills);
+  }
+  phase = 'in-folder';
+  amt = 0;
+}
+
+/** DEPLOY (stage 2 — fired by ledger.ts only after the fold settles): record each sheet's
+ *  in-folder HOME pose, reparent to the SCENE (world transform preserved — the same object,
+ *  no jump), register the read anchors, and start the lerp to the display pose. */
+export function deploySheets(at: THREE.Vector3): void {
+  if (phase !== 'in-folder') return;
+  anchor = at.clone();
+  for (const k of ['pnl', 'balance'] as const) {
+    const sh = sheets[k];
+    if (!sh) continue;
+    sh.updateWorldMatrix(true, true);
+    const pos = new THREE.Vector3(), quat = new THREE.Quaternion(), scl = new THREE.Vector3();
+    sh.matrixWorld.decompose(pos, quat, scl);
+    homePose[k] = { pos, quat, scale: scl };
+    scene.attach(sh); // REPARENT — the object keeps its world transform
+    focusGroups[focusId(k)] = sh; // FOCUSABLE while deployed — the read-ladder targets it
+  }
+  phase = 'deploying';
+  amt = 0;
+  selected = 'pnl';
+  setLastFocus(focusId('pnl'));
+}
+
+/** RETRACT: leave read if reading a sheet, then lerp each sheet BACK to its recorded home
+ *  pose; at arrival they are folder.attach-ed again (the same objects, back inside). */
+export function retractSheets(): void {
+  if (phase === 'in-folder') return;
+  if (getMode() === 'read' && readState().focus.startsWith('ledger-')) sceneView();
+  phase = 'returning';
   setLastFocus('table');
 }
 
-/** enter READ mode of the SELECTED report's page — the zoom-to-read fit-to-frame (the
- *  "stuck zoomed" fix: readView fits ALL bbox corners inside the frustum). */
+/** a sheet's DISPLAY pose target. */
+function displayPose(k: PageKind): Pose {
+  return {
+    pos: new THREE.Vector3(anchor.x + (k === 'pnl' ? -GAP : GAP), anchor.y, anchor.z),
+    quat: UP_QUAT.clone(),
+    scale: new THREE.Vector3(DISPLAY_SCALE, DISPLAY_SCALE, DISPLAY_SCALE),
+  };
+}
+
+/** the per-frame step — the deploy/return lerp between the HOME and DISPLAY poses. */
+export function tickSpread(): void {
+  if (phase === 'deploying' || phase === 'returning') {
+    amt = phase === 'deploying' ? Math.min(1, amt + (1 - amt) * 0.16 + 0.02) : Math.max(0, amt - (amt * 0.16 + 0.02));
+    const e = ease(amt);
+    for (const k of ['pnl', 'balance'] as const) {
+      const sh = sheets[k], home = homePose[k];
+      if (!sh || !home) continue;
+      const disp = displayPose(k);
+      sh.position.lerpVectors(home.pos, disp.pos, e);
+      sh.quaternion.slerpQuaternions(home.quat, disp.quat, e);
+      sh.scale.lerpVectors(home.scale, disp.scale, e);
+    }
+    if (phase === 'deploying' && amt >= 0.999) { amt = 1; phase = 'displayed'; }
+    if (phase === 'returning' && amt <= 0.001) {
+      amt = 0;
+      for (const k of ['pnl', 'balance'] as const) {
+        const sh = sheets[k], home = homePose[k];
+        if (!sh || !home) continue;
+        sh.position.copy(home.pos); sh.quaternion.copy(home.quat); sh.scale.copy(home.scale);
+        if (folderGrp) folderGrp.attach(sh); // BACK INSIDE — the same object, reparented home
+        delete focusGroups[focusId(k)];
+      }
+      phase = 'in-folder';
+    }
+  }
+}
+
+/** ANCHOR-PER-REPORT (SEALED by the owner): clicking a deployed sheet selects it and zooms
+ *  smoothly into its reading view. */
+export function anchorPage(k: PageKind): void {
+  if (phase !== 'displayed') return; // only settled sheets are read targets (K7-P D9)
+  selected = k;
+  setLastFocus(focusId(k));
+  readView(focusId(k));
+}
+
+/** enter READ of the selected sheet (the gate's zoom-to-read primitive, kept). */
 export function readSelected(): void {
-  if (!open) return;
+  if (phase !== 'displayed') return;
   setLastFocus(focusId(selected));
   readView(focusId(selected));
 }
 
-// ── the per-frame step: advance the OPEN animation, then detect a LEFT/RIGHT pan gesture in
-// read mode and glide the read focus to the OTHER page (a smooth switch). ──
-export function tickSpread(): void {
-  if (!open) return;
-  if (openAmt < 1) {
-    openAmt = Math.min(1, openAmt + (1 - openAmt) * 0.16 + 0.02); // ease-out to settle (~15 frames)
-    applyOpenPose(openAmt);
-  }
-  // the SWITCH: only when settled AND at rest (gliding() guards against mid-glide oscillation —
-  // after a switch the look glides to the new page centre, so the offset falls back under T).
-  if (openAmt < 1 || getMode() !== 'read' || gliding()) return;
-  const rs = readState();
-  const lookX = lookAtPoint().x;
-  if (rs.focus === focusId('pnl') && pnlPage && lookX > pnlPage.position.x + SWITCH_T) {
-    selected = 'balance'; setLastFocus(focusId('balance')); readView(focusId('balance')); // pan RIGHT → Balance
-  } else if (rs.focus === focusId('balance') && balPage && lookX < balPage.position.x - SWITCH_T) {
-    selected = 'pnl'; setLastFocus(focusId('pnl')); readView(focusId('pnl')); // pan LEFT → P&L
-  }
-}
-
 // ── the __GAME3D__ gate surfaces (VG8n; STATE/geometry, never pixels — I-57c) ──
-export const spreadOpen = (): boolean => open;
-export const spreadSettled = (): boolean => open && openAmt >= 0.999;
+export const spreadSettled = (): boolean => phase === 'displayed';
+export const sheetsHome = (): boolean => phase === 'in-folder';
 export const selectedReport = (): PageKind => selected;
 
-/** the two pages: id · kind · world-x (the gate asserts LEFT P&L world-x < RIGHT Balance) ·
- *  focusable (registered so the camera read-ladder can target it). */
-export const spreadPages = (): { id: string; kind: PageKind; worldX: number; focusable: boolean }[] => {
-  const out: { id: string; kind: PageKind; worldX: number; focusable: boolean }[] = [];
+/** THE THREE-OBJECTS ORACLE: each sheet's uuid + parentage ('folder' | 'scene'). The gate
+ *  asserts the SAME uuids walk folder → scene → folder across the whole open/close cycle —
+ *  a faked animation (rebuilt or swapped pages) cannot pass. */
+export const sheetIds = (): { kind: PageKind; uuid: string; parent: 'folder' | 'scene' | 'other' }[] => {
+  const out: { kind: PageKind; uuid: string; parent: 'folder' | 'scene' | 'other' }[] = [];
   for (const k of ['pnl', 'balance'] as const) {
-    const p = k === 'pnl' ? pnlPage : balPage;
-    if (!p) continue;
-    const x = new THREE.Box3().setFromObject(p).getCenter(new THREE.Vector3()).x;
-    out.push({ id: focusId(k), kind: k, worldX: x, focusable: focusGroups[focusId(k)] !== undefined });
+    const sh = sheets[k];
+    if (!sh) continue;
+    out.push({ kind: k, uuid: sh.uuid, parent: sh.parent === folderGrp ? 'folder' : sh.parent === scene ? 'scene' : 'other' });
   }
   return out;
 };
 
-/** a page's rendered stamped rows, keyed by region id (the "renders real content, not blank"
- *  oracle — every region's renderedLines from the layoutFace stamp). Null when closed. */
+/** each sheet's world bbox (the form/peek oracle's raw geometry). */
+export const sheetBBoxes = (): { kind: PageKind; minX: number; maxX: number }[] => {
+  const out: { kind: PageKind; minX: number; maxX: number }[] = [];
+  for (const k of ['pnl', 'balance'] as const) {
+    const sh = sheets[k];
+    if (!sh) continue;
+    const b = new THREE.Box3().setFromObject(sh);
+    out.push({ kind: k, minX: b.min.x, maxX: b.max.x });
+  }
+  return out;
+};
+
+/** the two sheets: id · kind · world-x/y · focusable (registered while deployed). */
+export const spreadPages = (): { id: string; kind: PageKind; worldX: number; worldY: number; focusable: boolean }[] => {
+  const out: { id: string; kind: PageKind; worldX: number; worldY: number; focusable: boolean }[] = [];
+  for (const k of ['pnl', 'balance'] as const) {
+    const sh = sheets[k];
+    if (!sh) continue;
+    const c = new THREE.Box3().setFromObject(sh).getCenter(new THREE.Vector3());
+    out.push({ id: focusId(k), kind: k, worldX: c.x, worldY: c.y, focusable: focusGroups[focusId(k)] !== undefined });
+  }
+  return out;
+};
+
+/** a sheet's rendered stamped rows, keyed by region id (the non-blank/fidelity oracle). */
 export const pageContent = (k: PageKind): Record<string, readonly string[]> | null => {
   const face = faces[k];
   if (!face) return null;
@@ -161,14 +236,14 @@ export const pageContent = (k: PageKind): Record<string, readonly string[]> | nu
   return rows;
 };
 
-/** the OPAQUE state across BOTH pages (I-70 equivalent): min opacity 1 AND every face in the
- *  opaque pass (transparent === false) — the page is not see-through. Null when closed. */
+/** the OPAQUE state across BOTH sheets (I-70): min opacity 1 AND every face in the opaque
+ *  pass — not see-through. Null when no sheets exist. */
 export const spreadOpaque = (): { opaque: boolean; minOpacity: number; opaquePass: boolean } | null => {
-  if (!open) return null;
+  if (!sheets.pnl && !sheets.balance) return null;
   let minOpacity = 1;
   let opaquePass = true;
-  for (const p of [pnlPage, balPage]) {
-    p?.traverse((o: THREE.Object3D) => {
+  for (const k of ['pnl', 'balance'] as const) {
+    sheets[k]?.traverse((o: THREE.Object3D) => {
       const mat = (o as THREE.Mesh).material as (THREE.Material & { opacity: number; transparent: boolean }) | undefined;
       if (mat && 'opacity' in mat) {
         minOpacity = Math.min(minOpacity, mat.opacity);
