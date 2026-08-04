@@ -239,6 +239,18 @@ export const table: Component = {
       discardTweenTrace: dplay.discardTweenTrace, // G-1 (I-101): M6's motion teeth
       discardReturnTrace: dplay.discardReturnTrace, // G-1 (I-101): M8's glide teeth
       orphanGrabMeshes: () => ({ phase: draw.drawPhaseState(), count: oracles.orphanGrabMeshCount(cx!) }),
+      // S-1b (I-104): these five were DROPPED by the S-1 extraction surgery — the full
+      // battery caught it at VG8j:81 (`onionState is not a function`). Restored verbatim.
+      /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */
+      cardFamily: (id: string) => CARD_FAMILY[id] ?? 'discard',
+      partitionView: () => {
+        const v = cx!.projection();
+        const p = partition(v.ownDiscard);
+        return { global: p.global, session: p.session, pile: p.pile, total: v.ownDiscard.length };
+      },
+      onionState: onion.onionState,
+      onionRegions: onion.onionRegions,
+      forceFlipMismatch: draw.setForceFlipMismatch,
       stackInfo: (rid: string) => oracles.stackInfoOf(cx!, rid, fidget[rid] ?? 0),
       regionScreenXY: (rid: string) => oracles.regionScreenXYOf(cx!, rid),
     };
