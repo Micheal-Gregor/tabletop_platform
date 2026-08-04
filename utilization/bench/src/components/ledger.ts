@@ -26,11 +26,19 @@ export const ledgerComponent: Component = {
 
   build(ctx) {
     cx = ctx;
-    // A10/P-2c: the LEDGER — the closed FOLDER flat in front of the VIEWING seat's board
-    // (seat-0, near row +z), holding its TWO PERSISTENT SHEET OBJECTS (built from the live
-    // projection — the three-objects law, I-86). Registered under focusGroups['ledger'].
+    // A10/P-2c: the LEDGER — the closed FOLDER flat at the LEFT EDGE of the seat play
+    // area (Q-3/I-93, discharging I-84(5a)): position DERIVED from the live seat-0 board
+    // bbox (the K-D pattern, no magic point), holding its TWO PERSISTENT SHEET OBJECTS
+    // (the three-objects law, I-86). Registered under focusGroups['ledger'].
     const book = ledger.ledgerBook(ctx.viewSeat, ctx.projection());
-    book.position.set(-420, 2, 560);
+    const board = ctx.theater.focusObject('seat-0');
+    if (board) {
+      board.updateWorldMatrix(true, true);
+      const bb = new THREE.Box3().setFromObject(board);
+      book.position.set(bb.min.x - 95, 2, bb.getCenter(new THREE.Vector3()).z + 130); // left of the board, in front
+    } else {
+      book.position.set(-420, 2, 560); // defensive fallback (caught by the left-edge gate)
+    }
     bookRoot = book;
     return book;
   },
@@ -108,6 +116,14 @@ export const ledgerComponent: Component = {
       ledgerFolderForm: ledger.ledgerFolderForm,
       /** the FOLDER's world-top y — the RISE oracle (the pages must stand ABOVE it). */
       ledgerFolderY: () => (bookRoot ? new THREE.Box3().setFromObject(bookRoot).max.y : null),
+      /** Q-3 (I-93): the LEFT-EDGE oracle — folder centre-x vs the live seat-0 board. */
+      ledgerLeftOfBoard: () => {
+        const board = cx!.theater.focusObject('seat-0');
+        if (!bookRoot || !board) return null;
+        const fx = new THREE.Box3().setFromObject(bookRoot).getCenter(new THREE.Vector3()).x;
+        const bminx = new THREE.Box3().setFromObject(board).min.x;
+        return { folderX: fx, boardMinX: bminx, left: fx < bminx };
+      },
       /** a standing page's world bbox width/height — the PORTRAIT (report-sized) oracle. */
       ledgerPageBBox: (kind: 'pnl' | 'balance') => {
         const p = ledger.spreadPages().find((x) => x.kind === kind);

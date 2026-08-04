@@ -1,0 +1,60 @@
+// VG8p — Q-3 (I-93; kill-first): THE SEAT PLAY AREA. Each seat's CREW as a count-true row
+// IN FRONT of its board (from the I-93 public view.crew projection field — R-19 honored);
+// the viewer's assets at the row's right end (unattached until the attach verbs land,
+// I-82f); GRAB + RESET (contract v2) — a real drag moves a crew card, release glides it
+// BACK to its anchor, state invariant; the ledger folder sits at the LEFT EDGE of the
+// seat area (derived from the live board bbox — I-84(5a) discharged). STATE/geometry,
+// never pixels (I-57c); waits on STATE, never clocks (I-60f). SELF-SEEDING.
+export const suite = '3d';
+export const id = 'VG8p';
+
+export async function run(h) {
+  const { page, check, gotoStage, hashes } = h;
+  const G = (fn, ...a) => page.evaluate(fn, ...a);
+
+  await gotoStage('game3d.html');
+  await G(() => window.__GAME3D__.glideTo('overview'));
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+
+  // crew-rows-true: per seat, rendered crew cards ≡ the projection's crew by outfit
+  // (genesis: exactly one per shop, six seats) AND the row sits BETWEEN board and table.
+  const rows = await G(() => window.__GAME3D__.crewRows());
+  const rowsOk = Array.isArray(rows) && rows.length === 6
+    && rows.every((r) => r.want === r.got && r.want === 1 && r.inFront);
+  check('VG8p/crew-rows-true', rowsOk,
+    `${rows?.length} seats · ${rows?.map((r) => `${r.seat}:${r.got}/${r.want}${r.inFront ? '' : '·NOT-IN-FRONT'}`).join(' ')}`);
+
+  // assets-count-true: rendered ≡ the viewer's projection assets (genesis 0 — the count
+  // law binds now; content arrives when new-van resolves. The zero-state re-kill trigger
+  // is carried on I-93, the I-76 precedent.)
+  const ac = await G(() => window.__GAME3D__.assetsCount());
+  check('VG8p/assets-count-true', !!ac && ac.want === ac.got,
+    `viewer assets rendered ${ac?.got} ≡ projection ${ac?.want}`);
+
+  // seatplay-grab-reset: a REAL ~100-px drag on moe's crew card moves it off its anchor;
+  // release → the reset glide returns it (Δ<5), rowHash/moveCount INVARIANT (pure theater).
+  const hm0 = await hashes();
+  const xy = await G(() => window.__GAME3D__.seatPlayCardXY('crew:crew-moe'));
+  let resetOk = false, resetDetail = 'NO-CARD-XY';
+  if (xy) {
+    await page.mouse.move(xy.x, xy.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 5; i++) await page.mouse.move(xy.x + i * 24, xy.y - i * 12);
+    await page.mouse.up();
+    await page.waitForFunction(() => { const s = window.__GAME3D__.seatPlayGrabState(); return !s.grabbing && !s.resetting; }, null, { timeout: 60000 }).catch(() => {});
+    const st = await G(() => window.__GAME3D__.seatPlayGrabState());
+    const pos = await G(() => window.__GAME3D__.seatPlayCardPos('crew:crew-moe'));
+    const hm1 = await hashes();
+    const back = pos && Math.hypot(pos.x - pos.ax, pos.y - pos.ay, pos.z - pos.az) < 5;
+    const invariant = hm1.m === hm0.m && hm1.h === hm0.h;
+    resetOk = !!(st?.lastReset && st.lastReset.moved > 40 && st.lastReset.returned && back && invariant);
+    resetDetail = `dragged ${st?.lastReset?.moved?.toFixed?.(0)}u · returned:${st?.lastReset?.returned} · at-anchor:${back} · state-invariant:${invariant}`;
+  }
+  check('VG8p/seatplay-grab-reset', resetOk, resetDetail);
+
+  // ledger-left-edge: the folder sits LEFT of the seat-0 board (derived, not the old
+  // magic point). Kill: restore (-420,2,560) → centre-x ≥ board min-x → false.
+  const leftOk = await G(() => window.__GAME3D__.ledgerLeftOfBoard());
+  check('VG8p/ledger-left-edge', !!leftOk && leftOk.left === true,
+    `folder centre-x ${leftOk?.folderX?.toFixed?.(0)} < seat-0 board min-x ${leftOk?.boardMinX?.toFixed?.(0)} : ${leftOk?.left}`);
+}

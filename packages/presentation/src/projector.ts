@@ -41,6 +41,10 @@ export interface SeatView {
   readonly receivables: readonly { readonly holder: string; readonly amount: number; readonly source: string }[];
   readonly results: unknown;
   readonly ownDiscard: readonly string[];
+  /** Q-3 (I-93): the CREW — public state (every player sees every shop's staff, the v1
+   *  board's own truth); the 3D bench's tradespeople rows render from THIS field only
+   *  (R-19: no render read outside the projector). Additive. */
+  readonly crew: readonly { readonly id: string; readonly outfit: string }[];
 }
 
 /** HK-10 — before render read: the object MUST be a branded projection. */
@@ -78,6 +82,7 @@ export function project(state: State, seat: string): SeatView {
     receivables: (state['receivables'] as SeatView['receivables']) ?? [],
     results: state['results'] ?? null,
     ownDiscard: decksRaw[seat]?.discard ?? [],
+    crew: (state['crew'] as SeatView['crew']) ?? [], // Q-3 (I-93): public crew, additive
   };
   return freezeDeep(structuredClone(view) as never) as unknown as SeatView;
 }
