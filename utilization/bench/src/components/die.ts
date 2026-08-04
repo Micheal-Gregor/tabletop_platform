@@ -29,6 +29,16 @@ let cx: PlayAreaContext | null = null;
  *  SAME object buildScene places — components/box.ts reads it the same way). This is the
  *  WHOLE table area the die is free to tumble across (K-E, I-81), NOT the tiny 'dice'
  *  sub-region and NOT a magic square — the caged-die fix. */
+/** the pointer's point on the TABLE plane — THE one frame every grab sample uses (I-117). */
+function diePlanePoint(ctx: PlayAreaContext, clientX: number, clientY: number, topY: number): THREE.Vector3 | null {
+  const r = ctx.renderer.domElement.getBoundingClientRect();
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1), ctx.camera);
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -topY);
+  const p = new THREE.Vector3();
+  return ray.ray.intersectPlane(plane, p) ? p : null;
+}
+
 function tableRect(ctx: PlayAreaContext): TableRect | null {
   const t = ctx.theater.focusObject('table');
   if (!t) return null;
@@ -93,20 +103,22 @@ export const die: Component = {
   // R-1a (I-109) — GRAB-FLICK (contract v3): the die claims from idle; kinematic follow
   // on the table plane; a real flick → a LIVE sim (pure fidget theater, no reconcile);
   // a motionless release FALLS THROUGH so a plain click still rolls (the VG8m drives).
-  onGrabStart(_ctx, hit: PickInfo) {
+  onGrabStart(ctx, hit: PickInfo) {
     if (!hit.tags['die']) return false;
-    // I-115/M4: the raycast intersection IS the pointer's world point — one frame, real travel.
-    return dieGrabStart(hit.point.x, hit.point.z);
+    // I-117 (fixing I-115/M4's INCOMPLETE fix — the gate caught it twice): the seed must
+    // come from THE SAME PLANE the moves sample. hit.point sits on the die's TOP SURFACE
+    // (45u up); the moves sample the TABLE plane — the same pixel maps 26–54u apart
+    // between those planes, so one jitter move read as a huge "travel" and every jittery
+    // click became a micro-flick. One plane, one frame, for the seed AND every move.
+    const rect = dieTableRect();
+    const p = rect ? diePlanePoint(ctx, hit.event.clientX, hit.event.clientY, rect.topY) : null;
+    return dieGrabStart(p ? p.x : hit.point.x, p ? p.z : hit.point.z);
   },
   onGrabMove(ctx, ev: PointerEvent) {
     const rect = dieTableRect();
     if (!rect) return;
-    const r = ctx.renderer.domElement.getBoundingClientRect();
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -rect.topY);
-    const p = new THREE.Vector3();
-    if (ray.ray.intersectPlane(plane, p)) dieGrabMove(p.x, p.z);
+    const p = diePlanePoint(ctx, ev.clientX, ev.clientY, rect.topY);
+    if (p) dieGrabMove(p.x, p.z);
   },
   onGrabEnd(ctx, _ev: PointerEvent) {
     const flicked = dieGrabEnd();
