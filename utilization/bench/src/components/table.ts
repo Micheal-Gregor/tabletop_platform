@@ -3,17 +3,18 @@
  * (surfaces.layoutFace, stacks.cardStack/cardBack) and the EXISTING onion.ts reading
  * board UNCHANGED, delegating; owns the engine-bound table face (fills stamped from the
  * projection), the count-true deck/discard stacks, the deck/discard FIDGET, and the
- * DRAW-THEATER cluster (doDraw → flight → onion-open) lifted verbatim from the spine.
+ * DRAW-THEATER cluster — Q-2 (I-90): doDraw → FLIP AT THE PILE → onion DISPLAYS (no
+ * flight) → on close the same card ROUTES to its destination (engine truth).
  *
  * Placement: free{surface:'ground'} — the table is the root surface others bind to
  * (K-A inert metadata; the current geometry is preserved).
  */
 import * as THREE from 'three';
-import { beginFlourish, completeFlourish } from '@tabletop/presentation';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
-import { layoutFace, fortuneFaceTexture } from '../surfaces.js';
-import { cardBack, cardStack } from '../stacks.js';
+import { layoutFace } from '../surfaces.js';
+import { cardStack } from '../stacks.js';
 import * as onion from '../onion.js';
+import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
@@ -23,30 +24,8 @@ let cx: PlayAreaContext | null = null;
 // ── FIDGET (I-67e): PURE THEATER — seeded offsets, meshes only, never state ──
 const fidget: Record<string, number> = { deck: 0, discard: 0 };
 
-// ── DRAW THEATER (I-67c): the verb through the same doors; HK-11 at flight end ──
-let drawPhase: 'idle' | 'flying' | 'reading' = 'idle';
-let flight: { mesh: THREE.Mesh; from: THREE.Vector3; t: number; inst: ReturnType<typeof beginFlourish>; seeded: string; flipped: boolean } | null = null;
-let forceMismatch = false; // the committed forced-mismatch drill (VG7d precedent) — one-shot
-
-function doDraw(ctx: PlayAreaContext): void {
-  if (drawPhase !== 'idle') { ctx.status('the draw is already in the air — one theater at a time (I-67c)'); return; } // K7-A2 D1
-  const before = ctx.projection();
-  const active = before.seats[before.turn.seatIdx]!.id;
-  if (!ctx.submit('draw', { deck: active })) return;
-  const after = ctx.projection();
-  const seeded = after.decks[active]?.discardTop ?? '(none)';
-  const inst = beginFlourish('card-flip', seeded, '♪ card flip');
-  const deckObj = ctx.theater.focusObject('table:deck');
-  const from = deckObj ? new THREE.Box3().setFromObject(deckObj).getCenter(new THREE.Vector3()) : new THREE.Vector3(0, 10, 0);
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(52, 78), new THREE.MeshBasicMaterial({ map: cardBack() }));
-  m.position.copy(from);
-  m.rotation.x = -Math.PI / 2;
-  ctx.scene.add(m);
-  flight = { mesh: m, from, t: 0, inst, seeded, flipped: false };
-  drawPhase = 'flying';
-  ctx.rebuild(); // I-67a/g: the deck is already one card shorter — the geometry is the count
-  ctx.status(`${active} draws — ♪ card flip`);
-}
+// ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
+// size-gate extraction). This adapter delegates: grab/flick/flip/onion/route. ──
 
 export const table: Component = {
   id: 'table',
@@ -88,11 +67,23 @@ export const table: Component = {
     return t;
   },
 
-  // Phase 0: ANY click closes the open reading board; consumed (I-67b)
+  // Phase 0: ANY click closes the open reading board; consumed (I-67b). Q-2 (I-90): the
+  // close starts the ROUTE — the same card travels to its destination, then idle.
   consumeClick(ctx) {
-    if (onion.onionState().open) { onion.closeOnion(); drawPhase = 'idle'; ctx.status('reading board closed'); return true; }
+    if (onion.onionState().open) {
+      onion.closeOnion();
+      draw.startRoute(ctx);
+      ctx.status('reading board closed — the card routes to the discard');
+      return true;
+    }
     return false;
   },
+
+  // CONTRACT v2 (Q-2b, I-91): the GRAB protocol — the deck's top card grabs on the
+  // viewer's turn; flick past the threshold to draw, too soft settles back face down.
+  onGrabStart(ctx, hit: PickInfo) { return draw.grabStart(ctx, hit); },
+  onGrabMove(ctx, ev: PointerEvent) { draw.grabMove(ctx, ev); },
+  onGrabEnd(ctx, ev: PointerEvent) { return draw.grabEnd(ctx, ev); },
 
   // Phase 2: the felt → table; a region click anchors that region (I-66d); a deck click
   // fires the draw on the VIEWER'S turn, else steps the deck fidget; discard clicks step
@@ -104,7 +95,10 @@ export const table: Component = {
     if (region) { ctx.theater.setLastFocus(`table:${region}`); ctx.status(`anchored: ${region} — zoom in for its read view`); }
     if (region === 'deck') {
       const v = ctx.projection();
-      if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { doDraw(ctx); }
+      // Q-2b (I-91): a plain CLICK no longer draws — the flick gesture is the draw. The
+      // grab protocol consumed any viewer-turn tap as the nudge; reaching here on the
+      // viewer's turn means an edge case (e.g. read-mode entry) — hint, don't act.
+      if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('grab the top card and FLICK to flip it'); }
       else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
     } else if (region === 'discard') {
       fidget['discard'] = ((fidget['discard'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`discard fidget → ${['neat', 'peek', 'spread five'][fidget['discard']]}`);
@@ -112,41 +106,9 @@ export const table: Component = {
     return true;
   },
 
-  // the DRAW FLIGHT (I-67c): deck → camera, flipping at the midpoint; HK-11 at the end
-  tick(ctx) {
-    if (!flight) return;
-    flight.t = Math.min(1, flight.t + 0.03);
-    const pT = flight.t;
-    const ease = pT * pT * (3 - 2 * pT);
-    const cam = ctx.camera;
-    const dest = cam.position.clone().add(cam.getWorldDirection(new THREE.Vector3()).multiplyScalar(140));
-    flight.mesh.position.lerpVectors(flight.from, dest, ease);
-    const faceCam = cam.quaternion.clone();
-    const flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
-    flight.mesh.quaternion.slerpQuaternions(flat, faceCam, ease);
-    flight.mesh.rotateY(Math.PI * (1 - ease)); // the flip on top of the turn-to-camera
-    if (pT >= 0.5 && !flight.flipped) {
-      flight.flipped = true; // the midpoint face-swap: the classic flip trick
-      const displayed = forceMismatch ? 'WRONG-CARD' : flight.seeded;
-      (flight.mesh.material as THREE.Material).dispose();
-      // A3 (I-69): the flip reveals a FORTUNE face, not bare text; `displayed` may be the
-      // drill's lie — the flying card shows it, the reading board then shows the truth.
-      flight.mesh.material = new THREE.MeshBasicMaterial({ map: fortuneFaceTexture(displayed) });
-    }
-    if (pT >= 1) {
-      const displayed = forceMismatch ? 'WRONG-CARD' : flight.seeded;
-      const verdict = completeFlourish(flight.inst, displayed); // HK-11 — truth wins (R-20)
-      onion.setOnionVerdict({ mismatch: verdict.mismatch !== null, displayed, seeded: flight.seeded });
-      // A3 (I-69): the reading board opens on the fortune anatomy of the TRUTH-WINS card
-      // (verdict.result is the seeded id even when displayed lied — R-20).
-      onion.openOnion(verdict.result, verdict.mismatch !== null);
-      if (verdict.mismatch) ctx.status('⚑ theater mismatch — truth wins (R-20)');
-      ctx.scene.remove(flight.mesh);
-      flight = null;
-      forceMismatch = false; // the drill is one-shot
-      drawPhase = 'reading';
-    }
-  },
+  // Q-2b (I-91): the whole draw step — momentum flip → onion display · settle-back ·
+  // route — lives in table-draw.ts; delegate.
+  tick(ctx) { draw.tickDraw(ctx); },
 
   gate() {
     const ctx = cx!;
@@ -162,10 +124,15 @@ export const table: Component = {
         return out;
       },
       /** the current draw phase (gates WAIT ON STATE — I-67), the onion, the drill, the stacks */
-      drawPhase: () => drawPhase,
+      drawPhase: draw.drawPhaseState,
+      /** Q-2/Q-2b oracles: the theater card's live position vs the deck (flip-not-fly),
+       *  the completed route record, and the last GESTURE verdict (flicked | weak). */
+      drawTheater: () => draw.drawTheaterInfo(cx!),
+      lastRoute: draw.lastRoute,
+      drawGesture: draw.drawGesture,
       onionState: onion.onionState,
       onionRegions: onion.onionRegions,
-      forceFlipMismatch: (v: boolean) => { forceMismatch = v; },
+      forceFlipMismatch: draw.setForceFlipMismatch,
       stackInfo: (rid: string) => {
         const grp = ctx.theater.focusObject(`table:${rid}`);
         if (!grp) return null;

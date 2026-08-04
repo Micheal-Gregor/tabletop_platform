@@ -60,21 +60,64 @@ export async function run(h) {
         `${arrDetail} · tradespeople-pile:${tp?.count} equipment-pile:${eq?.count} (want 6·6 staged exhibits)`);
     }
 
-    // THE DRAW — a REAL click on the deck; the gate then WAITS ON STATE (drawPhase)
+    // draw-weak-flick (Q-2b, I-91 — the owner's "if the card isn't flicked hard enough,
+    // it just stays face down on the pile"): a SLOW 6-px drag on the deck grabs the top
+    // card but does NOT draw — verdict 'weak', deck count + rowHash + moveCount invariant,
+    // no onion. The slow waits SHAPE the input (gesture definition); every ASSERTION still
+    // waits on STATE (I-60f). Kill: threshold 0 → every touch draws → false.
+    {
+      const hmW = await hashes();
+      const wxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+      await page.mouse.move(wxy.x, wxy.y);
+      await page.mouse.down();
+      await page.mouse.move(wxy.x + 3, wxy.y - 2);
+      await page.waitForTimeout(400); // input shape: a lazy drag
+      await page.mouse.move(wxy.x + 6, wxy.y - 4);
+      await page.mouse.up();
+      await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+      const g0 = await page.evaluate(() => window.__GAME3D__.drawGesture());
+      const dW = await info('deck');
+      const hmW1 = await hashes();
+      const onionW = await page.evaluate(() => window.__GAME3D__.onionState().open);
+      const weakOk = !!g0 && g0.verdict === 'weak' && g0.velocity < g0.threshold
+        && dW.count === 36 && hmW1.m === hmW.m && hmW1.h === hmW.h && onionW === false;
+      check('VG8j/draw-weak-flick', weakOk,
+        `verdict:${g0?.verdict} (v ${g0?.velocity?.toFixed?.(3)} < T ${g0?.threshold}) · deck:${dW?.count} (still 36) · moves/hash invariant:${hmW1.m === hmW.m && hmW1.h === hmW.h} · onion stayed closed:${onionW === false} — the card settled back face down, NO draw`);
+    }
+
+    // THE DRAW — Q-2b (I-91): a REAL GRAB + FLICK on the deck's top card (down → fast
+    // moves → up; velocity far above the threshold); the gate then WAITS ON STATE.
     const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
-    await page.mouse.click(dxy.x, dxy.y);
+    await page.mouse.move(dxy.x, dxy.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 4; i++) await page.mouse.move(dxy.x + i * 12, dxy.y - i * 10);
+    await page.mouse.up();
     // K7-A2 D1 (re-cut at D7): a SECOND deck click lands GENUINELY mid-flight — wait on
     // STATE (drawPhase left 'idle') PLUS one rendered frame (matrixWorld fresh), never
     // clocks (I-60f), so the second raycast really hits the deck. One theater at a time:
     // the second click must change NOTHING (exactly one draw: moves +1, deck −1, one onion).
     await page.waitForFunction(() => window.__GAME3D__.drawPhase() !== 'idle', null, { timeout: 60000 }).catch(() => {});
+    // draw-flip-not-fly (Q-2, I-90 — the owner's "it just displays the card"): DURING the
+    // pre-reading theater the flip card sits AT THE DECK (a small in-place lift), never
+    // traveling toward the camera. Kill: restore the flight destination → distance grows
+    // to hundreds of world units → false.
+    const th = await page.evaluate(() => window.__GAME3D__.drawTheater());
+    let flipAtPile = false, flipDetail = 'NO-THEATER (missed the flip window)';
+    if (th && th.card && th.deck) {
+      const d = Math.hypot(th.card.x - th.deck.x, th.card.y - th.deck.y, th.card.z - th.deck.z);
+      flipAtPile = d < 40;
+      flipDetail = `phase ${th.phase} · |card−deck| ${d.toFixed(1)} (<40 — flipping IN PLACE, no flight)`;
+    }
+    check('VG8j/draw-flip-not-fly', flipAtPile, flipDetail);
+    // one theater at a time (K7-A2 D1 carried into Q-2b): a second interaction mid-flip
+    // changes NOTHING (the grab guard refuses; clicks no longer draw) — exactly one draw.
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     await page.mouse.click(dxy.x, dxy.y);
     let flightDone = true;
     try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
     catch { flightDone = false; }
     if (!flightDone) {
-      check('VG8j/draw-theater-hk11', false, 'draw flight never reached the reading board (timeout)');
+      check('VG8j/draw-theater-hk11', false, 'the flip never reached the reading board (timeout)');
     } else {
       const o1 = await page.evaluate(() => window.__GAME3D__.onionState());
       const oa = await page.evaluate(() => window.__GAME3D__.onionRegions()); // A3/I-69: anatomy while the board is OPEN
@@ -85,6 +128,17 @@ export async function run(h) {
       // CONSUMED (no raycast beneath: no draw, no fidget, no re-anchor from this click)
       const dxyClose = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
       await page.mouse.click(dxyClose.x, dxyClose.y);
+      // Q-2 (I-90): the close starts the ROUTE — observe it (never a teleport), then wait
+      // on the cycle's END state (routing → idle; state, never clocks — I-60f).
+      let routeObserved = false;
+      try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'routing', null, { timeout: 8000 }); routeObserved = true; }
+      catch { routeObserved = (await page.evaluate(() => window.__GAME3D__.drawPhase())) === 'idle' && !!(await page.evaluate(() => window.__GAME3D__.lastRoute())); }
+      await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+      const routeRec = await page.evaluate(() => window.__GAME3D__.lastRoute());
+      const routeEndOk = !!routeRec && routeRec.dest === 'discard'
+        && Math.hypot(routeRec.endX - routeRec.targetX, routeRec.endY - routeRec.targetY, routeRec.endZ - routeRec.targetZ) < 20;
+      check('VG8j/route-to-discard', routeObserved && routeEndOk,
+        `route-observed:${routeObserved} · dest:${routeRec?.dest} · end≈target:${routeEndOk} — the card TRAVELS to the discard (no teleport)`);
       const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase(), z: window.__GAME3D__.zoomState() }));
       const hmClose = await hashes();
       const dClose = await info('deck');

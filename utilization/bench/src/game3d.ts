@@ -130,16 +130,35 @@ function endTurn(): void {
 // overlay, then (past the guard) raycasts nearest→far. EXACTLY today's control flow. ──
 let dragFrom: { x: number; y: number } | null = null;
 let dragMoved = false;
+let grabber: (typeof COMPONENTS)[number] | null = null; // CONTRACT v2 (I-91): the grab claimant
 const ray = new THREE.Raycaster();
-renderer.domElement.addEventListener('pointerdown', (ev) => { dragFrom = { x: ev.clientX, y: ev.clientY }; dragMoved = false; });
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  dragFrom = { x: ev.clientX, y: ev.clientY }; dragMoved = false;
+  // THE GRAB PROTOCOL (I-91): scene mode only — raycast; the first onGrabStart=true claims
+  // the drag (camera pan/orbit suppressed until release). Read mode keeps its pan.
+  if (cam.getMode() !== 'read') {
+    const r0 = renderer.domElement.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((ev.clientX - r0.left) / r0.width) * 2 - 1, -((ev.clientY - r0.top) / r0.height) * 2 + 1), camera);
+    outer: for (const hit of ray.intersectObjects(scene.children, true)) {
+      const pick = computePick(hit, ev);
+      for (const c of COMPONENTS) if (c.onGrabStart?.(ctx, pick)) { grabber = c; break outer; }
+    }
+  }
+});
 renderer.domElement.addEventListener('pointermove', (ev) => {
   if (!dragFrom) return;
   const dx = ev.clientX - dragFrom.x, dy = ev.clientY - dragFrom.y;
   if (Math.abs(dx) + Math.abs(dy) > 4) dragMoved = true;
+  if (grabber) { grabber.onGrabMove?.(ctx, ev); return; } // the claimed drag — no camera pan
   if (cam.getMode() === 'read' && dragMoved) { cam.panBy(dx, dy); dragFrom = { x: ev.clientX, y: ev.clientY }; }
 });
 renderer.domElement.addEventListener('pointerup', (ev) => {
   const wasDrag = dragMoved; dragFrom = null; dragMoved = false;
+  if (grabber) { // the claimed gesture releases first (I-91)
+    const consumed = grabber.onGrabEnd?.(ctx, ev) ?? false;
+    grabber = null;
+    if (consumed) return;
+  }
   // Phase 0: consumeClick in registry order (overlay closes — round modal, onion, ledger)
   for (const c of COMPONENTS) if (c.consumeClick?.(ctx, ev)) return;
   // the drag/read guard stays BETWEEN Phase 0 and the raycast

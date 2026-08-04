@@ -89,6 +89,14 @@ export interface Component {
   consumeClick?(ctx: PlayAreaContext, ev: PointerEvent): boolean;
   /** Phase 2 — one raycast intersection, in registry order; return true to stop. */
   onPick?(ctx: PlayAreaContext, hit: PickInfo): boolean;
+  /** CONTRACT v2 (Q-2b, I-91) — THE GRAB PROTOCOL: pointerdown raycast (scene mode only),
+   *  in registry order; the FIRST component returning true CLAIMS the drag — the camera
+   *  pan/orbit is suppressed and moves/release route here until the pointer lifts. */
+  onGrabStart?(ctx: PlayAreaContext, hit: PickInfo): boolean;
+  /** pointer moves while this component holds the grab. */
+  onGrabMove?(ctx: PlayAreaContext, ev: PointerEvent): void;
+  /** the release; return true when the gesture CONSUMED the click (Phase 0/2 skipped). */
+  onGrabEnd?(ctx: PlayAreaContext, ev: PointerEvent): boolean;
   /** per-frame step, in registry order. */
   tick?(ctx: PlayAreaContext, t: number): void;
   /** the component's FLAT __GAME3D__ keys (merged via assignGate). */
