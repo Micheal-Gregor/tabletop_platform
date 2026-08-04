@@ -12,6 +12,9 @@
  */
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
+import { stationPos } from '../playarea.js'; // PA-2 (I-142)
+import { RING_N, SEATS } from '../stage.js';
+const SEATS_N = SEATS.length; // the box's slot index (the first prop slot)
 import { buildBox } from '../box.js';
 
 let cx: PlayAreaContext | null = null;
@@ -45,10 +48,12 @@ export const box: Component = {
     const bd = Math.sqrt((tb.area * 0.3) / 1.25);
     const bw = 1.25 * bd;
     const b = buildBox({ bw, bd });
-    // PLACEMENT — to the RIGHT of the whole table: the base LEFT edge sits a clear gap past
-    // the table's RIGHT edge (left edge = tb.rightX + gap). Aligned to the table's z-centre.
-    const gap = 170; // L-5b (I-132, owner: 'moved a little further away from the table top') — was 50
-    b.position.set(tb.rightX + gap + bw / 2, 0, tb.centerZ);
+    // PA-2 (I-142, owner-ruled — superseding the beside-the-table placement): the box
+    // is a RING OCCUPANT — slot 6 (past seat-5), tangent like a board, yawed to its
+    // angle. The template's radius already clears the table; no gap constant survives.
+    const slot = stationPos(SEATS_N, RING_N);
+    b.position.set(slot.x, 0, slot.z);
+    b.rotation.y = slot.yaw;
     return b;
   },
 
@@ -113,6 +118,7 @@ export const box: Component = {
           distinct: baseObj !== null && lidObj !== null && baseObj !== lidObj,
           offBase,
           boxLeftX: baseB ? baseB.min.x : box3(boxGrp).min.x, // the box BASE's left edge
+          boxCenter: (() => { const bb = box3(boxGrp); return { x: (bb.min.x + bb.max.x) / 2, z: (bb.min.z + bb.max.z) / 2 }; })(), // PA-2: the ring-slot oracle
           boxRightX: baseB ? baseB.max.x : null,
           tableFound: tB !== null,
           tableRightX: tB ? tB.max.x : null,

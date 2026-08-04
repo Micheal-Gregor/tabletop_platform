@@ -30,11 +30,16 @@ export async function run(h) {
   check('VG8o/box-present', !!(bp && bp.present && bp.hasBase),
     bp && bp.present ? `box present · base:${bp.hasBase}` : 'NO BOX in the scene');
 
-  // box-right-of-table: the box's LEFT edge is beyond the TABLE's RIGHT edge (EDGES, not centres)
-  check('VG8o/box-right-of-table', !!(bp && bp.present && bp.tableFound && bp.boxLeftX > bp.tableRightX),
-    bp && bp.present && bp.tableFound
-      ? `box left-edge x ${bp.boxLeftX.toFixed(1)} > table right-edge x ${bp.tableRightX.toFixed(1)} (Δ ${(bp.boxLeftX - bp.tableRightX).toFixed(1)})`
-      : 'no box / no table bbox');
+  // PA-2 (I-142, superseding box-right-of-table): the box is a RING OCCUPANT — slot 6,
+  // its centre ON the template's circle (the same derivation the seats consume).
+  // KILL: restore the beside-the-table placement → centre ≉ slot → fails by name.
+  const slot6 = await G((n) => window.__GAME3D__.ringSlot(n), 6);
+  const boxOnRing = !!(bp && bp.present && bp.boxCenter && slot6
+    && Math.hypot(bp.boxCenter.x - slot6.x, bp.boxCenter.z - slot6.z) < 2);
+  check('VG8o/box-on-ring', boxOnRing,
+    bp && bp.boxCenter && slot6
+      ? `box centre (${bp.boxCenter.x.toFixed(0)},${bp.boxCenter.z.toFixed(0)}) ≡ ring slot 6 (${slot6.x.toFixed(0)},${slot6.z.toFixed(0)}) — the 7th occupant (I-142)`
+      : 'no box centre / no ring slot');
 
   // box-large-enough: the box footprint ≥ ¼ the table footprint (the table folds in four)
   check('VG8o/box-large-enough', !!(bp && bp.present && bp.boxArea !== null && bp.tableArea !== null && bp.boxArea >= bp.tableArea / 4),

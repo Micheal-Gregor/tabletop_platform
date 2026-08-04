@@ -9,7 +9,7 @@
  * overview pose is set on the shared camera, and the #stage wheel listener is attached.
  */
 import * as THREE from 'three';
-import { camera, focusGroups, presets, WORLD, status, SEAT_YAWS } from './stage.js';
+import { camera, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N } from './stage.js';
 import { stationLook } from './playarea.js'; // PA-1 (I-141)
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
@@ -26,7 +26,7 @@ const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } =>
   if (name.startsWith('seat-')) {
     const i = Number(name.slice(5));
     const yaw = SEAT_YAWS[i] ?? 0;
-    const lk = stationLook(i, SEAT_YAWS.length);
+    const lk = stationLook(i, RING_N); // PA-2: the occupant count
     const look = new THREE.Vector3(lk.x, 0, lk.z);
     return { pos: new THREE.Vector3(look.x + Math.sin(yaw) * d * 0.7, d * 0.72, look.z + Math.cos(yaw) * d * 0.7), look };
   }

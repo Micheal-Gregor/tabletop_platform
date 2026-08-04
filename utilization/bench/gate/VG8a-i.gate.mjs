@@ -274,7 +274,10 @@ export async function run(h) {
       }));
       const dirF = { x: f.look.x - f.pos.x, y: f.look.y - f.pos.y, z: f.look.z - f.pos.z };
       const lenF = Math.hypot(dirF.x, dirF.y, dirF.z);
-      const nF = { x: 0, y: Math.sin(0.25), z: -Math.cos(0.25) }; // the near normal flipped π about Y
+      // PA-2 (I-142): seat-4 rides the ring (no longer 180°) — the want normal DERIVES
+      // from its yaw: n = (sin·cos0.25, sin0.25, cos·cos0.25). The LAW is face-the-board.
+      const yaw4 = await page.evaluate(() => window.__GAME3D__.seatYawData(4));
+      const nF = { x: Math.sin(yaw4) * Math.cos(0.25), y: Math.sin(0.25), z: Math.cos(yaw4) * Math.cos(0.25) };
       const dotF = (dirF.x * nF.x + dirF.y * nF.y + dirF.z * nF.z) / lenF;
       const faceOnF = Math.abs(dotF + 1) < 1e-6;
       const fitF = f.corners && f.corners.every((c) => Math.abs(c.x) <= 1 && Math.abs(c.y) <= 1);

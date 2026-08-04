@@ -16,7 +16,10 @@ export const presets = focusPresets(SEATS.length, WORLD);
 // I-141 — the owner's ring law supersedes the corner special-case): equidistant seats,
 // seat-1 anchored near-mid, yaw = the seat's angle. Same consumers, one source.
 import { ringYaws } from './playarea.js';
-export const SEAT_YAWS: readonly number[] = ringYaws(SEATS.length);
+// PA-2 (I-142): the ring's OCCUPANTS = the seats + the GAME BOX (slot 6) — the
+// template's first prop. Every angle derives at 2π/RING_N; seat-1 stays anchored.
+export const RING_N = SEATS.length + 1;
+export const SEAT_YAWS: readonly number[] = ringYaws(RING_N).slice(0, SEATS.length);
 
 // ── scene from the PROJECTION ──
 export const scene = new THREE.Scene();

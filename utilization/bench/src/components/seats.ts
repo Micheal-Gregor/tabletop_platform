@@ -10,6 +10,7 @@ import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, panel } from '../surfaces.js';
 import { SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js';
 import { stationPos } from '../playarea.js'; // PA-1 (I-141): the radial template
+import { RING_N } from '../stage.js'; // PA-2 (I-142): seats + the box share the ring
 
 const SEATS = BOTY_PACK6.seats.map((s) => s.id);
 
@@ -53,7 +54,7 @@ export const seats: Component = {
       // PA-1 (I-141, the owner's RADIAL TEMPLATE — supersedes the L-5/L-5b corners):
       // every seat sits EQUIDISTANT on the ring around 0,0,0; the radius derives from
       // the stations' chord claim vs the table's clearance; yaw = the seat's angle.
-      const st = stationPos(i, SEATS.length);
+      const st = stationPos(i, RING_N);
       b.position.set(st.x, 130, st.z);
       b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), st.yaw)
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));

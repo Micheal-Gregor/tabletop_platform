@@ -18,8 +18,8 @@ import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { SeatView } from '@tabletop/presentation';
 import { emit, project } from '@tabletop/presentation';
 import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob } from '../../../packs/boty/src/index.js';
-import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS } from './stage.js';
-import { ringRadius, stationLook } from './playarea.js'; // PA-1 (I-141)
+import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS, RING_N } from './stage.js';
+import { ringRadius, stationLook, stationPos } from './playarea.js'; // PA-1/PA-2 (I-141/I-142)
 import * as cam from './camera.js';
 import type { PlayAreaContext, PickInfo } from './component.js';
 import { assignGate } from './component.js';
@@ -274,8 +274,10 @@ const gate: Record<string, unknown> = {
   // A16 (I-137): the pools' counts — the arrangement + hire/buy legs derive from these.
   poolCounts: () => projectNow().pools,
   // PA-1 (I-141): the ring template's surfaces — the seat-pose and glide laws derive.
-  ringInfo: () => ({ r: ringRadius(SEATS.length), n: SEATS.length }),
-  ringLook: (i: number) => stationLook(i, SEATS.length),
+  ringInfo: () => ({ r: ringRadius(RING_N), n: RING_N }),
+  ringLook: (i: number) => stationLook(i, RING_N),
+  ringSlot: (i: number) => stationPos(i, RING_N), // PA-2 (I-142): any occupant's slot
+
   viewData: () => {
     const v = projectNow();
     return { seats: v.seats.map((s) => ({ id: s.id, cash: s.cash })), round: v.turn.round, active: v.seats[v.turn.seatIdx]!.id };
