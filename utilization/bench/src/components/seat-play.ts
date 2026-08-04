@@ -13,6 +13,8 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { panelTexture } from '../surfaces.js';
+import { planSeatRows } from '../seat-rows.js'; // L-4 (I-131): the pure row planner
+import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 
 let cx: PlayAreaContext | null = null;
 let root: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
@@ -43,37 +45,83 @@ export const seatPlay: Component = {
     cards = [];
     const v = ctx.projection();
     const g = new THREE.Group();
+    // the viewer's LOCAL (session) cards — moved here from the table's in-play area by
+    // the I-131 seat-front ruling ('if a local card is drawn, it is added as a bottom
+    // row'); ownDiscard is the VIEWER'S, so the bottom row is the VIEWER'S seat (the
+    // Q-2c active-seat placement superseded on the record, I-131). Family tags are
+    // PRESERVED so renderedPartition keeps counting (the oracle walks by family).
+    const session = v.ownDiscard.filter((id) => CARD_FAMILY[id] === 'session');
     for (let i = 0; i < v.seats.length; i++) {
       const seat = v.seats[i]!;
       const sf = seatFront(ctx, i);
       if (!sf) continue;
-      // the CREW row — count-true from the projection (view.crew by outfit)
+      // L-4 (I-131): THE ROW PLAN — pure data in, rows out (unit-tested). Trades = the
+      // public crew (pairs STAGED at zero until the attach verbs land, I-82f); the
+      // viewer adds unattached equipment (assets) + the local bottom row.
       const crew = v.crew.filter((m) => m.outfit === seat.id);
-      crew.forEach((m, k) => {
-        const mesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(44, 66),
-          new THREE.MeshBasicMaterial({ map: panelTexture([m.id, `${seat.id}'s crew`], 10, 16), side: THREE.DoubleSide }),
-        );
-        mesh.position.set(sf.c.x - 120 + k * 56, 34, sf.c.z + sf.dir * 46); // standing, in front of the board
-        if (sf.dir < 0) mesh.rotation.y = Math.PI; // far row faces the table
-        mesh.userData = { seatPlayCard: `crew:${m.id}`, focus: `seat-${i}` };
-        cards.push({ key: `crew:${m.id}`, mesh, anchor: mesh.position.clone() });
-        g.add(mesh);
-      });
-      // the VIEWER'S assets — a compact face-up group at the row's RIGHT end (UNATTACHED
-      // until the attach verbs land, I-82f; assets are per-seat public projection data)
-      if (seat.id === ctx.viewSeat) {
-        seat.assets.forEach((a, k) => {
+      const mine = seat.id === ctx.viewSeat;
+      const rows = planSeatRows(
+        crew.map((m) => ({ id: m.id, paired: false })),
+        mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}` })) : [],
+        mine ? session.map((id) => ({ id })) : [],
+      );
+      const total = rows.length;
+      rows.forEach((row, r) => {
+        // the FRONT TOP row (trades) sits nearest the table; later rows step back
+        // toward the board — the owner's top-to-bottom order (I-130).
+        const zOff = 46 + (total - 1 - r) * 68;
+        const widths = row.items.map((it) => it.w * 56);
+        const natural = widths.reduce((a, b) => a + b, 0);
+        const MAXW = 380; // the row's space — beyond it, respace to OVERLAP (I-130)
+        const scale = row.overlap || natural > MAXW ? MAXW / natural : 1;
+        let cum = 0;
+        row.items.forEach((it) => {
+          const w = widths[row.items.indexOf(it)]! * scale;
+          const cxp = sf.c.x - (natural * scale) / 2 + cum + w / 2;
+          cum += w;
+          const isLocal = it.kind === 'local';
+          const label = it.kind === 'equipment' ? it.id.split(':')[0]! : it.id;
           const mesh = new THREE.Mesh(
-            new THREE.PlaneGeometry(38, 56),
-            new THREE.MeshBasicMaterial({ map: panelTexture([a.ref, `$${a.value}`], 10, 16), side: THREE.DoubleSide }),
+            new THREE.PlaneGeometry(it.kind === 'pair' ? 62 : 44, isLocal ? 60 : 66),
+            new THREE.MeshBasicMaterial({ map: panelTexture([label, `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
           );
-          mesh.rotation.x = -Math.PI / 2; // flat on the felt
-          mesh.position.set(sf.c.x + 140 + (k % 3) * 44, 2.5, sf.c.z + sf.dir * (46 + Math.floor(k / 3) * 62));
-          mesh.userData = { seatPlayCard: `asset:${a.ref}:${k}`, focus: `seat-${i}` };
-          cards.push({ key: `asset:${a.ref}:${k}`, mesh, anchor: mesh.position.clone() });
+          if (isLocal || it.kind === 'equipment') {
+            mesh.rotation.x = -Math.PI / 2; // flat on the felt
+            mesh.position.set(cxp, 2.5, sf.c.z + sf.dir * zOff);
+          } else {
+            mesh.position.set(cxp, 34, sf.c.z + sf.dir * zOff); // standing
+            if (sf.dir < 0) mesh.rotation.y = Math.PI; // far rows face the table
+          }
+          const key = `${it.kind === 'pair' ? 'crew' : it.kind === 'trades' ? 'crew' : it.kind === 'equipment' ? 'asset' : 'local'}:${it.id}`;
+          mesh.userData = { seatPlayCard: key, focus: `seat-${i}` };
+          if (isLocal) mesh.userData = { ...mesh.userData, card: true, slotCard: it.id, family: 'session' }; // the partition oracle's walk
+          cards.push({ key, mesh, anchor: mesh.position.clone() });
           g.add(mesh);
         });
+      });
+      // L-4 (I-131): the HAND stages BELOW THE BOOKS — the viewer's face-down mini
+      // stack (count = the SVG hand law: ownDiscard top-3). A9's fan/fidget rides its
+      // own increment; exact books alignment refines there (registered).
+      if (mine) {
+        const ledger = ctx.theater.focusObject('ledger');
+        if (ledger) {
+          ledger.updateWorldMatrix(true, true);
+          const lb = new THREE.Box3().setFromObject(ledger);
+          const lc = lb.getCenter(new THREE.Vector3());
+          const away = lc.z > 0 ? 1 : -1; // below the books = away from the table
+          const n = Math.min(3, v.ownDiscard.length);
+          for (let k = 0; k < n; k++) {
+            const mesh = new THREE.Mesh(
+              new THREE.PlaneGeometry(40, 60),
+              new THREE.MeshBasicMaterial({ color: 0x5a4a3a, side: THREE.DoubleSide }), // face DOWN — a back, no data (redaction)
+            );
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(lc.x + k * 6, 2 + k * 0.8, lc.z + away * 95 + k * 4);
+            mesh.userData = { seatPlayCard: `hand:${k}`, focus: `seat-${i}`, hand: true };
+            cards.push({ key: `hand:${k}`, mesh, anchor: mesh.position.clone() });
+            g.add(mesh);
+          }
+        }
       }
     }
     root = g;
@@ -156,6 +204,38 @@ export const seatPlay: Component = {
         return { want, got: cards.filter((c) => c.key.startsWith('asset:')).length };
       },
       seatPlayGrabState: () => ({ grabbing: !!grab, resetting: !!resetting, lastReset }),
+      /** L-4 (I-131) oracles: the PLAN vs the RENDER for a seat (row kinds/counts/
+       *  overlap ≡ meshes by key prefix), and the hand's below-the-books geometry. */
+      seatRowsInfo: (i: number) => {
+        const v = ctx.projection();
+        const seat = v.seats[i];
+        if (!seat) return null;
+        const mine = seat.id === ctx.viewSeat;
+        const session = v.ownDiscard.filter((id) => CARD_FAMILY[id] === 'session');
+        const plan = planSeatRows(
+          v.crew.filter((m) => m.outfit === seat.id).map((m) => ({ id: m.id, paired: false })),
+          mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}` })) : [],
+          mine ? session.map((id) => ({ id })) : [],
+        );
+        const of = (p: string) => cards.filter((c) => c.key.startsWith(p) && c.mesh.userData['focus'] === `seat-${i}` && !c.mesh.userData['hand']).length;
+        return {
+          plan: plan.map((r) => ({ kind: r.kind, n: r.items.length, overlap: r.overlap })),
+          got: { crew: of('crew:'), equipment: of('asset:'), local: of('local:') },
+          match: plan.filter((r) => r.kind === 'trades').reduce((a, r) => a + r.items.length, 0) === of('crew:')
+            && plan.filter((r) => r.kind === 'equipment').reduce((a, r) => a + r.items.length, 0) === of('asset:')
+            && plan.filter((r) => r.kind === 'local').reduce((a, r) => a + r.items.length, 0) === of('local:'),
+        };
+      },
+      handInfo: () => {
+        const hand = cards.filter((c) => c.mesh.userData['hand']);
+        const ledger = ctx.theater.focusObject('ledger');
+        if (!ledger) return { count: hand.length, belowBooks: false };
+        const lb = new THREE.Box3().setFromObject(ledger);
+        const lc = lb.getCenter(new THREE.Vector3());
+        // below the books = FARTHER from the table plane (|z| larger) than the ledger
+        const belowBooks = hand.length === 0 || hand.every((c) => Math.abs(c.mesh.position.z) > Math.abs(lc.z));
+        return { count: hand.length, belowBooks, want: Math.min(3, ctx.projection().ownDiscard.length) };
+      },
       seatPlayCardXY: (key: string) => {
         const card = cards.find((c) => c.key === key || c.key.startsWith(key));
         if (!card) return null;

@@ -13,6 +13,10 @@ export async function run(h) {
   {
     await page.evaluate(() => window.__GAME3D__.glideTo('table'));
     await waitRest('VG8j/table-glide-rest');
+    // P-3 (I-131): every card pin below DERIVES from the implementation's seeded
+    // per-seat order (the vector discipline — computed, never hand-written).
+    const DRAW = await page.evaluate(() => window.__GAME3D__.deckOrder('moe'));
+    let extraDrawsA8 = 0; // draws the decide leg adds beyond the drill's two
     const stg3 = await page.locator('#stage canvas').boundingBox();
     await page.mouse.move(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
 
@@ -239,9 +243,9 @@ export async function run(h) {
       const dClose = await info('deck');
       const consumed = hmClose.m === hm1.m && hmClose.h === hm1.h && dClose.count === d1.count && dClose.fidget === d1.fidget;
       check('VG8j/draw-theater-hk11',
-        o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
+        o1.open === true && o1.title === DRAW[0] && o1.verdict && o1.verdict.mismatch === false
         && fUp !== null && fUp > 0.9
-        && d1.count === d0.count - 1 && c1.count === 1 && c1.topFace === 'job-posting'
+        && d1.count === d0.count - 1 && c1.count === 1 && c1.topFace === DRAW[0]
         && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
         && closed.o === false && closed.p === 'idle' && consumed,
         `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · faceUpAtEnd:${fUp?.toFixed?.(2)} (want >0.9 — I-115/M3) · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
@@ -258,7 +262,7 @@ export async function run(h) {
       }));
       const pv = await page.evaluate(() => window.__GAME3D__.partitionView());
       const famOk = fam.g === 'global' && fam.s === 'session' && fam.d === 'discard' && fam.levy === 'global';
-      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.pile[0] === 'job-posting';
+      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.pile[0] === DRAW[0];
       // G-1 (I-101, closing K7-Q M1): the derived sum is true by construction — the LAW
       // needs the RENDER side. Exactly-once, per family: live meshes ≡ the derived view
       // (a deleted render block or a double-render fails BY NAME at the exercised states).
@@ -364,7 +368,7 @@ export async function run(h) {
         await page.mouse.click(stgQ.x + 20, stgQ.y + 20);
         await page.waitForFunction(() => window.__GAME3D__.onionState().open === false, null, { timeout: 60000 }).catch(() => {});
         await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 60000 }).catch(() => {});
-        check('VG8j/discard-flick-reads', opened && oTitle === 'job-posting' && !!fr && fr.cardId === 'job-posting',
+        check('VG8j/discard-flick-reads', opened && oTitle === DRAW[0] && !!fr && fr.cardId === DRAW[0],
           `onion:${opened}/${oTitle} · flick-read:${fr?.cardId} — the same mechanics read the pile`);
       }
 
@@ -410,11 +414,59 @@ export async function run(h) {
         await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
         await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
         const c2 = await info('discard');
-        const ownDiscardTrue = c2.count === 2 && c2.topFace === 'new-van'; // K7-A2 D3: the VIEWER'S ownDiscard, both cards
+        const ownDiscardTrue = c2.count === 2 && c2.topFace === DRAW[1]; // K7-A2 D3: the VIEWER'S ownDiscard, both cards (P-3: the pin derives)
         check('VG8j/forced-mismatch-truth-wins',
           f2 && o2 && o2.verdict && o2.verdict.mismatch === true && o2.verdict.displayed === 'WRONG-CARD'
-          && o2.verdict.seeded === 'new-van' && o2.title === 'new-van' && ownDiscardTrue && fd2 === 1,
+          && o2.verdict.seeded === DRAW[1] && o2.title === DRAW[1] && ownDiscardTrue && fd2 === 1,
           f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins) · own-discard:${c2.count}/${c2.topFace} · flipDir:${fd2} (want +1 — flicked RIGHT, I-115/M2)` : 'second flight never landed (timeout)');
+      }
+
+      // A8 (I-129, generalized at I-131) · window-prompt-decides: under the P-3 shuffle
+      // the FIRST window-opener sits wherever the seeded order put it (for this seed,
+      // DRAW[1] opens one at the drill's second draw). The leg is ORDER-AGNOSTIC: if a
+      // window is already open, decide it; else draw (real drag + close) until one
+      // opens (≤34). The prompt renders on the ONION LAYER (mine, options ≡
+      // projection), option 0 submits the REAL decide verb, the prompt leaves, and the
+      // end-turn below proves the HK-5 unblock. KILL: unregister the component → no
+      // prompt → fails; cut the decide wiring → the window stays open → THIS times out
+      // AND the end-turn refuses (two failures name the defect). Runs BEFORE multi-card
+      // so no prompt overlays that leg's drags (drill determinism, I-131).
+      {
+        const hmW = await hashes();
+        let pW = await page.evaluate(() => window.__GAME3D__.windowPrompts());
+        while (pW.want.length === 0 && extraDrawsA8 < 34) {
+          const dxyW = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+          await page.mouse.move(dxyW.x, dxyW.y);
+          await page.mouse.down();
+          for (let i = 1; i <= 4; i++) await page.mouse.move(dxyW.x + i * 12, dxyW.y - i * 10);
+          await page.mouse.up();
+          await page.waitForFunction(() => window.__GAME3D__.onionState().open === true, null, { timeout: 60000 });
+          const cxyW = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+          await page.mouse.click(cxyW.x, cxyW.y); // consumed close → the route runs
+          await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+          extraDrawsA8++;
+          pW = await page.evaluate(() => window.__GAME3D__.windowPrompts());
+        }
+        let promptUp = false;
+        try {
+          await page.waitForFunction(() => { const q = window.__GAME3D__.windowPrompts(); return q.want.length >= 1 && q.match && q.rendered[0].mine === true; }, null, { timeout: 8000 });
+          promptUp = true;
+        } catch { /* named below */ }
+        const pUp = await page.evaluate(() => window.__GAME3D__.windowPrompts());
+        let decided = false;
+        if (promptUp && pUp.rendered[0]) {
+          const oxy = await page.evaluate((a) => window.__GAME3D__.windowOptionXY(a, 0), pUp.rendered[0].id);
+          if (oxy) {
+            await page.mouse.click(oxy.x, oxy.y);
+            try { await page.waitForFunction(() => window.__GAME3D__.windowPrompts().want.length === 0, null, { timeout: 8000 }); decided = true; } catch { /* named below */ }
+          }
+        }
+        const pGone = await page.evaluate(() => window.__GAME3D__.windowPrompts());
+        const hmW1 = await hashes();
+        check('VG8j/window-prompt-decides',
+          promptUp && decided && pGone.rendered.length === 0
+          && hmW1.m === hmW.m + extraDrawsA8 + 1 && hmW1.h !== hmW.h, // draws + the decide — all REAL moves
+          `prompt-up+mine+match:${promptUp} (${pUp.rendered[0] ? `${pUp.rendered[0].kind}/${pUp.rendered[0].decider}/${pUp.rendered[0].options.length} opts` : 'NONE'} · after ${extraDrawsA8} extra draws) · decided:${decided} · prompt-gone:${pGone.rendered.length === 0} · moves ${hmW.m}→${hmW1.m} (want +${extraDrawsA8 + 1}) — the HK-5 soft-lock closes on the ONION layer (I-129/I-131)`);
       }
 
       // discard-multi-card (Q-6b, I-95 — THE OWNER'S EXACT SCENARIO: "drag some cards out
@@ -452,7 +504,7 @@ export async function run(h) {
         await page.waitForFunction(() => window.__GAME3D__.onionState().open === false, null, { timeout: 60000 }).catch(() => {});
         await page.waitForFunction(() => window.__GAME3D__.discardGesture() === null, null, { timeout: 180000 }).catch(() => {});
         const dEnd = await info('discard');
-        check('VG8j/discard-multi-card', loose2 && popped && oT2 === 'job-posting' && poolAt >= 2 && dM.count === 2 && dEnd.count === 2,
+        check('VG8j/discard-multi-card', loose2 && popped && oT2 === DRAW[0] && poolAt >= 2 && dM.count === 2 && dEnd.count === 2,
           `top-card-loose:${loose2} · under-card flick POPPED:${popped}/${oT2} (want job-posting) · cards-out-at-once:${poolAt} · pile ${dM?.count}→${dEnd?.count} (want 2→2)`);
       }
       // (G-1/I-101: the closed/hmClose/dClose capture and the draw-theater-hk11 check
@@ -469,7 +521,7 @@ export async function run(h) {
       // name (pass:false), never crashes the gate — the anatomy-absent leg's live falsifier.
       const artFrac = oa && oa.cardH && oa.regions.art ? oa.regions.art.h / oa.cardH : 0;
       const artDominant = !!(oa && oa.regions.art && oa.regions.title && oa.regions.art.h > oa.regions.title.h && artFrac >= 0.55 && artFrac <= 0.70);
-      const fillsOk = !!(oa && JSON.stringify(oa.regions.title?.lines) === JSON.stringify(['job-posting'])
+      const fillsOk = !!(oa && JSON.stringify(oa.regions.title?.lines) === JSON.stringify([DRAW[0]])
         && JSON.stringify(oa.regions.subtitle?.lines) === JSON.stringify(['Fortune'])
         && Array.isArray(oa.regions.text?.lines) && oa.regions.text.lines.length >= 1);
       check('VG8k/fortune-anatomy', !!(idsOk && artDominant && oa.hasBack && fillsOk),
@@ -521,44 +573,6 @@ export async function run(h) {
       check('VG8j/fidget-pure-theater', moved1 && moved2 && restored && pure,
         `normalized-then: peek-moved:${moved1} · spread-moved:${moved2} · neat-restored-exact:${restored} · rowHash+moves-invariant:${pure}`);
 
-      // A8 (I-129) · window-prompt-decides: moe's THIRD draw is crossroads BY THE SEED
-      // (genesis deck [job-posting, new-van, crossroads, …]) — its open_window fires and
-      // HK-5 would refuse the end-turn below until DECIDED. The prompt must render on the
-      // ONION LAYER (I-130; amber, mine, options ≡ projection), the option click must submit
-      // the REAL decide verb (moves+1), and the prompt must leave with the window.
-      // KILL: unregister the component → no prompt (match false / XY null) → fails;
-      // cut the decide wiring → the window stays open → THIS times out by name AND the
-      // end-turn below refuses (two failures name the defect).
-      {
-        const hmW = await hashes();
-        const dxyW = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
-        await page.mouse.click(dxyW.x, dxyW.y); // draw #3 (moe's turn holds)
-        await page.waitForFunction(() => window.__GAME3D__.onionState().open === true, null, { timeout: 60000 });
-        const oW = await page.evaluate(() => window.__GAME3D__.onionState());
-        await page.mouse.click(dxyW.x, dxyW.y); // consumed close → the route runs
-        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
-        let promptUp = false;
-        try {
-          await page.waitForFunction(() => { const p = window.__GAME3D__.windowPrompts(); return p.want.length === 1 && p.match && p.rendered[0].mine === true; }, null, { timeout: 8000 });
-          promptUp = true;
-        } catch { /* named below */ }
-        const pW = await page.evaluate(() => window.__GAME3D__.windowPrompts());
-        let decided = false;
-        if (promptUp && pW.rendered[0]) {
-          const oxy = await page.evaluate((a) => window.__GAME3D__.windowOptionXY(a, 0), pW.rendered[0].id);
-          if (oxy) {
-            await page.mouse.click(oxy.x, oxy.y);
-            try { await page.waitForFunction(() => window.__GAME3D__.windowPrompts().want.length === 0, null, { timeout: 8000 }); decided = true; } catch { /* named below */ }
-          }
-        }
-        const pW2 = await page.evaluate(() => window.__GAME3D__.windowPrompts());
-        const hmW1 = await hashes();
-        check('VG8j/window-prompt-decides',
-          oW.title === 'crossroads' && promptUp && decided && pW2.rendered.length === 0
-          && hmW1.m === hmW.m + 2 && hmW1.h !== hmW.h, // draw + decide — two REAL moves
-          `drew:${oW.title} (want crossroads) · prompt-up+mine+match:${promptUp} (${pW.rendered[0] ? `${pW.rendered[0].kind}/${pW.rendered[0].decider}/${pW.rendered[0].options.length} opts` : 'NONE'}) · decided:${decided} · prompt-gone:${pW2.rendered.length === 0} · moves ${hmW.m}→${hmW1.m} (want +2) — the HK-5 soft-lock closes (I-129)`);
-      }
-
       // END-TURN + the I-62b OBLIGATION: after real state change the frozen-panel class
       // dies — standings (★ moves), chrome, log, and the deck (now PETE's, 2 by the pack)
       await page.click('#end-btn');
@@ -574,12 +588,12 @@ export async function run(h) {
       const hdrOk = after.hdr.includes(`${after.v.active}'s turn`);
       const logOk = after.log && after.log.some((l) => l === 'moe · turn:end') && after.log.some((l) => l === 'moe · deck:draw'); // the engine's intent type names
       const d2 = await info('deck');
-      const deckIsPetes = d2.count === 2; // the committed pack: pete's deck holds 2
+      const deckIsPetes = d2.count === 36; // P-3 (I-131): EVERY seat's deck is the full set — pete's holds 36
       const c3 = await info('discard');
-      // K7-A2 D3: ownDiscard is the VIEWER'S — invariant across the turn change. The
-      // pinned values moved 2/new-van → 3/crossroads at I-129 (the A8 leg's third draw
-      // now precedes this block); the LAW (held across end-turn) is unchanged.
-      const ownDiscardHeld = c3.count === 3 && c3.topFace === 'crossroads';
+      // K7-A2 D3: ownDiscard is the VIEWER'S — invariant across the turn change. P-3
+      // (I-131): the values DERIVE — the drill drew 2 + whatever the decide leg needed;
+      // the top is the LAST drawn card in the seeded order. The LAW is unchanged.
+      const ownDiscardHeld = c3.count === 2 + extraDrawsA8 && c3.topFace === DRAW[1 + extraDrawsA8];
       // deck fidget when NOT the viewer's turn (I-67d): a deck click must NOT draw
       const hm4 = await hashes();
       const dxy3 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));

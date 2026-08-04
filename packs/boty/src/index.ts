@@ -9,7 +9,7 @@ import type { ContentPack } from '@tabletop/engine';
 import { buildGlobal, buildJob, buildRouted, buildRouting } from '@tabletop/patterns';
 import { BOTY_PACK, BOTY_REF, botyGenesis } from './pack.js';
 
-export { BOTY_PACK, BOTY_REF, botyGenesis, BOTY_PACK6, BOTY6_REF, botyGenesis6 } from './pack.js';
+export { BOTY_PACK, BOTY_REF, botyGenesis, BOTY_PACK6, BOTY6_REF, botyGenesis6, FULL_DECK, shuffledDeckFor } from './pack.js'; // P-3 (I-131): the order fn exported so pins derive from the implementation
 export { CARD_FAMILY } from './cards-q1.js'; // Q-2c (I-92): the derived-partition family data
 export {
   BOTY_LAYOUTS, BOTY_LAYOUT_DERIVATIONS, CARD_KINDS,

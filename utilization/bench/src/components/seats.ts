@@ -44,15 +44,20 @@ export const seats: Component = {
         actions: [s === active ? '' : '—'],
       });
       b.scale.set(2.6, 2.6, 1);
-      const far = i >= 3;
-      b.position.set(((i % 3) - 1) * 420, 130, far ? -420 : 420);
-      if (far) {
-        // the near-board pose flipped π about world Y: face −z, tilt back toward the far player
-        b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
-          .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));
-      } else {
-        b.rotation.x = -0.25;
-      }
+      // L-5 (I-131, owner-ruled): 'each corner seat be moved 45 degrees to the corners
+      // of the table' — corners (0,2,3,5) stand at the table's corners yawed ±45° facing
+      // their own player; MIDS (1,4) hold their certified poses (seat-1/seat-4 carry the
+      // read-pose gate pins — untouched by construction). The seat-front rows, ledger,
+      // and hand all DERIVE from the live board bbox, so they follow the corners free.
+      const CORNER = 470;
+      const yawOf = [-Math.PI / 4, 0, Math.PI / 4, Math.PI + Math.PI / 4, Math.PI, Math.PI - Math.PI / 4] as const;
+      const posOf: readonly [number, number][] = [
+        [-CORNER, CORNER], [0, 420], [CORNER, CORNER],
+        [-CORNER, -CORNER], [0, -420], [CORNER, -CORNER],
+      ];
+      b.position.set(posOf[i]![0], 130, posOf[i]![1]);
+      b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawOf[i]!)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));
       // the BACK of a seat screen shows ONLY the shop graphic (I-65c) — which shop, no data
       const back = panel(['[shop art]'], 100, 100, s);
       back.rotation.y = Math.PI;
@@ -128,6 +133,17 @@ export const seats: Component = {
           match: got['building-tier'] === wantTier && got['jobs-list'] === wantJobs
             && got['ar'] === 'AR — owed to you' && got['ap'] === 'AP — you owe',
         };
+      },
+      /** L-5 (I-131) oracle: board i's world position + yaw (from its world quaternion —
+       *  the corner law is GEOMETRY STATE, never a def echo). */
+      boardPose: (i: number) => {
+        const grp = ctx.theater.focusObject(`seat-${i}`);
+        if (!grp) return null;
+        grp.updateWorldMatrix(true, false);
+        const p = grp.getWorldPosition(new THREE.Vector3());
+        const q = grp.getWorldQuaternion(new THREE.Quaternion());
+        const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+        return { x: p.x, z: p.z, yawDeg: (Math.atan2(n.x, n.z) * 180) / Math.PI };
       },
       /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
       boardScreenXY: (i: number) => {

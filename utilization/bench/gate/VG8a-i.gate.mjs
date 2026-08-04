@@ -218,6 +218,35 @@ export async function run(h) {
     check('VG8g2/shop-board-data-true', fillsOk,
       fills.map((f, i) => `${i}:${f ? (f.match ? 'ok' : `MISMATCH tier"${f.got.tier}"≟"${f.want.tier}" jobs"${f.got.jobs}"≟"${f.want.jobs}"`) : 'NULL'}`).join(' · '));
 
+    // L-5 (I-131) · corner-seats-45: the four corner boards stand AT the corners yawed
+    // ±45° toward their players; the mids hold their certified poses (the seat-1/seat-4
+    // read pins above stay valid BY CONSTRUCTION). Geometry state, never a def echo.
+    // KILL: revert the corner poses → yaws read 0/180 → fails by name.
+    const poses = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.boardPose(i)));
+    const yawNear = (got, want) => got !== null && Math.abs(got - want) < 1;
+    const cornersOk = poses.every((p) => p)
+      && yawNear(poses[0].yawDeg, -45) && yawNear(poses[2].yawDeg, 45)
+      && yawNear(poses[1].yawDeg, 0) && Math.abs(Math.abs(poses[4].yawDeg) - 180) < 1
+      && yawNear(poses[3].yawDeg, -135) && yawNear(poses[5].yawDeg, 135)
+      && Math.abs(poses[0].x) > 440 && Math.abs(poses[0].z) > 440
+      && Math.abs(poses[5].x) > 440 && Math.abs(poses[5].z) > 440
+      && poses[1].x === 0 && poses[4].x === 0;
+    check('VG8g3/corner-seats-45', cornersOk,
+      poses.map((p, i) => `${i}:${p ? `${p.yawDeg.toFixed(0)}°@(${p.x.toFixed(0)},${p.z.toFixed(0)})` : 'NULL'}`).join(' · ') + ' (want -45/0/45/-135/180/135 — I-131)');
+
+    // L-4 (I-131) · seat-rows-law: every seat's RENDERED rows ≡ the pure planner's plan
+    // (the planner's own laws live in vitest — seat-rows.test.ts); the viewer's HAND
+    // stages BELOW the books (farther from the table than the ledger, count = the SVG
+    // hand law). Non-vacuous at genesis: moe has crew, ownDiscard 0 → hand 0 is the
+    // LAWFUL want (count-true both ways). KILL: stop consuming the plan → match false.
+    const rowsInfo = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.seatRowsInfo(i)));
+    const rowsOk = rowsInfo.every((r) => r && r.match) && rowsInfo[0].got.crew >= 1;
+    const hand = await page.evaluate(() => window.__GAME3D__.handInfo());
+    const handOk = !!hand && hand.count === hand.want && hand.belowBooks;
+    check('VG8g4/seat-rows-law', rowsOk && handOk,
+      rowsInfo.map((r, i) => `${i}:${r ? (r.match ? `ok(${r.got.crew}c/${r.got.equipment}e/${r.got.local}l)` : 'MISMATCH') : 'NULL'}`).join(' · ')
+      + ` · hand:${hand ? `${hand.count}/${hand.want} below-books:${hand.belowBooks}` : 'NULL'} (I-131)`);
+
     // L-3 (I-130) · medal-in-region: the 3D BOTY medal STANDS in the freed bottom-right
     // medal region — parts built, resting ON the table, centre INSIDE the region rect
     // (geometry state, never pixels). The re-rowed table (dice far right · BBB +

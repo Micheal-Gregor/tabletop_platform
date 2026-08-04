@@ -17,7 +17,7 @@ import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { SeatView } from '@tabletop/presentation';
 import { emit, project } from '@tabletop/presentation';
-import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty } from '../../../packs/boty/src/index.js';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, shuffledDeckFor } from '../../../packs/boty/src/index.js';
 import { scene, camera, renderer, focusGroups, presets, SEATS, status } from './stage.js';
 import * as cam from './camera.js';
 import type { PlayAreaContext, PickInfo } from './component.js';
@@ -259,6 +259,9 @@ const gate: Record<string, unknown> = {
   ready: () => renderer.getContext() !== null,
   rowHash: () => controller.stateHash(),
   moveCount: () => controller.row().moves.length,
+  // P-3 (I-131): the per-seat SEEDED deck order — gates derive their card pins FROM the
+  // implementation (the vector discipline), never hand-write them.
+  deckOrder: (seat: string) => shuffledDeckFor('maple-hollow', seat),
   viewData: () => {
     const v = projectNow();
     return { seats: v.seats.map((s) => ({ id: s.id, cash: s.cash })), round: v.turn.round, active: v.seats[v.turn.seatIdx]!.id };

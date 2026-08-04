@@ -89,19 +89,46 @@ const DRAFT_SHOPS = [
   { id: 'russ', trade: 'roofer' }, // DRAFT — Russ's Roofing
 ] as const;
 
+// ── P-3 (I-131, owner-ruled): "all decks and the discard pile are all seat/player
+// unique" — every seat's deck holds the SAME FULL 36-card set; each seat's DRAW ORDER
+// is a seeded Fisher-Yates shuffle keyed (sessionSeed, seatId) at GENESIS. Deterministic
+// per session (replays hold — AX-4 untouched); seats play out uniquely. Discards are
+// already per-seat. The v1 BOTY_PACK stays frozen (game.ts's certified world). ──
+export const FULL_DECK: readonly string[] = [...BOTY_PACK.decks['moe']!.cards, ...Q1_DECK_ADD];
+const mix = (z0: number): number => {
+  let z = (z0 + 0x9e3779b9) >>> 0;
+  z = Math.imul(z ^ (z >>> 16), 0x21f0aaad) >>> 0;
+  z = Math.imul(z ^ (z >>> 15), 0x735a2d97) >>> 0;
+  return (z ^ (z >>> 15)) >>> 0;
+};
+const hashStr = (s: string): number => {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+  return h;
+};
+/** The per-seat order — exported so gates/tests derive pins FROM the implementation
+ *  (the vector discipline: computed, never hand-written). */
+export function shuffledDeckFor(seed: string, seat: string): string[] {
+  const a = [...FULL_DECK];
+  let h = hashStr(`${seed}::${seat}`);
+  for (let i = a.length - 1; i > 0; i--) {
+    h = mix(h);
+    const j = h % (i + 1);
+    [a[i], a[j]] = [a[j]!, a[i]!];
+  }
+  return a;
+}
+
 export const BOTY_PACK6: ContentPack = {
   ...BOTY_PACK,
   // Q-1 (I-88; owner-ruled): ONE OF EVERY CARD in the game — the full v1-inventory set
-  // joins the sandbox variant's card map; moe's deck carries the whole set (3 + 33 = 36).
+  // joins the sandbox variant's card map. P-3 (I-131): EVERY seat's deck is that full
+  // set (the pack lists the catalog membership; the genesis carries each seat's order).
   cards: { ...BOTY_PACK.cards, ...Q1_FULL_SET },
   seats: [...BOTY_PACK.seats, ...DRAFT_SHOPS.map((s) => ({ id: s.id }))],
-  decks: {
-    ...BOTY_PACK.decks,
-    moe: { cards: [...BOTY_PACK.decks['moe']!.cards, ...Q1_DECK_ADD] },
-    sal: { cards: ['job-posting', 'gc-flavor'] },
-    faye: { cards: ['job-posting', 'gc-flavor'] },
-    russ: { cards: ['job-posting', 'gc-flavor'] },
-  },
+  decks: Object.fromEntries(
+    [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((s) => [s.id, { cards: [...FULL_DECK] }]),
+  ),
 };
 
 export const botyGenesis6: Genesis = (packRef, seats, seed) => {
@@ -112,15 +139,10 @@ export const botyGenesis6: Genesis = (packRef, seats, seed) => {
       ...(g['seats'] as unknown[]),
       ...DRAFT_SHOPS.map((s) => ({ id: s.id, trade: s.trade, cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false })),
     ],
-    decks: {
-      ...(g['decks'] as Record<string, unknown>),
-      // Q-1 (I-88): moe's genesis draw mirrors the PACK6 deck — the full set appended
-      // UNDER the original three (draw[0] stays the top; the first draws are unchanged).
-      moe: { draw: ['job-posting', 'new-van', 'crossroads', ...Q1_DECK_ADD], discard: [], reserve: [] },
-      sal: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
-      faye: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
-      russ: { draw: ['job-posting', 'gc-flavor'], discard: [], reserve: [] },
-    },
+    decks: Object.fromEntries(
+      // P-3 (I-131): the same set, a UNIQUE seeded order per seat — from the session seed
+      [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((s) => [s.id, { draw: shuffledDeckFor(String(seed), s.id), discard: [], reserve: [] }]),
+    ),
     crew: [
       ...(g['crew'] as unknown[]),
       { id: 'crew-sal', outfit: 'sal' },

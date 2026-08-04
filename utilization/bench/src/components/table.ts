@@ -40,7 +40,6 @@ function partition(ownDiscard: readonly string[]): { global: string[]; session: 
   }
   return { global, session, pile };
 }
-let sessionGroup: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
 let tableRoot: THREE.Group | null = null; // G-1 (I-101): the live table group — the RENDERED-rects oracle walks THIS, never the def
 
 // ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
@@ -86,25 +85,10 @@ export const table: Component = {
       m.userData = { card: true, slotCard: id, family: 'global' };
       t.add(m);
     });
-    if (sessionGroup) { sessionGroup.parent?.remove(sessionGroup); sessionGroup = null; }
-    if (part.session.length) {
-      const seatObj = ctx.theater.focusObject(`seat-${v.turn.seatIdx}`);
-      if (seatObj) {
-        const bb = new THREE.Box3().setFromObject(seatObj);
-        const c = bb.getCenter(new THREE.Vector3());
-        const dir = c.z > 0 ? -1 : 1; // toward the table — "under the active player's seat"
-        const sg = new THREE.Group();
-        part.session.slice(0, 6).forEach((id, i) => {
-          const m = new THREE.Mesh(new THREE.PlaneGeometry(52, 78), new THREE.MeshBasicMaterial({ map: panelTexture([id], 10, 16) }));
-          m.rotation.x = -Math.PI / 2;
-          m.position.set(c.x - 150 + i * 62, 2, c.z + dir * 70); // left-fill across the board's front
-          m.userData = { card: true, slotCard: id, family: 'session' };
-          sg.add(m);
-        });
-        sessionGroup = sg;
-        ctx.scene.add(sg);
-      }
-    }
+    // L-4 (I-131): the SESSION (local) cards MOVED to the viewer's seat-front BOTTOM ROW
+    // (seat-play's row plan — 'if a local card is drawn, it is added as a bottom row');
+    // the Q-2c active-seat placement is superseded on the record. Family tags travel
+    // with them, so renderedPartition keeps counting wherever they stand.
     // T-1 (I-89): the A16 pile STACKS — STAGED EXHIBITS (pure theater, like the die): the
     // slice has no tradesperson/equipment decks yet; counts bind to state when the engine
     // decks land (I-82f). Six face-down cards each, at their v2 regions.
