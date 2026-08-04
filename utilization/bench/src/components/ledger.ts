@@ -45,7 +45,11 @@ export const ledgerComponent: Component = {
       n.y = 0; n.normalize(); // toward the player, horizontal
       const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
       book.position.copy(c).addScaledVector(lat, -225).addScaledVector(n, 130).setY(2);
-      book.rotation.y = Math.atan2(n.x, n.z); // parallel to the board
+      // I-133 (the owner's screenshot catch — 'the folder rotated 45° instead of staying
+      // flat'): the world-yaw PREMULTIPLIES the built pose. Setting rotation.y MUTATED
+      // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
+      // composited a tilt and stood the folder on edge). Flat FIRST, then yawed.
+      book.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(n.x, n.z)));
     } else {
       book.position.set(-420, 2, 560); // defensive fallback (caught by the left-edge gate)
     }

@@ -32,7 +32,11 @@ export async function run(h) {
   if (g1 && gt && g2) {
   const pd8 = await page.evaluate(() => window.__GAME3D__.presetData('seat-0'));
   const d8 = 1900 / pd8.zoom;
-  const want8 = { x: pd8.cx - 800, y: d8 * 0.72, z: pd8.cy - 500 + d8 * 0.7 };
+  // I-133 (the mapping superseded ON THE RECORD): a seat preset approaches along ITS
+  // OWN yaw normal — want re-derives from the SAME SEAT_YAWS data the camera consumes
+  // (byte-identical to the old ±z form for the mids by trigonometry).
+  const yaw0 = await page.evaluate(() => window.__GAME3D__.seatYawData(0));
+  const want8 = { x: pd8.cx - 800 + Math.sin(yaw0) * d8 * 0.7, y: d8 * 0.72, z: pd8.cy - 500 + Math.cos(yaw0) * d8 * 0.7 };
   const near = (a, b) => Math.abs(a - b) < 1e-9; // K7-A1 D3: rest is an EXACT copy of the mapped target — identical IEEE expressions, no epsilon to hide in
   const moved8 = !(near(g1.x, gt.x) && near(g1.y, gt.y) && near(g1.z, gt.z));
   const pure8 = near(g1.x, g2.x) && near(g1.y, g2.y) && near(g1.z, g2.z);

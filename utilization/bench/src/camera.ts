@@ -9,7 +9,7 @@
  * overview pose is set on the shared camera, and the #stage wheel listener is attached.
  */
 import * as THREE from 'three';
-import { camera, focusGroups, presets, WORLD, status } from './stage.js';
+import { camera, focusGroups, presets, WORLD, status, SEAT_YAWS } from './stage.js';
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
 // SIDE-AWARE (I-65b): a SEAT preset is approached from that seat's own side of the
@@ -19,8 +19,13 @@ const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } =>
   const p = presets[name]!;
   const look = new THREE.Vector3(p.cx - WORLD.w / 2, 0, p.cy - WORLD.h / 2);
   const d = 1900 / p.zoom;
-  const side = name.startsWith('seat-') && p.cy < WORLD.h / 2 ? -1 : 1;
-  return { pos: new THREE.Vector3(look.x, d * 0.72, look.z + side * d * 0.7), look };
+  // I-133 (superseding the ±z side flag ON THE RECORD): a seat preset approaches along
+  // ITS OWN yaw normal (over the player's shoulder) — n = (sin yaw, 0, cos yaw). For the
+  // mids (yaw 0/π) this is BYTE-IDENTICAL to the old ±z by trigonometry; corners now
+  // arrive at 45°. Non-seat presets keep the +z approach.
+  const yaw = name.startsWith('seat-') ? SEAT_YAWS[Number(name.slice(5))] ?? 0 : 0;
+  const n = name.startsWith('seat-') ? { x: Math.sin(yaw), z: Math.cos(yaw) } : { x: 0, z: 1 };
+  return { pos: new THREE.Vector3(look.x + n.x * d * 0.7, d * 0.72, look.z + n.z * d * 0.7), look };
 };
 let target = mapPreset('overview');
 let currentLook = target.look.clone();

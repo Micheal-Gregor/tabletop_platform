@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, panel } from '../surfaces.js';
 import { SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js';
+import { SEAT_YAWS } from '../stage.js'; // I-133: the single yaw truth
 
 const SEATS = BOTY_PACK6.seats.map((s) => s.id);
 
@@ -54,7 +55,7 @@ export const seats: Component = {
       // closest edges — 'pulled back… full visibility of table'. DERIVED: a corner
       // board (half-width 130 world) yawed 45° reaches CORNER + 130·sin45° in z.
       const MID_Z = CORNER + 130 * Math.SQRT1_2; // ≈ 562 — the corner near-edge line
-      const yawOf = [-Math.PI / 4, 0, Math.PI / 4, Math.PI + Math.PI / 4, Math.PI, Math.PI - Math.PI / 4] as const;
+      const yawOf = SEAT_YAWS; // I-133: the single yaw truth (stage.ts)
       const posOf: readonly [number, number][] = [
         [-CORNER, CORNER], [0, MID_Z], [CORNER, CORNER],
         [-CORNER, -CORNER], [0, -MID_Z], [CORNER, -CORNER],
