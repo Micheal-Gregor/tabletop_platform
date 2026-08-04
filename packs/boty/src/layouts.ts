@@ -109,6 +109,32 @@ export const TOWN_OVERLAY: LayoutOverlay = {
 };
 export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
 
+/**
+ * THE V2 TABLE (T-1, I-89; owner-ruled 2026-08-03 with the v1-board screenshots): the
+ * 3D bench's table arrangement — season image top-left · GLOBAL CARDS IN PLAY to its
+ * right · player summary under the season · the four piles in a row (deck · discard ·
+ * tradespeople · equipment) · the dice spot · windows. A SEPARATE CHILD so the certified
+ * TOWN_TABLE (SVG bench, V-9, pins) is untouched; same parent, same declared overlay door.
+ */
+export const TOWN_V2_OVERLAY: LayoutOverlay = {
+  id: 'boty:town-table-v2',
+  override: [
+    { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 68, h: 22 }, // GLOBAL CARDS IN PLAY — right of the season
+    { id: 'deck', role: 'deck', x: 30, y: 28, w: 12, h: 24 },
+    { id: 'discard', role: 'discard', x: 46, y: 28, w: 12, h: 24 },
+    { id: 'dice', role: 'dice', x: 32, y: 58, w: 16, h: 16, z: 1 }, // the dice spot (P-1's home follows the region)
+    { id: 'windows', role: 'prompt-zone', x: 56, y: 56, w: 36, h: 24, z: 2 },
+  ],
+  add: [
+    { id: 'art-banner', role: 'art', x: 2, y: 2, w: 26, h: 22 }, // the SEASON image block, top-left
+    { id: 'standings', role: 'standings', x: 2, y: 28, w: 26, h: 32 }, // player summary, under the season
+    { id: 'log', role: 'table-log', x: 2, y: 64, w: 26, h: 32 },
+    { id: 'tradespeople-pile', role: 'deck', x: 62, y: 28, w: 12, h: 24 }, // A16 — staged exhibit until the engine deck lands
+    { id: 'equipment-pile', role: 'deck', x: 78, y: 28, w: 12, h: 24 }, // A16 — staged exhibit until the engine deck lands
+  ],
+};
+export const TOWN_TABLE_V2: LayoutDef = extendLayout(TABLE_PARENT, TOWN_V2_OVERLAY);
+
 // ── THE PARITY CHILDREN (I-55, owner-ruled 2026-08-01; sources: the archived nine +
 // the auditor's live-walk evidence in Report-5 Appendix A / inventory §4–5) ──
 
@@ -231,7 +257,7 @@ export const BOOKS_PANEL: LayoutDef = extendLayout(PANEL_PARENT, BOOKS_OVERLAY);
 export const CARD_KINDS = Object.freeze(['tradespeople', 'equipment', 'jobs', 'persistent', 'playable', 'global'] as const);
 
 export const BOTY_LAYOUTS: readonly LayoutDef[] = Object.freeze([
-  FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE,
+  FORTUNE_CARD, ROUND_CARD, SHOP_BOARD, TOWN_TABLE, TOWN_TABLE_V2,
   ROUND_PREAMBLE, RIVAL_SUMMARY, JOB_CARD, TRADESPERSON_CARD, EQUIPMENT_CARD,
   BOOKS_PANEL,
 ]);
@@ -242,6 +268,7 @@ export const BOTY_LAYOUT_DERIVATIONS = Object.freeze([
   { parent: CARD_PARENT, overlay: ROUND_OVERLAY, child: ROUND_CARD },
   { parent: BOARD_PARENT, overlay: SHOP_OVERLAY, child: SHOP_BOARD },
   { parent: TABLE_PARENT, overlay: TOWN_OVERLAY, child: TOWN_TABLE },
+  { parent: TABLE_PARENT, overlay: TOWN_V2_OVERLAY, child: TOWN_TABLE_V2 },
   { parent: CARD_PARENT, overlay: PREAMBLE_OVERLAY, child: ROUND_PREAMBLE },
   { parent: BOARD_PARENT, overlay: RIVAL_OVERLAY, child: RIVAL_SUMMARY },
   { parent: CARD_PARENT, overlay: JOB_OVERLAY, child: JOB_CARD },

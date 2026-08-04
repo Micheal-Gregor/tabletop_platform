@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import { panelTexture } from './surfaces.js';
-import { TOWN_TABLE } from '../../../packs/boty/src/index.js';
+import { TOWN_TABLE_V2 } from '../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
 
 // ── COUNT-TRUE CARD STACKS (I-67a): one real mesh per card; shared back texture ──
 let cardBackTex: THREE.CanvasTexture | null = null;
@@ -37,7 +37,7 @@ export function lcg(seed: number): () => number {
 export function cardStack(r: { x: number; y: number; w: number; h: number }, rid: string, count: number, faces: readonly string[] | null, fidgetState: number | undefined): THREE.Group {
   const grp = new THREE.Group();
   grp.position.set(r.x + r.w / 2 - 50, 50 - (r.y + r.h / 2), 0.2);
-  grp.userData = { region: rid, role: rid, def: TOWN_TABLE.id };
+  grp.userData = { region: rid, role: rid, def: TOWN_TABLE_V2.id };
   // the footprint ghost: keeps the region clickable and boxed even at zero cards
   const ghost = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.h), new THREE.MeshBasicMaterial({ color: 0xdfe7df, transparent: true, opacity: 0.5 }));
   grp.add(ghost);

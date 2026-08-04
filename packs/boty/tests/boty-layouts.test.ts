@@ -21,6 +21,7 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
   it('all children validate, are frozen, and name their parent in lineage', () => {
     expect(BOTY_LAYOUTS.map((l) => l.id)).toEqual([
       'boty:fortune-card', 'boty:round-card', 'boty:shop-board', 'boty:town-table',
+      'boty:town-table-v2', // T-1 (I-89): the 3D bench's v2 table child — same parent, same overlay door
       'boty:round-preamble', 'boty:rival-summary', 'boty:job-card', 'boty:tradesperson-card', 'boty:equipment-card',
       'boty:books',
     ]);

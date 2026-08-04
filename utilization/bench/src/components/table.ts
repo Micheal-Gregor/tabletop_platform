@@ -14,7 +14,7 @@ import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, fortuneFaceTexture } from '../surfaces.js';
 import { cardBack, cardStack } from '../stacks.js';
 import * as onion from '../onion.js';
-import { TOWN_TABLE, SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js';
+import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
 
@@ -64,16 +64,24 @@ export const table: Component = {
     const openWindows = v.windows.filter((w) => w.status === 'open').length;
     // the table: flat on the ground, fills stamped from the projection; deck+discard
     // regions are STACK OBJECTS, not quads (I-67a) — the geometry is the count
-    const t = layoutFace(TOWN_TABLE, 0xeef3ee, {
+    const t = layoutFace(TOWN_TABLE_V2, 0xeef3ee, {
       standings: ['THE TABLE', ...standings],
       log: ['TABLE LOG', ...(log.length ? log : ['(no moves yet)'])],
       windows: ['windows', openWindows ? `${openWindows} open — prompts at A8` : 'none open'],
-      'art-banner': [`[art: ${SEASONS[(v.turn.round - 1) % 4]} — Maple Hollow]`],
-    }, ['deck', 'discard']);
-    const deckR = TOWN_TABLE.regions.find((rg) => rg.id === 'deck')!;
-    const discR = TOWN_TABLE.regions.find((rg) => rg.id === 'discard')!;
+      'art-banner': [`[art: ${SEASONS[(v.turn.round - 1) % 4]} — Maple Hollow]`], // the SEASON block, top-left (T-1)
+      'global-play': ['GLOBAL CARDS IN PLAY', '(routing lands at Q-2)'], // the owner's global section — right of the season
+    }, ['deck', 'discard', 'tradespeople-pile', 'equipment-pile']);
+    const deckR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'deck')!;
+    const discR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
     t.add(cardStack(deckR, 'deck', v.decks[active]?.drawCount ?? 0, null, fidget['deck']));
     t.add(cardStack(discR, 'discard', v.ownDiscard.length, v.ownDiscard, fidget['discard'])); // the VIEWER'S discard — redaction-honest (I-67a)
+    // T-1 (I-89): the A16 pile STACKS — STAGED EXHIBITS (pure theater, like the die): the
+    // slice has no tradesperson/equipment decks yet; counts bind to state when the engine
+    // decks land (I-82f). Six face-down cards each, at their v2 regions.
+    const tpR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'tradespeople-pile')!;
+    const eqR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'equipment-pile')!;
+    t.add(cardStack(tpR, 'tradespeople-pile', 6, null, 0));
+    t.add(cardStack(eqR, 'equipment-pile', 6, null, 0));
     t.rotation.x = -Math.PI / 2;
     t.scale.set(9, 7, 1);
     t.userData['focus'] = 'table';
@@ -143,7 +151,10 @@ export const table: Component = {
   gate() {
     const ctx = cx!;
     return {
-      expectedFromDefs: () => TOWN_TABLE.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length,
+      expectedFromDefs: () => TOWN_TABLE_V2.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length,
+      /** T-1 (I-89): the v2 table def's region rects — the arrangement oracle (the def IS
+       *  the owner's spec; render≡def is VG8a's standing law). */
+      tableRegionRects: () => TOWN_TABLE_V2.regions.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h })),
       regionCount: () => { let n = 0; ctx.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['region']) n++; }); return n; },
       stamped: (regionId: string) => {
         let out: readonly string[] | null = null;
