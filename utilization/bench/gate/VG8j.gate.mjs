@@ -35,8 +35,8 @@ export async function run(h) {
     const heightTrue = ys.length === wantSample && ys.length >= 2
       && ys.every((y, i) => i === 0 || y > ys[i - 1])
       && (ys[ys.length - 1] - ys[0]) >= (ys.length - 1) * 0.8;
-    check('VG8j/stacks-count-true', d0 && c0 && d0.count === 36 && c0.count === 0 && heightTrue,
-      `deck:${d0?.count} (want 36, the committed Q-1 genesis) · discard:${c0?.count} (want 0) · height-true:${heightTrue} (sample ${ys.length}, Δy ${ys.length ? (ys[ys.length - 1] - ys[0]).toFixed(2) : '?'})`);
+    check('VG8j/stacks-count-true', d0 && c0 && d0.count === DRAW.length && c0.count === 0 && heightTrue, // O-4: the deck count DERIVES (34 — the in-play pair starts out); the PILE stays 0 (both genesis cards are in-play families)
+      `deck:${d0?.count} (want ${DRAW.length} — the genesis draw, I-138/O-4) · discard-pile:${c0?.count} (want 0) · height-true:${heightTrue} (sample ${ys.length}, Δy ${ys.length ? (ys[ys.length - 1] - ys[0]).toFixed(2) : '?'})`);
 
     // deck-tap-nudge (R-1a2, I-110 + R-1a3, I-111 — the owner's STACK PROOF + the
     // third-tap RE-CENTER "so the pile doesn't get too loose"): taps 1 and 2 NUDGE the
@@ -67,9 +67,9 @@ export async function run(h) {
       const s2 = spreadOf(p2), s3 = spreadOf(p3);
       const hmN1 = await hashes();
       const nOk = maxD > 0.5 && maxD < 12 && topMoved && s3 < 2.5 && s3 < s2
-        && (await info('deck')).count === 36 && hmN1.m === hmN.m && hmN1.h === hmN.h;
+        && (await info('deck')).count === DRAW.length && hmN1.m === hmN.m && hmN1.h === hmN.h;
       check('VG8j/deck-tap-nudge', nOk,
-        `tap1 max Δ ${maxD.toFixed(1)}u (want 0.5–12) · TOP card moved:${topMoved} (Δ ${ds1[ds1.length - 1]?.toFixed?.(1)}u — the tapped card itself, I-115/M1) · spread after tap2 ${s2.toFixed(1)}u → tap3 ${s3.toFixed(1)}u (want <2.5 & tighter) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h}`);
+        `tap1 max Δ ${maxD.toFixed(1)}u (want 0.5–12) · TOP card moved:${topMoved} (Δ ${ds1[ds1.length - 1]?.toFixed?.(1)}u — the tapped card itself, I-115/M1) · spread after tap2 ${s2.toFixed(1)}u → tap3 ${s3.toFixed(1)}u (want <2.5 & tighter) · deck-derived · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h}`);
     }
 
     // v2-table-arrangement (T-1, I-89; RE-PINNED at I-130 — the owner's re-row ruling):
@@ -167,7 +167,7 @@ export async function run(h) {
       // the weak release the deck's top is the SAME OBJECT again — a faked traveler cannot pass.
       const identity = !!u0 && ug === u0 && u1 === u0;
       check('VG8j/draw-drag-follows', wander > 30 && identity && gF?.verdict === 'weak' && dF.count === 36 && hmF1.m === hmF.m && hmF1.h === hmF.h,
-        `mid-drag wander ${wander.toFixed(0)}u (want >30 — the card FOLLOWS) · IDENTITY:${identity} (grabbed ≡ former top ≡ re-attached top — the three-objects law) · verdict:${gF?.verdict} · deck 36 · state-invariant:${hmF1.m === hmF.m && hmF1.h === hmF.h}`);
+        `mid-drag wander ${wander.toFixed(0)}u (want >30 — the card FOLLOWS) · IDENTITY:${identity} (grabbed ≡ former top ≡ re-attached top — the three-objects law) · verdict:${gF?.verdict} · deck-derived · state-invariant:${hmF1.m === hmF.m && hmF1.h === hmF.h}`);
     }
 
     // THE DRAW — Q-2b (I-91): a REAL GRAB + FLICK on the deck's top card (down → fast
@@ -265,7 +265,7 @@ export async function run(h) {
       }));
       const pv = await page.evaluate(() => window.__GAME3D__.partitionView());
       const famOk = fam.g === 'global' && fam.s === 'session' && fam.d === 'discard' && fam.levy === 'global';
-      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.pile[0] === DRAW[0];
+      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 3 && pv.global.length === 1 && pv.session.length === 1 && pv.pile[0] === DRAW[0]; // O-4 (I-138): genesis holds gbl-union (global) + svc-insurance (session) IN PLAY; the first draw joins the pile
       // G-1 (I-101, closing K7-Q M1): the derived sum is true by construction — the LAW
       // needs the RENDER side. Exactly-once, per family: live meshes ≡ the derived view
       // (a deleted render block or a double-render fails BY NAME at the exercised states).

@@ -13,7 +13,7 @@ import {
 } from '@tabletop/engine';
 import type { EngineCore } from '@tabletop/engine';
 import { emit, project } from '@tabletop/presentation';
-import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty } from '../src/index.js';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor } from '../src/index.js';
 
 describe('W-1: the PACK6 wiring (I-121)', () => {
   it('BOTY_PACK6 meets HK-4 (and a poisoned fx twin is REFUSED)', () => {
@@ -42,7 +42,8 @@ describe('W-1: the PACK6 wiring (I-121)', () => {
     const SEATS = BOTY_PACK6.seats.map((s) => s.id);
     for (const s of SEATS) controller.join('bench-3d', s);
     const projectNow = () => project(rebuild(controller.row(), botyGenesis6, wire()).getState(), SEATS[0]!);
-    for (let i = 1; i <= 36; i++) {
+    const N = genesisDrawFor('maple-hollow', 'moe').length; // O-4 (I-138): the derived genesis draw (in-play pair excluded)
+    for (let i = 1; i <= N; i++) {
       const v = projectNow();
       const active = v.seats[v.turn.seatIdx]!.id;
       let outcome = 'ok';

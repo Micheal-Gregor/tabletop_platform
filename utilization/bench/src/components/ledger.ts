@@ -50,6 +50,7 @@ export const ledgerComponent: Component = {
       // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
       // composited a tilt and stood the folder on edge). Flat FIRST, then yawed.
       book.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(n.x, n.z)));
+      ledger.setSpreadYaw(Math.atan2(n.x, n.z)); // O-1 (I-138): the risen pages follow the seat frame — no board overlap
     } else {
       book.position.set(-420, 2, 560); // defensive fallback (caught by the left-edge gate)
     }

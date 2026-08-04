@@ -106,6 +106,16 @@ const hashStr = (s: string): number => {
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
   return h;
 };
+/** O-4 (I-138, owner-ruled): the TEST CARDS IN PLAY at genesis — one GLOBAL on the
+ *  table ('labour unionizes') + one LOCAL per player ('buy insurance'). They start in
+ *  each seat's DISCARD (the partition presents them in-play) and are EXCLUDED from the
+ *  draw so one-of-every-card holds. */
+export const GENESIS_IN_PLAY: readonly string[] = ['svc-insurance', 'gbl-union'];
+/** the seat's GENESIS draw — the shuffled order minus the in-play pair. ONE source:
+ *  the genesis AND every gate pin derive from THIS (the vector discipline). */
+export function genesisDrawFor(seed: string, seat: string): string[] {
+  return shuffledDeckFor(seed, seat).filter((id) => !GENESIS_IN_PLAY.includes(id));
+}
 /** The per-seat order — exported so gates/tests derive pins FROM the implementation
  *  (the vector discipline: computed, never hand-written). */
 export function shuffledDeckFor(seed: string, seat: string): string[] {
@@ -166,8 +176,10 @@ export const botyGenesis6: Genesis = (packRef, seats, seed) => {
       ...DRAFT_SHOPS.map((s) => ({ id: s.id, trade: s.trade, cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false })),
     ],
     decks: Object.fromEntries(
-      // P-3 (I-131): the same set, a UNIQUE seeded order per seat — from the session seed
-      [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((s) => [s.id, { draw: shuffledDeckFor(String(seed), s.id), discard: [], reserve: [] }]),
+      // P-3 (I-131): the same set, a UNIQUE seeded order per seat — from the session
+      // seed. O-4 (I-138): the in-play pair starts in the DISCARD (presented in-play by
+      // the partition) and leaves the draw — one-of-every-card holds.
+      [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((s) => [s.id, { draw: genesisDrawFor(String(seed), s.id), discard: [...GENESIS_IN_PLAY], reserve: [] }]),
     ),
     crew: [
       ...(g['crew'] as unknown[]),

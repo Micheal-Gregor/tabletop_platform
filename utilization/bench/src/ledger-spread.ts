@@ -40,6 +40,12 @@ let phase: 'in-folder' | 'deploying' | 'displayed' | 'returning' = 'in-folder';
 let amt = 0; // 0 = home (in the folder) → 1 = display pose
 let selected: PageKind = 'pnl';
 const UP_QUAT = new THREE.Quaternion(); // standing upright, facing +z (the display orientation)
+// O-1 (I-138, the owner's overlap catch: 'the books opens up 45 degrees towards the
+// seat board'): the risen pages' pose derives from THE SEAT FRAME — spread along the
+// seat's LATERAL axis, faced along its NORMAL (toward the player), pushed a step AWAY
+// from the board. The component sets the yaw at build (the L-5b law finishing its job).
+let spreadYaw = 0;
+export function setSpreadYaw(y: number): void { spreadYaw = y; }
 
 const focusId = (k: PageKind): string => `ledger-${k}`;
 const ease = (t: number): number => t * t * (3 - 2 * t);
@@ -130,9 +136,11 @@ export function retractSheets(): void {
 
 /** a sheet's DISPLAY pose target. */
 function displayPose(k: PageKind): Pose {
+  const lat = new THREE.Vector3(Math.cos(spreadYaw), 0, -Math.sin(spreadYaw));
+  const n = new THREE.Vector3(Math.sin(spreadYaw), 0, Math.cos(spreadYaw));
   return {
-    pos: new THREE.Vector3(anchor.x + (k === 'pnl' ? -GAP : GAP), anchor.y, anchor.z),
-    quat: UP_QUAT.clone(),
+    pos: anchor.clone().addScaledVector(lat, k === 'pnl' ? -GAP : GAP).addScaledVector(n, 50),
+    quat: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), spreadYaw).multiply(UP_QUAT.clone()),
     scale: new THREE.Vector3(DISPLAY_SCALE, DISPLAY_SCALE, DISPLAY_SCALE),
   };
 }

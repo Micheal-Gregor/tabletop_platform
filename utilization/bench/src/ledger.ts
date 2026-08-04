@@ -19,7 +19,7 @@
 import * as THREE from 'three';
 import type { SeatView } from '@tabletop/presentation';
 import { BOOKS_PANEL } from '../../../packs/boty/src/index.js';
-import { buildSheets, stampSheet, deploySheets, retractSheets, tickSpread, sheetsHome, sheetBBoxes } from './ledger-spread.js';
+import { buildSheets, stampSheet, deploySheets, retractSheets, tickSpread, sheetsHome, sheetBBoxes, setSpreadYaw } from './ledger-spread.js';
 
 type Balance = {
   seat: string; cash: number; ar: number; ap: number;
@@ -209,6 +209,6 @@ export const booksPanelIds = (): readonly string[] => BOOKS_PANEL.regions.map((r
 // re-export the sheets' gate + read surfaces so the component's gate() aggregates one place.
 export {
   spreadPages, pageContent, spreadOpaque, spreadSettled, readSelected, selectedReport,
-  anchorPage, sheetIds, sheetsHome,
+  anchorPage, sheetIds, sheetsHome, setSpreadYaw,
 } from './ledger-spread.js';
 export type { PageKind } from './ledger-spread.js';

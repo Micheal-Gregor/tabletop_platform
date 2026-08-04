@@ -17,7 +17,7 @@ import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { SeatView } from '@tabletop/presentation';
 import { emit, project } from '@tabletop/presentation';
-import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, shuffledDeckFor, botyJob } from '../../../packs/boty/src/index.js';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob } from '../../../packs/boty/src/index.js';
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS } from './stage.js';
 import * as cam from './camera.js';
 import type { PlayAreaContext, PickInfo } from './component.js';
@@ -265,7 +265,7 @@ const gate: Record<string, unknown> = {
   moveCount: () => controller.row().moves.length,
   // P-3 (I-131): the per-seat SEEDED deck order — gates derive their card pins FROM the
   // implementation (the vector discipline), never hand-write them.
-  deckOrder: (seat: string) => shuffledDeckFor('maple-hollow', seat),
+  deckOrder: (seat: string) => genesisDrawFor('maple-hollow', seat), // O-4 (I-138): the GENESIS draw (in-play pair excluded)
   // I-133: the single yaw truth as DATA — VG8c re-derives the preset law from it.
   seatYawData: (i: number) => SEAT_YAWS[i] ?? null,
   // A6 (I-136): the public crew surface — VG8s waits on assignedTo STATE, never clocks.
