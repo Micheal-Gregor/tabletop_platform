@@ -139,6 +139,22 @@ export async function run(h) {
         && Math.hypot(routeRec.endX - routeRec.targetX, routeRec.endY - routeRec.targetY, routeRec.endZ - routeRec.targetZ) < 20;
       check('VG8j/route-to-discard', routeObserved && routeEndOk,
         `route-observed:${routeObserved} · dest:${routeRec?.dest} · end≈target:${routeEndOk} — the card TRAVELS to the discard (no teleport)`);
+
+      // slot-partition-law (Q-2c, I-92): the family DATA is pinned (a map regression fails
+      // here) and the DERIVED VIEW sums — pile + global + session ≡ ownDiscard. At this
+      // state: one drawn card (job-posting → the pile), slots empty. LIVE global/session
+      // routing seals at playtest; the drill-state re-kill TRIGGER is carried on I-92.
+      const fam = await page.evaluate(() => ({
+        g: window.__GAME3D__.cardFamily('gbl-boom'),
+        s: window.__GAME3D__.cardFamily('svc-marketing'),
+        d: window.__GAME3D__.cardFamily('job-posting'),
+        levy: window.__GAME3D__.cardFamily('town-levy'),
+      }));
+      const pv = await page.evaluate(() => window.__GAME3D__.partitionView());
+      const famOk = fam.g === 'global' && fam.s === 'session' && fam.d === 'discard' && fam.levy === 'global';
+      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.pile[0] === 'job-posting';
+      check('VG8j/slot-partition-law', famOk && sumOk,
+        `family{gbl-boom:${fam.g} svc-marketing:${fam.s} job-posting:${fam.d} town-levy:${fam.levy}} · partition sums:${sumOk} (${pv?.pile?.length}+${pv?.global?.length}+${pv?.session?.length}=${pv?.total})`);
       const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase(), z: window.__GAME3D__.zoomState() }));
       const hmClose = await hashes();
       const dClose = await info('deck');

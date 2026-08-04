@@ -72,3 +72,19 @@ export const Q1_FULL_SET: CardMap = {
 /** The deck-order append (UNDER the existing three — draw[0] stays the top, so the first
  *  draws are unchanged). One of each, the families in catalog order. */
 export const Q1_DECK_ADD: readonly string[] = Object.keys(Q1_FULL_SET);
+
+/** Q-2c (I-92) — THE CARD FAMILY map (content DATA): which resolved cards present as
+ *  IN PLAY — GLOBAL (the table's global section) or SESSION (the active seat's row) —
+ *  versus the plain discard pile. The bench PARTITIONS the projection's discard by this
+ *  map (derived-never-stored); it invents no state. Every card not named here: discard. */
+export const CARD_FAMILY: Readonly<Record<string, 'global' | 'session'>> = {
+  'town-levy': 'global',
+  'gbl-boom': 'global',
+  'gbl-recession': 'global',
+  'gbl-union': 'global',
+  'svc-insurance': 'session',
+  'svc-marketing': 'session',
+  'svc-accountant': 'session',
+  'svc-training': 'session',
+  'svc-security': 'session',
+};

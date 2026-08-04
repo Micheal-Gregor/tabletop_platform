@@ -17,6 +17,7 @@ import type { PlayAreaContext, PickInfo } from './component.js';
 import { fortuneFaceTexture } from './surfaces.js';
 import { cardBack } from './stacks.js';
 import * as onion from './onion.js';
+import { CARD_FAMILY } from '../../../packs/boty/src/index.js'; // Q-2c (I-92): the family data
 
 export type DrawPhase = 'idle' | 'grabbing' | 'flipping' | 'reading' | 'routing' | 'settling';
 let phase: DrawPhase = 'idle';
@@ -28,17 +29,29 @@ let theater: {
   inst: ReturnType<typeof beginFlourish> | null; seeded: string; flipped: boolean;
   hiddenTop: THREE.Object3D | null;
   routeFrom: THREE.Vector3 | null; routeTo: THREE.Vector3 | null; dest: string | null;
+  destPos: THREE.Vector3 | null; // the card's OWN rendered spot in the derived view (I-92)
   angle: number; samples: { x: number; y: number; t: number }[];
 } | null = null;
 let lastRouteRec: { dest: string; endX: number; endY: number; endZ: number; targetX: number; targetY: number; targetZ: number } | null = null;
 let lastGesture: { verdict: 'flicked' | 'weak'; velocity: number } | null = null;
 let forceMismatch = false; // the committed forced-mismatch drill — one-shot
 
-/** THE ROUTING BRANCHES (I-90): global play · local play · discard — ENGINE TRUTH. */
-function routeDestFor(): 'global-play' | 'local' | 'discard' {
-  // if (projection carries the card in global play) return 'global-play';
-  // if (projection carries the card in the seat's local play) return 'local';
-  return 'discard';
+/** THE ROUTING BRANCHES (I-90/I-92): the destination is the DERIVED VIEW's placement of
+ *  the card — the CARD_FAMILY content data partitions the projection's discard: global →
+ *  the table's GLOBAL CARDS IN PLAY slots · session → the active seat's session row ·
+ *  else the discard pile. Derived-never-stored; no invented state. */
+function routeDestFor(cardId: string): 'global' | 'session' | 'discard' {
+  return CARD_FAMILY[cardId] ?? 'discard';
+}
+
+/** the card's OWN rendered mesh in the derived view (slots) or the pile top — the route
+ *  TARGET + the hide/reveal handle: the traveler lands exactly where the view puts it. */
+function findCardMesh(ctx: PlayAreaContext, cardId: string, dest: 'global' | 'session' | 'discard'): { mesh: THREE.Object3D | null; pos: THREE.Vector3 } {
+  if (dest === 'discard') return stackTop(ctx, 'discard');
+  let found: THREE.Object3D | null = null;
+  ctx.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['slotCard'] === cardId && o.userData?.['family'] === dest) found = o; });
+  if (!found) return stackTop(ctx, 'discard'); // defensive: the view didn't render it — the pile is truth
+  return { mesh: found, pos: (found as THREE.Object3D).getWorldPosition(new THREE.Vector3()) };
 }
 
 /** a stack's TOP card mesh (world) — route targets + the hide/reveal handles. */
@@ -70,7 +83,7 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   if (dt.mesh) dt.mesh.visible = false; // the grab card IS the top card — never two
   theater = {
     mesh: m, from, t: 0, inst: null, seeded: '', flipped: false,
-    hiddenTop: dt.mesh, routeFrom: null, routeTo: null, dest: null,
+    hiddenTop: dt.mesh, routeFrom: null, routeTo: null, dest: null, destPos: null,
     angle: 0, samples: [{ x: hit.event.clientX, y: hit.event.clientY, t: performance.now() }],
   };
   phase = 'grabbing';
@@ -104,9 +117,15 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
     theater.seeded = after.decks[active]?.discardTop ?? '(none)';
     theater.inst = beginFlourish('card-flip', theater.seeded, '♪ card flip');
     ctx.rebuild(); // geometry is the count — the deck is one shorter
-    const disc = stackTop(ctx, 'discard'); // the rebuilt discard holds the card — hide its top
-    if (disc.mesh) disc.mesh.visible = false;
-    theater.hiddenTop = disc.mesh;
+    // Q-2c (I-92): the rebuilt DERIVED VIEW already renders the card at its destination
+    // (global slot · session row · pile top) — hide that mesh; the traveler IS the card
+    // until it lands there.
+    const dest = routeDestFor(theater.seeded);
+    const target = findCardMesh(ctx, theater.seeded, dest);
+    if (target.mesh) target.mesh.visible = false;
+    theater.hiddenTop = target.mesh;
+    theater.destPos = target.pos.clone();
+    theater.dest = dest;
     theater.t = theater.angle / Math.PI; // momentum: the flip continues from the grabbed tilt
     phase = 'flipping';
     lastGesture = { verdict: 'flicked', velocity: vel };
@@ -121,13 +140,13 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
 
 function settleBack(): void { phase = 'settling'; if (theater) theater.t = 0; }
 
-/** onion close → ROUTE the same card (real movement, no teleport). */
+/** onion close → ROUTE the same card (real movement, no teleport) to where the derived
+ *  view placed it — first open global slot · session row · or the discard top (I-92). */
 export function startRoute(ctx: PlayAreaContext): void {
   if (!theater) { phase = 'idle'; return; }
-  const dest = routeDestFor();
   theater.routeFrom = theater.mesh.position.clone();
-  theater.routeTo = stackTop(ctx, 'discard').pos.clone(); // global/local targets land with their cycles (I-90)
-  theater.dest = dest;
+  theater.routeTo = (theater.destPos ?? stackTop(ctx, 'discard').pos).clone();
+  theater.dest = theater.dest ?? 'discard';
   theater.t = 0;
   phase = 'routing';
 }

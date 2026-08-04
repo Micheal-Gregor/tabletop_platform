@@ -11,10 +11,11 @@
  */
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
-import { layoutFace } from '../surfaces.js';
+import { layoutFace, panelTexture } from '../surfaces.js';
 import { cardStack } from '../stacks.js';
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
+import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
@@ -23,6 +24,21 @@ let cx: PlayAreaContext | null = null;
 
 // ── FIDGET (I-67e): PURE THEATER — seeded offsets, meshes only, never state ──
 const fidget: Record<string, number> = { deck: 0, discard: 0 };
+
+// ── Q-2c (I-92): THE DERIVED PARTITION — ownDiscard split by CARD_FAMILY (content data):
+// global → the table's GLOBAL CARDS IN PLAY slots · session → the active seat's row ·
+// else the pile. Derived-never-stored; every card renders exactly once. ──
+function partition(ownDiscard: readonly string[]): { global: string[]; session: string[]; pile: string[] } {
+  const global: string[] = [], session: string[] = [], pile: string[] = [];
+  for (const id of ownDiscard) {
+    const f = CARD_FAMILY[id];
+    if (f === 'global') global.push(id);
+    else if (f === 'session') session.push(id);
+    else pile.push(id);
+  }
+  return { global, session, pile };
+}
+let sessionGroup: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
 
 // ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
 // size-gate extraction). This adapter delegates: grab/flick/flip/onion/route. ──
@@ -48,12 +64,41 @@ export const table: Component = {
       log: ['TABLE LOG', ...(log.length ? log : ['(no moves yet)'])],
       windows: ['windows', openWindows ? `${openWindows} open — prompts at A8` : 'none open'],
       'art-banner': [`[art: ${SEASONS[(v.turn.round - 1) % 4]} — Maple Hollow]`], // the SEASON block, top-left (T-1)
-      'global-play': ['GLOBAL CARDS IN PLAY', '(routing lands at Q-2)'], // the owner's global section — right of the season
+      'global-play': ['GLOBAL CARDS IN PLAY'], // Q-2c: the slots fill left-to-right below the label
     }, ['deck', 'discard', 'tradespeople-pile', 'equipment-pile']);
     const deckR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'deck')!;
     const discR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
     t.add(cardStack(deckR, 'deck', v.decks[active]?.drawCount ?? 0, null, fidget['deck']));
-    t.add(cardStack(discR, 'discard', v.ownDiscard.length, v.ownDiscard, fidget['discard'])); // the VIEWER'S discard — redaction-honest (I-67a)
+    // Q-2c (I-92): the pile renders the PARTITION's pile slice; globals + session cards
+    // render IN PLAY (left-filled, discard order). pile + global + session ≡ ownDiscard.
+    const part = partition(v.ownDiscard);
+    t.add(cardStack(discR, 'discard', part.pile.length, part.pile, fidget['discard'])); // the VIEWER'S discard — redaction-honest (I-67a)
+    const gpR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'global-play')!;
+    part.global.slice(0, 6).forEach((id, i) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(9, 15), new THREE.MeshBasicMaterial({ map: panelTexture([id], 9, 15) }));
+      m.position.set(gpR.x + 8 + i * 11 - 50, 50 - (gpR.y + gpR.h - 9), 0.7); // left-fill along the section
+      m.userData = { card: true, slotCard: id, family: 'global' };
+      t.add(m);
+    });
+    if (sessionGroup) { sessionGroup.parent?.remove(sessionGroup); sessionGroup = null; }
+    if (part.session.length) {
+      const seatObj = ctx.theater.focusObject(`seat-${v.turn.seatIdx}`);
+      if (seatObj) {
+        const bb = new THREE.Box3().setFromObject(seatObj);
+        const c = bb.getCenter(new THREE.Vector3());
+        const dir = c.z > 0 ? -1 : 1; // toward the table — "under the active player's seat"
+        const sg = new THREE.Group();
+        part.session.slice(0, 6).forEach((id, i) => {
+          const m = new THREE.Mesh(new THREE.PlaneGeometry(52, 78), new THREE.MeshBasicMaterial({ map: panelTexture([id], 10, 16) }));
+          m.rotation.x = -Math.PI / 2;
+          m.position.set(c.x - 150 + i * 62, 2, c.z + dir * 70); // left-fill across the board's front
+          m.userData = { card: true, slotCard: id, family: 'session' };
+          sg.add(m);
+        });
+        sessionGroup = sg;
+        ctx.scene.add(sg);
+      }
+    }
     // T-1 (I-89): the A16 pile STACKS — STAGED EXHIBITS (pure theater, like the die): the
     // slice has no tradesperson/equipment decks yet; counts bind to state when the engine
     // decks land (I-82f). Six face-down cards each, at their v2 regions.
@@ -130,6 +175,13 @@ export const table: Component = {
       drawTheater: () => draw.drawTheaterInfo(cx!),
       lastRoute: draw.lastRoute,
       drawGesture: draw.drawGesture,
+      /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */
+      cardFamily: (id: string) => CARD_FAMILY[id] ?? 'discard',
+      partitionView: () => {
+        const v = cx!.projection();
+        const p = partition(v.ownDiscard);
+        return { global: p.global, session: p.session, pile: p.pile, total: v.ownDiscard.length };
+      },
       onionState: onion.onionState,
       onionRegions: onion.onionRegions,
       forceFlipMismatch: draw.setForceFlipMismatch,
