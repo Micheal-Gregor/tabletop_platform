@@ -255,6 +255,7 @@ export const table: Component = {
       stackInfo: (rid: string) => oracles.stackInfoOf(cx!, rid, fidget[rid] ?? 0),
       deckTopUuid: () => oracles.stackTopUuidOf(cx!, 'deck'), // I-112: the identity oracle
       drawGrabUuid: draw.drawGrabUuid, // I-112: the grabbed mesh's uuid (null at idle)
+      drawFlipDir: draw.drawFlipDir, // I-113: the flick's direction (+1 cw · −1 ccw)
       regionScreenXY: (rid: string) => oracles.regionScreenXYOf(cx!, rid),
     };
   },

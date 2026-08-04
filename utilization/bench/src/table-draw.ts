@@ -1,15 +1,11 @@
 /**
- * TABLE-DRAW — the draw-theater cluster (Q-2b, I-91; a size-gate extraction from
- * components/table.ts). THE FLICK-TO-FLIP LAW (owner-ruled): pointerdown on the deck's
- * top card GRABS it (viewer's turn only) — it lifts and TILTS with the drag, face still
- * down (nothing revealed before the engine speaks); release with velocity ≥ FLICK_T →
- * the draw SUBMITS through the same doors and the flip completes with momentum (midpoint
- * face-swap — always post-release), HK-11 at flip end, then the onion just DISPLAYS the
- * card ("let go and THEN the pop-up shows"). A weak flick or a tap → NO submit: the card
- * settles back FACE DOWN (a nudge wiggle) — rowHash/moveCount invariant, pure theater.
- * On onion close the SAME card ROUTES (glide + arc, no teleport) to its destination —
- * engine truth (today the discard; the global/local branches fire when the projection
- * carries in-play cards, I-82f/I-90).
+ * TABLE-DRAW — the draw-theater cluster (Q-2b I-91 · I-110/112/113; a size-gate
+ * extraction from components/table.ts). THE LAW: the REAL top box grabs (I-112,
+ * three-objects), follows the pointer (I-110), tilts SIGNED below the reveal; release
+ * ≥ FLICK_T → the draw SUBMITS and the flip completes IN THE FLICK'S DIRECTION at a
+ * velocity-scaled pace within tight clamps — completion GUARANTEED (I-113); weak →
+ * the SAME card re-attaches face down, state invariant; a tap nudges the stack
+ * (I-110). On onion close the card ROUTES to its derived destination (I-92).
  */
 import * as THREE from 'three';
 import { beginFlourish, completeFlourish } from '@tabletop/presentation';
@@ -35,21 +31,16 @@ let theater: {
   routeFrom: THREE.Vector3 | null; routeTo: THREE.Vector3 | null; dest: string | null;
   destPos: THREE.Vector3 | null; // the card's OWN rendered spot in the derived view (I-92)
   angle: number; samples: { x: number; y: number; t: number }[];
+  flipDir: number; flipSpeed: number; flipLift: number; // R-1a5 (I-113): direction + tight physics-responsiveness
 } | null = null;
 let lastRouteRec: { dest: string; endX: number; endY: number; endZ: number; targetX: number; targetY: number; targetZ: number } | null = null;
 let lastGesture: { verdict: 'flicked' | 'weak'; velocity: number } | null = null;
 let forceMismatch = false; // the committed forced-mismatch drill — one-shot
 
-/** THE ROUTING BRANCHES (I-90/I-92): the destination is the DERIVED VIEW's placement of
- *  the card — the CARD_FAMILY content data partitions the projection's discard: global →
- *  the table's GLOBAL CARDS IN PLAY slots · session → the active seat's session row ·
- *  else the discard pile. Derived-never-stored; no invented state. */
-function routeDestFor(cardId: string): 'global' | 'session' | 'discard' {
-  return CARD_FAMILY[cardId] ?? 'discard';
-}
+/** the DERIVED VIEW's destination for the card (I-90/I-92; derived-never-stored). */
+const routeDestFor = (cardId: string): 'global' | 'session' | 'discard' => CARD_FAMILY[cardId] ?? 'discard';
 
-/** the card's OWN rendered mesh in the derived view (slots) or the pile top — the route
- *  TARGET + the hide/reveal handle: the traveler lands exactly where the view puts it. */
+/** the card's OWN rendered mesh in the derived view — the route target + reveal handle. */
 function findCardMesh(ctx: PlayAreaContext, cardId: string, dest: 'global' | 'session' | 'discard'): { mesh: THREE.Object3D | null; pos: THREE.Vector3 } {
   if (dest === 'discard') return stackTop(ctx, 'discard');
   let found: THREE.Object3D | null = null;
@@ -58,7 +49,7 @@ function findCardMesh(ctx: PlayAreaContext, cardId: string, dest: 'global' | 'se
   return { mesh: found, pos: (found as THREE.Object3D).getWorldPosition(new THREE.Vector3()) };
 }
 
-/** a stack's TOP card mesh (world) — route targets + the hide/reveal handles. */
+/** a stack's TOP card mesh (world). */
 function stackTop(ctx: PlayAreaContext, rid: string): { mesh: THREE.Object3D | null; pos: THREE.Vector3 } {
   const grp = ctx.theater.focusObject(`table:${rid}`);
   if (!grp) return { mesh: null, pos: new THREE.Vector3() };
@@ -71,7 +62,7 @@ function stackTop(ctx: PlayAreaContext, rid: string): { mesh: THREE.Object3D | n
   return { mesh: top, pos };
 }
 
-/** GRAB (contract v2): claims only on the deck, the VIEWER'S turn, theater idle. */
+/** GRAB: claims only on the deck, the VIEWER'S turn, theater idle (contract v2). */
 export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   if (phase !== 'idle' || hit.region !== 'deck') return false;
   const v = ctx.projection();
@@ -81,9 +72,8 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   const dt = stackTop(ctx, 'deck');
   if (!dt.mesh) return false;
   const from = dt.pos.clone();
-  // R-1a4 (I-112, owner-caught): the grabbed card IS the real top box — scene.attach (the
-  // Q-6/P-2c three-objects pattern), world pose baked, same size, same edges. No plane is
-  // built and nothing is hidden on the deck side; the box survives rebuilds scene-parented.
+  // I-112 (owner-caught): the grabbed card IS the real top box — scene.attach (the P-2c
+  // three-objects pattern); nothing hidden; the box survives rebuilds scene-parented.
   const m = dt.mesh as THREE.Mesh;
   const homeGroup = m.parent;
   const homeLocal = { pos: m.position.clone(), quat: m.quaternion.clone() };
@@ -96,6 +86,7 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
     mesh: m, from, t: 0, bound, settleFrom: null, homeGroup, homeLocal, swappedFace: null, inst: null, seeded: '', flipped: false,
     hiddenTop: null, routeFrom: null, routeTo: null, dest: null, destPos: null,
     angle: 0, samples: [{ x: hit.event.clientX, y: hit.event.clientY, t: performance.now() }],
+    flipDir: 1, flipSpeed: 0.06, flipLift: 16,
   };
   phase = 'grabbing';
   ctx.status('grabbed the top card — flick to flip it');
@@ -107,9 +98,11 @@ export function grabMove(ctx: PlayAreaContext, ev: PointerEvent): void {
   theater.samples.push({ x: ev.clientX, y: ev.clientY, t: performance.now() });
   if (theater.samples.length > 6) theater.samples.shift();
   const d = Math.hypot(ev.clientX - theater.samples[0]!.x, ev.clientY - theater.samples[0]!.y);
-  theater.angle = Math.min(TILT_MAX, d / 90); // tilt with the drag — CLAMPED below the reveal (unchanged law)
-  // R-1a2 (I-110, the owner's ruling): the card FOLLOWS the pointer on the deck-top plane
-  // ("drag it around before a flick"), clamped to the table; the tilt/reveal law holds.
+  // R-1a5 (I-113): the tilt is SIGNED by the drag's screen-x — the card LEANS the way you
+  // pull; the magnitude stays CLAMPED below the reveal (the reveal-order law unchanged).
+  const lean = ev.clientX - theater.samples[0]!.x >= 0 ? 1 : -1;
+  theater.angle = lean * Math.min(TILT_MAX, d / 90);
+  // I-110: the card FOLLOWS the pointer on the deck-top plane, clamped to the table.
   let fx = theater.from.x, fz = theater.from.z;
   const r = ctx.renderer.domElement.getBoundingClientRect();
   const ray = new THREE.Raycaster();
@@ -120,7 +113,7 @@ export function grabMove(ctx: PlayAreaContext, ev: PointerEvent): void {
     fx = theater.bound ? Math.max(theater.bound.minX, Math.min(theater.bound.maxX, p.x)) : p.x;
     fz = theater.bound ? Math.max(theater.bound.minZ, Math.min(theater.bound.maxZ, p.z)) : p.z;
   }
-  theater.mesh.position.set(fx, theater.from.y + 6 + theater.angle * 22, fz);
+  theater.mesh.position.set(fx, theater.from.y + 6 + Math.abs(theater.angle) * 22, fz);
   theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
   theater.mesh.rotateY(theater.angle);
 }
@@ -150,7 +143,12 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
     theater.destPos = target.pos.clone();
     theater.dest = dest;
     theater.from = new THREE.Vector3(theater.mesh.position.x, theater.from.y, theater.mesh.position.z); // R-1a2: the flip happens WHERE RELEASED
-    theater.t = theater.angle / Math.PI; // momentum: the flip continues from the grabbed tilt
+    // R-1a5 (I-113): flicked right → clockwise, left → counter-clockwise; speed + lift
+    // scale with the flick velocity WITHIN TIGHT CLAMPS — and the flip ALWAYS completes.
+    theater.flipDir = z.x - a.x >= 0 ? 1 : -1;
+    theater.flipSpeed = Math.max(0.045, Math.min(0.09, 0.03 + vel * 0.015));
+    theater.flipLift = Math.max(12, Math.min(26, 8 + vel * 5));
+    theater.t = Math.abs(theater.angle) / Math.PI; // momentum: the flip continues from the lean
     phase = 'flipping';
     lastGesture = { verdict: 'flicked', velocity: vel };
     ctx.status(`flicked (${vel.toFixed(2)} px/ms) — the card flips · ♪ card flip`);
@@ -222,12 +220,12 @@ function finishTheater(ctx: PlayAreaContext, reattach = false): void {
 export function tickDraw(ctx: PlayAreaContext): void {
   if (!theater) return;
   if (phase === 'flipping') {
-    theater.t = Math.min(1, theater.t + 0.06);
+    theater.t = Math.min(1, theater.t + theater.flipSpeed); // R-1a5: responsive, ALWAYS completes
     const pT = theater.t;
     const ease = pT * pT * (3 - 2 * pT);
-    theater.mesh.position.set(theater.from.x, theater.from.y + Math.sin(pT * Math.PI) * 16 + 6, theater.from.z);
+    theater.mesh.position.set(theater.from.x, theater.from.y + Math.sin(pT * Math.PI) * theater.flipLift + 6, theater.from.z);
     theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
-    theater.mesh.rotateY(Math.PI * ease);
+    theater.mesh.rotateY(theater.flipDir * Math.PI * ease); // R-1a5: the flick's direction
     if (pT >= 0.5 && !theater.flipped) {
       theater.flipped = true; // the midpoint face-swap — always post-release + post-submit
       const displayed = forceMismatch ? 'WRONG-CARD' : theater.seeded;
@@ -240,7 +238,10 @@ export function tickDraw(ctx: PlayAreaContext): void {
     }
     if (pT >= 1) {
       theater.mesh.position.copy(theater.from);
+      // I-113 (fixing the I-112 latent end-pose bug): the end pose is the FLIPPED, face-up
+      // rotation — the underside slot (the fortune face) stays UP through reading + routing.
       theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
+      theater.mesh.rotateY(theater.flipDir * Math.PI);
       const displayed = forceMismatch ? 'WRONG-CARD' : theater.seeded;
       const verdict = completeFlourish(theater.inst!, displayed); // HK-11 — truth wins (R-20)
       theater.inst = null;
@@ -258,10 +259,10 @@ export function tickDraw(ctx: PlayAreaContext): void {
     const sf = theater.settleFrom ?? theater.from; // R-1a2: the dragged card GLIDES back to the deck
     theater.mesh.position.set(
       sf.x + (theater.from.x - sf.x) * theater.t,
-      theater.from.y + back * (6 + theater.angle * 22),
+      theater.from.y + back * (6 + Math.abs(theater.angle) * 22),
       sf.z + (theater.from.z - sf.z) * theater.t);
     theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
-    theater.mesh.rotateY(theater.angle * back + Math.sin(theater.t * Math.PI * 3) * 0.05 * back); // the nudge wiggle
+    theater.mesh.rotateY(theater.angle * back + Math.sin(theater.t * Math.PI * 3) * 0.05 * back); // the nudge wiggle (signed lean unwinds)
     if (theater.t >= 1) finishTheater(ctx, true); // the SAME card, back on the pile — nothing happened (I-112)
     return;
   }
@@ -289,6 +290,7 @@ export const setForceFlipMismatch = (v: boolean): void => { forceMismatch = v; }
 export const lastRoute = () => lastRouteRec;
 export const drawGesture = () => (lastGesture ? { ...lastGesture, threshold: FLICK_T } : null);
 export const drawGrabUuid = (): string | null => (theater ? theater.mesh.uuid : null); // I-112: the identity oracle
+export const drawFlipDir = (): number | null => (theater && (phase === 'flipping' || phase === 'reading' || phase === 'routing') ? theater.flipDir : null); // I-113
 export function drawTheaterInfo(ctx: PlayAreaContext) {
   if (!theater) return null;
   const dp = stackTop(ctx, 'deck').pos;

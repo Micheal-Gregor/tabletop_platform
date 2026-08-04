@@ -170,12 +170,13 @@ export async function run(h) {
     // 150u horizontal for THIS drive. The restored flight-to-camera mutant (y rockets by
     // hundreds) still dies by name.
     const th = await page.evaluate(() => window.__GAME3D__.drawTheater());
+    const fd = await page.evaluate(() => window.__GAME3D__.drawFlipDir()); // I-113: this drive drags RIGHT → +1
     let flipAtPile = false, flipDetail = 'NO-THEATER (missed the flip window)';
     if (th && th.card && th.deck) {
       const lift = th.card.y - th.deck.y;
       const horiz = Math.hypot(th.card.x - th.deck.x, th.card.z - th.deck.z);
-      flipAtPile = lift < 60 && horiz < 150;
-      flipDetail = `phase ${th.phase} · lift ${lift.toFixed(1)} (<60 — table level, no camera flight) · horiz ${horiz.toFixed(1)} (<150 for this drive)`;
+      flipAtPile = lift < 60 && horiz < 150 && fd === 1;
+      flipDetail = `phase ${th.phase} · lift ${lift.toFixed(1)} (<60 — table level, no camera flight) · horiz ${horiz.toFixed(1)} (<150) · flipDir ${fd} (want +1 — flicked RIGHT flips clockwise, I-113)`;
     }
     check('VG8j/draw-flip-not-fly', flipAtPile, flipDetail);
     // one theater at a time (K7-A2 D1 carried into Q-2b): a second interaction mid-flip
