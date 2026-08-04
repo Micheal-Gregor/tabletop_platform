@@ -32,11 +32,12 @@ export async function run(h) {
   if (g1 && gt && g2) {
   const pd8 = await page.evaluate(() => window.__GAME3D__.presetData('seat-0'));
   const d8 = 1900 / pd8.zoom;
-  // I-133 (the mapping superseded ON THE RECORD): a seat preset approaches along ITS
-  // OWN yaw normal — want re-derives from the SAME SEAT_YAWS data the camera consumes
-  // (byte-identical to the old ±z form for the mids by trigonometry).
+  // PA-1 (I-141, superseding the I-133 mapping ON THE RECORD): a seat preset LOOKS at
+  // its ring station and approaches along the seat's yaw — the want re-derives from the
+  // SAME template expressions the camera consumes (ringLook + seatYawData).
   const yaw0 = await page.evaluate(() => window.__GAME3D__.seatYawData(0));
-  const want8 = { x: pd8.cx - 800 + Math.sin(yaw0) * d8 * 0.7, y: d8 * 0.72, z: pd8.cy - 500 + Math.cos(yaw0) * d8 * 0.7 };
+  const lk0 = await page.evaluate(() => window.__GAME3D__.ringLook(0));
+  const want8 = { x: lk0.x + Math.sin(yaw0) * d8 * 0.7, y: d8 * 0.72, z: lk0.z + Math.cos(yaw0) * d8 * 0.7 };
   const near = (a, b) => Math.abs(a - b) < 1e-9; // K7-A1 D3: rest is an EXACT copy of the mapped target — identical IEEE expressions, no epsilon to hide in
   const moved8 = !(near(g1.x, gt.x) && near(g1.y, gt.y) && near(g1.z, gt.z));
   const pure8 = near(g1.x, g2.x) && near(g1.y, g2.y) && near(g1.z, g2.z);
@@ -222,22 +223,23 @@ export async function run(h) {
     check('VG8g2/shop-board-data-true', fillsOk,
       fills.map((f, i) => `${i}:${f ? (f.match ? 'ok' : `MISMATCH tier"${f.got.tier}"≟"${f.want.tier}" jobs"${f.got.jobs}"≟"${f.want.jobs}"`) : 'NULL'}`).join(' · '));
 
-    // L-5 (I-131) · corner-seats-45: the four corner boards stand AT the corners yawed
-    // ±45° toward their players; the mids hold their certified poses (the seat-1/seat-4
-    // read pins above stay valid BY CONSTRUCTION). Geometry state, never a def echo.
-    // KILL: revert the corner poses → yaws read 0/180 → fails by name.
+    // PA-1 (I-141) · ring-stations: every board stands ON THE RING — equidistant at the
+    // template's derived radius, yawed to its own angle (supersedes the L-5 corner pins
+    // BY the owner's own template). The wants derive from the SAME playarea expressions
+    // the boards consume. KILL: hand-place any seat → its radius/yaw diverges → fails.
     const poses = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.boardPose(i)));
-    const yawNear = (got, want) => got !== null && Math.abs(got - want) < 1;
-    const cornersOk = poses.every((p) => p)
-      && yawNear(poses[0].yawDeg, -45) && yawNear(poses[2].yawDeg, 45)
-      && yawNear(poses[1].yawDeg, 0) && Math.abs(Math.abs(poses[4].yawDeg) - 180) < 1
-      && yawNear(poses[3].yawDeg, -135) && yawNear(poses[5].yawDeg, 135)
-      && Math.abs(poses[0].x) > 440 && Math.abs(poses[0].z) > 440
-      && Math.abs(poses[5].x) > 440 && Math.abs(poses[5].z) > 440
-      && poses[1].x === 0 && poses[4].x === 0
-      && Math.abs(poses[1].z) > 550 && Math.abs(poses[4].z) > 550; // L-5b (I-132): mids pulled back to the corner near-edge line (≈562)
-    check('VG8g3/corner-seats-45', cornersOk,
-      poses.map((p, i) => `${i}:${p ? `${p.yawDeg.toFixed(0)}°@(${p.x.toFixed(0)},${p.z.toFixed(0)})` : 'NULL'}`).join(' · ') + ' (want -45/0/45/-135/180/135 — I-131)');
+    const ring = await page.evaluate(() => window.__GAME3D__.ringInfo());
+    const yawsAll = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.seatYawData(i)));
+    const ringOk = poses.every((p, i) => {
+      if (!p) return false;
+      const wx = Math.sin(yawsAll[i]) * ring.r, wz = Math.cos(yawsAll[i]) * ring.r;
+      const yawWant = (yawsAll[i] * 180) / Math.PI;
+      let dy = Math.abs(p.yawDeg - yawWant) % 360;
+      if (dy > 180) dy = 360 - dy;
+      return Math.hypot(p.x - wx, p.z - wz) < 2 && dy < 1;
+    });
+    check('VG8g3/ring-stations', ringOk && ring.r > 400,
+      poses.map((p, i) => `${i}:${p ? `${p.yawDeg.toFixed(0)}°@r${Math.hypot(p.x, p.z).toFixed(0)}` : 'NULL'}`).join(' · ') + ` (want equidistant at r=${ring.r.toFixed(0)} — the PA-1 template, I-141)`);
 
     // L-4 (I-131) · seat-rows-law: every seat's RENDERED rows ≡ the pure planner's plan
     // (the planner's own laws live in vitest — seat-rows.test.ts); the viewer's HAND

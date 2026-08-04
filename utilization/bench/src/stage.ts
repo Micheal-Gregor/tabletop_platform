@@ -12,10 +12,11 @@ import { BOTY_PACK6 } from '../../../packs/boty/src/index.js';
 export const WORLD = { w: 1600, h: 1000 };
 export const SEATS = BOTY_PACK6.seats.map((s) => s.id);
 export const presets = focusPresets(SEATS.length, WORLD);
-// I-133 (from the I-132 corner ruling): THE SINGLE YAW TRUTH — corners (0,2,3,5) face
-// their players at ±45/±135°, mids (1,4) hold 0/π. Consumed by seats.ts (board poses),
-// camera.ts (preset approach), and the VG8c law gate — one source, no drift.
-export const SEAT_YAWS: readonly number[] = [-Math.PI / 4, 0, Math.PI / 4, Math.PI + Math.PI / 4, Math.PI, Math.PI - Math.PI / 4];
+// I-133's SINGLE YAW TRUTH, now DERIVED from the radial play-area template (PA-1,
+// I-141 — the owner's ring law supersedes the corner special-case): equidistant seats,
+// seat-1 anchored near-mid, yaw = the seat's angle. Same consumers, one source.
+import { ringYaws } from './playarea.js';
+export const SEAT_YAWS: readonly number[] = ringYaws(SEATS.length);
 
 // ── scene from the PROJECTION ──
 export const scene = new THREE.Scene();

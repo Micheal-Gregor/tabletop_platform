@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, panel } from '../surfaces.js';
 import { SHOP_BOARD, BOTY_PACK6 } from '../../../../packs/boty/src/index.js';
-import { SEAT_YAWS } from '../stage.js'; // I-133: the single yaw truth
+import { stationPos } from '../playarea.js'; // PA-1 (I-141): the radial template
 
 const SEATS = BOTY_PACK6.seats.map((s) => s.id);
 
@@ -50,18 +50,12 @@ export const seats: Component = {
       // their own player; MIDS (1,4) hold their certified poses (seat-1/seat-4 carry the
       // read-pose gate pins — untouched by construction). The seat-front rows, ledger,
       // and hand all DERIVE from the live board bbox, so they follow the corners free.
-      const CORNER = 470;
-      // L-5b (I-132): the MID seats sit ON THE LINE of the adjacent corner boards'
-      // closest edges — 'pulled back… full visibility of table'. DERIVED: a corner
-      // board (half-width 130 world) yawed 45° reaches CORNER + 130·sin45° in z.
-      const MID_Z = CORNER + 130 * Math.SQRT1_2; // ≈ 562 — the corner near-edge line
-      const yawOf = SEAT_YAWS; // I-133: the single yaw truth (stage.ts)
-      const posOf: readonly [number, number][] = [
-        [-CORNER, CORNER], [0, MID_Z], [CORNER, CORNER],
-        [-CORNER, -CORNER], [0, -MID_Z], [CORNER, -CORNER],
-      ];
-      b.position.set(posOf[i]![0], 130, posOf[i]![1]);
-      b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawOf[i]!)
+      // PA-1 (I-141, the owner's RADIAL TEMPLATE — supersedes the L-5/L-5b corners):
+      // every seat sits EQUIDISTANT on the ring around 0,0,0; the radius derives from
+      // the stations' chord claim vs the table's clearance; yaw = the seat's angle.
+      const st = stationPos(i, SEATS.length);
+      b.position.set(st.x, 130, st.z);
+      b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), st.yaw)
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));
       // the BACK of a seat screen shows ONLY the shop graphic (I-65c) — which shop, no data
       const back = panel(['[shop art]'], 100, 100, s);
