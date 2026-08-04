@@ -17,7 +17,7 @@ import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { SeatView } from '@tabletop/presentation';
 import { emit, project } from '@tabletop/presentation';
-import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, shuffledDeckFor } from '../../../packs/boty/src/index.js';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, shuffledDeckFor, botyJob } from '../../../packs/boty/src/index.js';
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS } from './stage.js';
 import * as cam from './camera.js';
 import type { PlayAreaContext, PickInfo } from './component.js';
@@ -233,12 +233,16 @@ document.getElementById('bar')!.innerHTML =
   Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
   `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
   `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>` +
-  `<button id="round-btn" title="the round sequence — preamble → round card (I-55a)">🎲 round</button>`;
+  `<button id="round-btn" title="the round sequence — preamble → round card (I-55a)">🎲 round</button>` +
+  `<button id="spawn-btn" title="post a job — the spawn-venture verb (A6/I-136; the SVG bench's own exhibit door)">🔨 spawn job</button>`;
 document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
+  // A6 (I-136): the SPAWN DOOR — the SVG bench's exhibit chrome (#spawn-job) in 3D; a
+  // REAL verb through the same doors, then the rebuild renders the venture + its slots.
+  if (t.id === 'spawn-btn') { if (submitVerb('spawn-venture', { spec: botyJob() })) { buildScene(); status('job posted — select a tradesperson, then click a portion slot'); } }
   // A4 (I-55a): open the round sequence; the lead-off callout DERIVES from the projected
   // active seat (the K7-v1x D2 law — theater never outruns truth).
   if (t.id === 'round-btn') { const v = projectNow(); openRoundSequence(v.turn.round, v.seats[v.turn.seatIdx]!.id, SEASONS[(v.turn.round - 1) % 4]!); status('round sequence — who goes first?'); }
@@ -264,6 +268,8 @@ const gate: Record<string, unknown> = {
   deckOrder: (seat: string) => shuffledDeckFor('maple-hollow', seat),
   // I-133: the single yaw truth as DATA — VG8c re-derives the preset law from it.
   seatYawData: (i: number) => SEAT_YAWS[i] ?? null,
+  // A6 (I-136): the public crew surface — VG8s waits on assignedTo STATE, never clocks.
+  viewCrew: () => projectNow().crew,
   viewData: () => {
     const v = projectNow();
     return { seats: v.seats.map((s) => ({ id: s.id, cash: s.cash })), round: v.turn.round, active: v.seats[v.turn.seatIdx]!.id };

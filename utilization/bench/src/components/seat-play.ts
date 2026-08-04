@@ -15,6 +15,7 @@ import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { panelTexture } from '../surfaces.js';
 import { planSeatRows } from '../seat-rows.js'; // L-4 (I-131): the pure row planner
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
+import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 
 let cx: PlayAreaContext | null = null;
 let root: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
@@ -48,6 +49,7 @@ export const seatPlay: Component = {
     cx = ctx;
     if (root) { root.parent?.remove(root); root = null; } // purge (K7-P D2)
     if (grab || resetting) { grab = null; resetting = null; } // a rebuild drops any live gesture
+    loop.resetCrewLoop(); // A6: theater drops; the SELECTION survives (the SVG's law)
     cards = [];
     const v = ctx.projection();
     const g = new THREE.Group();
@@ -87,9 +89,11 @@ export const seatPlay: Component = {
           cum += w;
           const isLocal = it.kind === 'local';
           const label = it.kind === 'equipment' ? it.id.split(':')[0]! : it.id;
+          // A6 (I-136): an ASSIGNED tradesperson wears its status (the SVG's crew-busy)
+          const assigned = (it.kind === 'trades' || it.kind === 'pair') && crew.find((m) => m.id === it.id)?.assignedTo !== undefined;
           const mesh = new THREE.Mesh(
             new THREE.PlaneGeometry(it.kind === 'pair' ? 62 : 44, isLocal ? 60 : 66),
-            new THREE.MeshBasicMaterial({ map: panelTexture([label, `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
+            new THREE.MeshBasicMaterial({ map: panelTexture([label, assigned ? '⚒ working' : `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
           );
           // L-5b (I-132): the SEAT FRAME LAW — position in the board's frame (lateral +
           // toward-table steps), orientation yawed WITH the board (corner rows run at 45°).
@@ -162,6 +166,22 @@ export const seatPlay: Component = {
   onGrabEnd(ctx, _ev: PointerEvent) {
     if (!grab) return false;
     const moved = grab.card.mesh.position.distanceTo(grab.card.anchor);
+    // A6 (I-136): a sub-8u release on the VIEWER'S OWN crew card is a CLICK — it routes
+    // to the v4 loop (assigned → work; else toggle select). The VG8p reset drive moves
+    // >40u, so the grab/reset law is untouched by predicate; equipment/local/hand keep
+    // the nudge-settle.
+    if (moved < 8 && grab.card.key.startsWith('crew:')) {
+      const crewId = grab.card.key.slice(5);
+      const v = ctx.projection();
+      const member = v.crew.find((m) => m.id === crewId);
+      if (member && member.outfit === ctx.viewSeat) {
+        const card = grab.card;
+        grab = null;
+        card.mesh.position.copy(card.anchor); // the un-moved click leaves no offset behind
+        loop.crewClick(ctx, crewId, card.mesh, member.assignedTo !== undefined);
+        return true;
+      }
+    }
     resetting = { card: grab.card, from: grab.card.mesh.position.clone(), t: 0 };
     lastReset = { moved, returned: false, frames: 0 };
     grab = null;
@@ -180,6 +200,8 @@ export const seatPlay: Component = {
   },
 
   tick() {
+    // A6 (I-136): the loop's theater — hop → assign-at-arrival · bounce · re-lift
+    loop.tickCrewLoop((key) => cards.find((c) => c.key === key)?.mesh ?? null);
     if (!resetting) return;
     resetting.t = Math.min(1, resetting.t + 0.07);
     const e = resetting.t * resetting.t * (3 - 2 * resetting.t);
