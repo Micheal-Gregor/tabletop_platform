@@ -65,3 +65,48 @@ export function workCrew(state: State, crewId: string): JsonObject {
   }
   return next;
 }
+
+// ── A16 POOLS (I-137, owner-ruled 2026-08-04): hire a tradesperson · buy equipment.
+// The pools carry their card DATA INLINE ({id, trade/name, cost}) — content-as-data,
+// the engine stays content-agnostic; the pack's genesis seeds them (shared piles,
+// seeded shuffle). S-3 module-native intents (the venture:spawn precedent); costs levy
+// through EffectEngine at the wire (R-24 — the sole applier); cost 0 posts nothing
+// (GBC-63). An EMPTY pool refuses BY NAME — never a silent no-op. ──
+export interface PoolCard extends JsonObject {
+  readonly id: string;
+  readonly cost: number;
+}
+export interface Pools extends JsonObject {
+  readonly tradespeople: readonly (PoolCard & { readonly trade: string })[];
+  readonly equipment: readonly (PoolCard & { readonly name: string })[];
+}
+export function poolsOf(state: State): Pools {
+  return (state['pools'] as Pools) ?? { tradespeople: [], equipment: [] };
+}
+
+/** GX-30: hire the TOP tradesperson card → a new crew member for the seat. */
+export function hireCrew(state: State, seat: string): { next: JsonObject; cost: number } {
+  const pools = poolsOf(state);
+  const top = pools.tradespeople[0];
+  if (!top) throw new VentureRefusal('pool', 'GX-30', 'the tradesperson pool is empty — no one to hire');
+  const next = {
+    ...state,
+    pools: { ...pools, tradespeople: pools.tradespeople.slice(1) },
+    crew: [...crewOf(state), { id: top.id, outfit: seat, trade: top.trade }],
+  };
+  return { next, cost: top.cost };
+}
+
+/** GX-30: buy the TOP equipment card → a seat asset {ref, value}. */
+export function buyEquipment(state: State, seat: string): { next: JsonObject; cost: number } {
+  const pools = poolsOf(state);
+  const top = pools.equipment[0];
+  if (!top) throw new VentureRefusal('pool', 'GX-30', 'the equipment pool is empty — nothing to buy');
+  const seats = (state['seats'] as readonly JsonObject[]).map((s) =>
+    s['id'] === seat
+      ? { ...s, assets: [...((s['assets'] as readonly JsonObject[]) ?? []), { ref: top.id, value: top.cost }] }
+      : s,
+  );
+  const next = { ...state, pools: { ...pools, equipment: pools.equipment.slice(1) }, seats };
+  return { next, cost: top.cost };
+}

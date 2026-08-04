@@ -270,6 +270,8 @@ const gate: Record<string, unknown> = {
   seatYawData: (i: number) => SEAT_YAWS[i] ?? null,
   // A6 (I-136): the public crew surface — VG8s waits on assignedTo STATE, never clocks.
   viewCrew: () => projectNow().crew,
+  // A16 (I-137): the pools' counts — the arrangement + hire/buy legs derive from these.
+  poolCounts: () => projectNow().pools,
   viewData: () => {
     const v = projectNow();
     return { seats: v.seats.map((s) => ({ id: s.id, cash: s.cash })), round: v.turn.round, active: v.seats[v.turn.seatIdx]!.id };

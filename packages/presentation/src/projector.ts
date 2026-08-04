@@ -37,6 +37,9 @@ export interface SeatView {
   /** Options are ABSENT unless this seat is the decider. */
   readonly windows: readonly { readonly id: string; readonly kind: string; readonly decider: string; readonly status: string; readonly options: readonly string[] | null }[];
   readonly ventures: readonly { readonly id: string; readonly status: string; readonly portions: number }[];
+  // A16 pools (I-137): COUNTS ONLY — the piles are face down (redaction); `?? empty`
+  // tolerates pool-less v1 states (the frozen SVG bench projects unchanged).
+  readonly pools: { readonly tradespeople: number; readonly equipment: number };
   readonly debts: readonly { readonly debtor: string; readonly creditor: string; readonly amount: number; readonly due: number }[];
   readonly receivables: readonly { readonly holder: string; readonly amount: number; readonly source: string }[];
   readonly results: unknown;
@@ -86,6 +89,10 @@ export function project(state: State, seat: string): SeatView {
     results: state['results'] ?? null,
     ownDiscard: decksRaw[seat]?.discard ?? [],
     crew: (state['crew'] as SeatView['crew']) ?? [], // Q-3 (I-93): public crew, additive
+    pools: (() => { // A16 (I-137): counts only — face-down piles
+      const p = state['pools'] as { tradespeople?: readonly unknown[]; equipment?: readonly unknown[] } | undefined;
+      return { tradespeople: p?.tradespeople?.length ?? 0, equipment: p?.equipment?.length ?? 0 };
+    })(),
   };
   return freezeDeep(structuredClone(view) as never) as unknown as SeatView;
 }

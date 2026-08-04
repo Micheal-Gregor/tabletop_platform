@@ -79,6 +79,45 @@ export async function run(h) {
   check('VG8s/crew-work-bounces', bounced && (st4.lastBounce?.frames ?? 0) >= 0 && hm4.m === hm3.m + 1 && hm4.h !== hm3.h,
     `work-submitted:${hm4.m === hm3.m + 1} (moves ${hm3.m}→${hm4.m}) · bounce-observed:${bounced}`);
 
+  // 5 · HIRE (A16, I-137): click the tradesperson pile on your turn → the hire verb →
+  // crew +1 (the new member from the pool's top), pool −1 (count-true stack), moves +1.
+  // KILL: cut the pile click routing → counts hold → fails by name.
+  const pc0 = await page.evaluate(() => window.__GAME3D__.poolCounts());
+  const crew0 = (await page.evaluate(() => window.__GAME3D__.viewCrew())).filter((m) => m.outfit === 'moe').length;
+  const hm5 = await hashes();
+  const txy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('tradespeople-pile'));
+  let hired = false;
+  if (txy) {
+    await page.mouse.click(txy.x, txy.y);
+    try {
+      await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pc0.tradespeople - 1, { timeout: 8000 });
+      hired = true;
+    } catch { /* named below */ }
+  }
+  const crew1 = (await page.evaluate(() => window.__GAME3D__.viewCrew())).filter((m) => m.outfit === 'moe').length;
+  const hm6 = await hashes();
+  check('VG8s/pile-click-hires', hired && crew1 === crew0 + 1 && hm6.m === hm5.m + 1 && hm6.h !== hm5.h,
+    `pool ${pc0.tradespeople}→${pc0.tradespeople - 1}:${hired} · moe's crew ${crew0}→${crew1} (want +1) · moves ${hm5.m}→${hm6.m} (want +1 — a REAL verb, I-137)`);
+
+  // 6 · BUY (A16, I-137): click the equipment pile → the buy verb → the viewer's assets
+  // +1, pool −1, moves +1 — AND the I-93 DEFERRED-until-nonzero trigger FIRES: the first
+  // nonzero asset RENDERS in the seat's equipment row (the L-4 plan's row, count-true).
+  const a0 = await page.evaluate(() => window.__GAME3D__.assetsCount());
+  const exy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('equipment-pile'));
+  let bought = false;
+  if (exy) {
+    await page.mouse.click(exy.x, exy.y);
+    try {
+      await page.waitForFunction((want) => window.__GAME3D__.assetsCount().got === want, a0.got + 1, { timeout: 8000 });
+      bought = true;
+    } catch { /* named below */ }
+  }
+  const a1 = await page.evaluate(() => window.__GAME3D__.assetsCount());
+  const pc2 = await page.evaluate(() => window.__GAME3D__.poolCounts());
+  const hm7 = await hashes();
+  check('VG8s/pile-click-buys', bought && a1.want === a0.want + 1 && a1.got === a1.want && pc2.equipment === pc0.equipment - 1 && hm7.m === hm6.m + 1,
+    `assets ${a0.got}→${a1.got} RENDERED ≡ projection ${a1.want} (the I-93 nonzero trigger FIRES) · equipment pool ${pc0.equipment}→${pc2.equipment} · moves ${hm6.m}→${hm7.m} (want +1)`);
+
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
 }

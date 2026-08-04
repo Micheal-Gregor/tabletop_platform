@@ -27,6 +27,9 @@ const VERBS: Readonly<Record<string, VerbFactory>> = Object.freeze({
   'assign-crew': (seat, a) => ({ type: 'crew:assign', seat, args: { crew: a['crew'], venture: a['venture'], portion: a['portion'] } }),
   'work': (seat, a) => ({ type: 'crew:work', seat, args: { crew: a['crew'] } }),
   'attach-effect': (seat, a) => ({ type: 'tfx:attach', seat, args: { tfx: a['tfx'] } }),
+  // A16 (I-137, admission on the record): the pools' doors — module-native intents.
+  'hire': (seat) => ({ type: 'crew:hire', seat, args: {} }),
+  'buy-equipment': (seat) => ({ type: 'outfit:buy', seat, args: {} }),
   'decide': (seat, a) => ({ type: 'window:resolve', seat, args: { window: a['window'], option: a['option'] } }),
   'end-turn': (seat) => ({ type: 'turn:end', seat, args: {} }),
   'reckon': (seat) => ({ type: 'closing:reckon', seat, args: {} }),

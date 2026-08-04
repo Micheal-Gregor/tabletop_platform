@@ -16,7 +16,7 @@ import type { SlotDecl } from '../rules/contributions.js';
 import { post, transfer, ledgerLoaded } from './ledger.js';
 import { spawnVenture, routeVenture, lapseExpired, debtsOf, setDebts } from './ventures.js';
 import type { VentureSpec } from './ventures.js';
-import { assignCrew, workCrew } from './outfit.js';
+import { assignCrew, workCrew, hireCrew, buyEquipment } from './outfit.js';
 import { attachTimedFx } from './timedfx.js';
 import type { TimedFx } from './timedfx.js';
 import { tickTimedEffects } from './timedfx.js';
@@ -179,6 +179,26 @@ export function wireLibrary(core: EngineCore, registry: RuleRegistry): void {
     'crew:work',
     { args: (_s, i) => (typeof i.args['crew'] === 'string' ? true : 'crew required'), rules: [onTurn] },
     (state, intent) => workCrew(state, intent.args['crew'] as string)
+  );
+
+  // A16 POOLS (I-137): hire · buy — module-native intents (the venture:spawn door);
+  // cost > 0 levies through EffectEngine (R-24), cost 0 posts nothing (GBC-63).
+  core.registerIntent(
+    'crew:hire',
+    { args: () => true, rules: [onTurn] },
+    (state, intent) => {
+      const { next, cost } = hireCrew(state, intent.seat);
+      return cost > 0 ? EffectEngine.apply(next as never, { fx: 'levy', scope: intent.seat, amount: cost }, { windowDepth: 0 }) : next;
+    }
+  );
+
+  core.registerIntent(
+    'outfit:buy',
+    { args: () => true, rules: [onTurn] },
+    (state, intent) => {
+      const { next, cost } = buyEquipment(state, intent.seat);
+      return cost > 0 ? EffectEngine.apply(next as never, { fx: 'levy', scope: intent.seat, amount: cost }, { windowDepth: 0 }) : next;
+    }
   );
 
   core.registerIntent(

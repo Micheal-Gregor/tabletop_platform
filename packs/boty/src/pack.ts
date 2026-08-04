@@ -131,10 +131,36 @@ export const BOTY_PACK6: ContentPack = {
   ),
 };
 
+// ── A16 POOLS CONTENT (I-137, DRAFT under D-1): 8 tradesperson cards (one per trade)
+// + 8 equipment cards. COSTS 0 — the economics gap is NAMED, not hidden: starting cash
+// and real prices are the owner's numbers; the levy-on-cost plumbing ships dark. ──
+const TRADES_POOL: readonly { id: string; trade: string; cost: number }[] = [
+  'mechanic', 'plumber', 'electrician', 'carpenter', 'mason', 'painter', 'roofer', 'welder',
+].map((t, i) => ({ id: `tp-${t}-${i + 1}`, trade: t, cost: 0 }));
+const EQUIP_POOL: readonly { id: string; name: string; cost: number }[] = [
+  'work-van', 'scissor-lift', 'toolkit', 'welder-rig', 'scaffold', 'paint-sprayer', 'generator', 'trailer',
+].map((n, i) => ({ id: `eq-${n}-${i + 1}`, name: n, cost: 0 }));
+/** one seeded shuffle per SHARED pool (not per seat — the piles are the table's). */
+function shuffledPool<T>(seed: string, key: string, list: readonly T[]): T[] {
+  const a = [...list];
+  let h = hashStr(`${seed}::pool::${key}`);
+  for (let i = a.length - 1; i > 0; i--) {
+    h = mix(h);
+    const j = h % (i + 1);
+    [a[i], a[j]] = [a[j]!, a[i]!];
+  }
+  return a;
+}
+
 export const botyGenesis6: Genesis = (packRef, seats, seed) => {
   const g = botyGenesis(packRef, seats, seed) as Record<string, unknown>;
   return {
     ...g,
+    // A16 (I-137): the REAL pools — hire/buy pop these; counts feed the table stacks.
+    pools: {
+      tradespeople: shuffledPool(String(seed), 'tradespeople', TRADES_POOL),
+      equipment: shuffledPool(String(seed), 'equipment', EQUIP_POOL),
+    },
     seats: [
       ...(g['seats'] as unknown[]),
       ...DRAFT_SHOPS.map((s) => ({ id: s.id, trade: s.trade, cash: 0, favor: 0, assets: [], sueRights: [], eliminated: false })),

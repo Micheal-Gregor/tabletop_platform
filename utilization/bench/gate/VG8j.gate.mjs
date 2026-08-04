@@ -106,9 +106,12 @@ export async function run(h) {
         arrOk = !!(seasonTL && globRight && standUnder && rowA && rowB && rowC && medalBR && windowsGone);
         arrDetail = `season-top-left:${!!seasonTL} · global-right:${!!globRight} · standings-under:${!!standUnder} · rowA(dice-far-right):${!!rowA} · rowB(trades+equip):${!!rowB} · rowC(bbb+networking):${!!rowC} · medal-bottom-right:${!!medalBR} · windows-GONE:${windowsGone}`;
       }
-      const pilesOk = tp && eq && bb && nw && tp.count === 6 && eq.count === 6 && bb.count === 6 && nw.count === 6;
+      // A16 (I-137): tp/eq are REAL pools — their wants DERIVE from the projection's
+      // counts (count-true); bbb/networking stay 6-card staged exhibits.
+      const pc = await page.evaluate(() => window.__GAME3D__.poolCounts());
+      const pilesOk = tp && eq && bb && nw && tp.count === pc.tradespeople && eq.count === pc.equipment && tp.count > 0 && bb.count === 6 && nw.count === 6;
       check('VG8j/v2-table-arrangement', arrOk && !!pilesOk,
-        `${arrDetail} · piles tp:${tp?.count} eq:${eq?.count} bbb:${bb?.count} nw:${nw?.count} (want 6×4 staged exhibits)`);
+        `${arrDetail} · piles tp:${tp?.count}≡${pc?.tradespeople} eq:${eq?.count}≡${pc?.equipment} (REAL, count-true — I-137) bbb:${bb?.count} nw:${nw?.count} (want 6 staged)`);
     }
 
     // draw-weak-flick (Q-2b, I-91 — the owner's "if the card isn't flicked hard enough,

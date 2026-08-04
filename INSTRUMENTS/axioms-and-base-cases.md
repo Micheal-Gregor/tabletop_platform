@@ -436,3 +436,10 @@ titled); a separate labels channel is Phase-5 adaptation work.
   behavior changes — additive supersession); renderLayout produces an a11y-clean panel
   frame. The statement-tab switch is pure ui-state: same child + different FILLS, zero
   state bytes touched. *(I-50, I-56)*
+
+- **GBC-63 — the pools' base cases (I-137, BEFORE the feature):** an EMPTY pool refuses
+  the hire/buy BY NAME (GX-30 — never a silent no-op); COST 0 posts NOTHING to the
+  ledger (no zero-amount levy noise — the draft-content case); COST > 0 levies exactly
+  once through EffectEngine (R-24; R-5 balance holds by the levy fx's own law); a
+  pool-less STATE (the frozen v1 genesis) projects counts 0/0 and refuses hire/buy by
+  the empty-pool refusal — the certified bench's behavior is unchanged by construction.

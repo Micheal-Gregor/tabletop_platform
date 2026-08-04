@@ -123,3 +123,12 @@ an omission.
 | MP9 ClockDriver + Adaptation/A11y | packages/presentation/src/clock.ts (a11yAudit lives in render.ts — row corrected per K7-F6 D6) | two-clock law · ODG-e1 stays open · a11y floor/labels split | displayClock derives from the SeatView (game clock); the animation Timeline is LOCAL and never writes state; a11yAudit counts unlabeled elements (floor = 0) | built |
 | MP-L LayoutContracts + Camera (F6 supersession, owner-ruled 2026-07-31) | packages/presentation/src/layout.ts | I-50 · I-48b · D-1 · ODG-p1 (unchanged: SVG) | Parent layouts as DATA (CARD/CARD-BACK/BOARD/TABLE with roled regions in unit space); extendLayout(parent, overlay) with declared shadowing (override/add/suppress; refusals name the defect); renderLayout → unskinned SVG frames (a11y floor); camera = cameraViewBox + focus presets + the 2.5D table transform | built |
 | MP-L PANEL_PARENT (arc step 1, owner-approved PANEL ruling 2026-08-01) | packages/presentation/src/layout.ts (extended) | I-56a · Report-5 A.2 route (a) · source 10-books-balance (measured) | kind union grows to 'card'\|'board'\|'table'\|'panel' (ADDITIVE — nothing previously lawful changes); `template:panel` = the generic report anatomy: title (4,4,60,8) · tabs/mode-tabs (4,15,92,9) · body/line-items (4,28,92,50) · total (4,80,92,8) · footnote (4,90,92,7); PARENT_LAYOUTS becomes five; renderTable untouched (V-9 safe) | built |
+
+## A16 pools extension (I-137; owner-ruled 2026-08-04) — M12a/M12b module-native intents
+
+| Module | File | Traces | Behavior | Status |
+|---|---|---|---|---|
+| M12b Crew · hire | packages/engine/src/library/outfit.ts + wire.ts | S-3 module-native · I-137 · GX-30 | `crew:hire` (onTurn): pops the top `pools.tradespeople` PoolCard ({id,trade,cost} — content-as-data, engine content-agnostic) → crew {id, outfit:seat, trade}; empty pool → OutfitRefusal GX-30; cost>0 → levy via EffectEngine (R-24), cost 0 skips | building |
+| M12a Outfit · buy | packages/engine/src/library/outfit.ts + wire.ts | S-3 module-native · I-137 · GX-30 | `outfit:buy` (onTurn): pops the top `pools.equipment` PoolCard → seat.assets {ref:id, value:cost}; empty pool → GX-30; cost via the same levy path | building |
+| MP5 projection · pools | packages/presentation/src/projector.ts | S-6 · redaction | pools as COUNTS ONLY (face-down piles); `?? empty` tolerates pool-less v1 states | building |
+| MP3 emitter · verbs | packages/presentation/src/emitter.ts | R-23 · I-137 admission | 'hire' → crew:hire · 'buy-equipment' → outfit:buy (the venture:spawn door precedent) | building |

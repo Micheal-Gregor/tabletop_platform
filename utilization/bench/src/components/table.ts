@@ -89,13 +89,12 @@ export const table: Component = {
     // (seat-play's row plan — 'if a local card is drawn, it is added as a bottom row');
     // the Q-2c active-seat placement is superseded on the record. Family tags travel
     // with them, so renderedPartition keeps counting wherever they stand.
-    // T-1 (I-89): the A16 pile STACKS — STAGED EXHIBITS (pure theater, like the die): the
-    // slice has no tradesperson/equipment decks yet; counts bind to state when the engine
-    // decks land (I-82f). Six face-down cards each, at their v2 regions.
+    // A16 (I-137): the tradesperson + equipment piles are REAL — counts BIND to the
+    // projection's pools (hire/buy pop them; count-true is the law, I-82f discharged).
     const tpR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'tradespeople-pile')!;
     const eqR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'equipment-pile')!;
-    t.add(cardStack(tpR, 'tradespeople-pile', 6, null, 0));
-    t.add(cardStack(eqR, 'equipment-pile', 6, null, 0));
+    t.add(cardStack(tpR, 'tradespeople-pile', v.pools.tradespeople, null, 0));
+    t.add(cardStack(eqR, 'equipment-pile', v.pools.equipment, null, 0));
     // I-130: the TWO NEW staged decks (BBB · Networking) — row C, same staging law as
     // A16 (counts bind to state when their engine decks land; presentation stages).
     const bbR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'bbb-pile')!;
@@ -169,6 +168,20 @@ export const table: Component = {
       // viewer's turn means an edge case (e.g. read-mode entry) — hint, don't act.
       if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('grab the top card and FLICK to flip it'); }
       else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
+    } else if (region === 'tradespeople-pile' || region === 'equipment-pile') {
+      // A16 (I-137): YOUR turn → the pile's verb through the doors (hire / buy); a
+      // refusal (empty pool, off-turn) speaks via submitVerb's status. The hire-flight
+      // flourish is the registered polish row — the rebuild renders truth today.
+      const v3 = ctx.projection();
+      if (v3.seats[v3.turn.seatIdx]!.id === ctx.viewSeat) {
+        const verb = region === 'tradespeople-pile' ? 'hire' : 'buy-equipment';
+        if (ctx.submit(verb, {})) {
+          ctx.rebuild();
+          ctx.status(verb === 'hire' ? 'hired — a new tradesperson joins your crew' : 'bought — the equipment joins your rack');
+        }
+      } else {
+        ctx.status(`${region === 'tradespeople-pile' ? 'the tradesperson pool' : 'the equipment pool'} — hire on your turn`);
+      }
     } else if (region === 'discard') {
       // Q-6 (I-94): the 3-step fidget, ANIMATED — the cards TWEEN to the next state's
       // poses (no rebuild snap; the "cheap image thing" closed).
