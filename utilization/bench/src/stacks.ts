@@ -72,3 +72,41 @@ export function cardStack(r: { x: number; y: number; w: number; h: number }, rid
   }
   return grp;
 }
+
+// ── R-1a2 (I-110) — THE STACK PROOF (owner: "prove to the player it's an actual stack
+// of cards and not just the image of a stack"): a TAP nudges the TOP FIVE cards to
+// slightly shifted PERSISTING poses (local ±0.5 → world ≈±4u · rot ±0.05 rad ≈ ±3°),
+// tweened ~11 frames; the next rebuild re-canonicalizes. Pure theater, generic to any
+// stack group. Seeded per tap (deterministic for the gate's first-tap assertion).
+let nudge: { items: { m: THREE.Object3D; fx: number; tx: number; fy: number; ty: number; fr: number; tr: number }[]; t: number } | null = null;
+let nudgeCount = 0;
+export function nudgeStack(grp: THREE.Object3D | null): boolean {
+  if (!grp || nudge) return false;
+  const cards: THREE.Object3D[] = [];
+  grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) cards.push(o); });
+  cards.sort((a, b) => (a.userData['idx'] as number) - (b.userData['idx'] as number));
+  const top = cards.slice(-5);
+  if (!top.length) return false;
+  const rnd = lcg(0x57ac + Math.imul(++nudgeCount, 40503));
+  nudge = {
+    t: 0,
+    items: top.map((m) => ({
+      m, fx: m.position.x, tx: m.position.x + (rnd() - 0.5) * 1.0,
+      fy: m.position.y, ty: m.position.y + (rnd() - 0.5) * 1.0,
+      fr: m.rotation.z, tr: m.rotation.z + (rnd() - 0.5) * 0.1,
+    })),
+  };
+  return true;
+}
+export const stackNudging = (): boolean => nudge !== null;
+export function tickStackNudge(): void {
+  if (!nudge) return;
+  nudge.t = Math.min(1, nudge.t + 0.09);
+  const e = nudge.t * nudge.t * (3 - 2 * nudge.t);
+  for (const it of nudge.items) {
+    it.m.position.x = it.fx + (it.tx - it.fx) * e;
+    it.m.position.y = it.fy + (it.ty - it.fy) * e;
+    it.m.rotation.z = it.fr + (it.tr - it.fr) * e;
+  }
+  if (nudge.t >= 1) nudge = null;
+}

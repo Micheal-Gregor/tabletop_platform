@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, panelTexture } from '../surfaces.js';
-import { cardStack } from '../stacks.js';
+import { cardStack, stackNudging, tickStackNudge } from '../stacks.js';
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
@@ -204,7 +204,7 @@ export const table: Component = {
   },
 
   // Q-2b/Q-6: the draw step (table-draw) + the live discard (tween/hold/return); delegate.
-  tick(ctx) { draw.tickDraw(ctx); dplay.tickDiscardPlay(ctx); },
+  tick(ctx) { draw.tickDraw(ctx); dplay.tickDiscardPlay(ctx); tickStackNudge(); }, // + R-1a2: the stack-proof nudge
 
   gate() {
     const ctx = cx!;
@@ -239,6 +239,7 @@ export const table: Component = {
       discardTweenTrace: dplay.discardTweenTrace, // G-1 (I-101): M6's motion teeth
       discardReturnTrace: dplay.discardReturnTrace, // G-1 (I-101): M8's glide teeth
       orphanGrabMeshes: () => ({ phase: draw.drawPhaseState(), count: oracles.orphanGrabMeshCount(cx!) }),
+      deckNudging: stackNudging, // R-1a2 (I-110): the tap-nudge state (the gate waits on it)
       // S-1b (I-104): these five were DROPPED by the S-1 extraction surgery — the full
       // battery caught it at VG8j:81 (`onionState is not a function`). Restored verbatim.
       /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */

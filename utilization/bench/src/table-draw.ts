@@ -15,7 +15,7 @@ import * as THREE from 'three';
 import { beginFlourish, completeFlourish } from '@tabletop/presentation';
 import type { PlayAreaContext, PickInfo } from './component.js';
 import { fortuneFaceTexture } from './surfaces.js';
-import { cardBack } from './stacks.js';
+import { cardBack, nudgeStack } from './stacks.js';
 import * as onion from './onion.js';
 import { CARD_FAMILY } from '../../../packs/boty/src/index.js'; // Q-2c (I-92): the family data
 
@@ -26,6 +26,8 @@ const TILT_MAX = Math.PI * 0.45; // below the face-reveal angle: face-down stays
 
 let theater: {
   mesh: THREE.Mesh; from: THREE.Vector3; t: number;
+  bound: { minX: number; maxX: number; minZ: number; maxZ: number } | null; // R-1a2 (I-110): the drag-follow clamp
+  settleFrom: THREE.Vector3 | null; // R-1a2: the weak settle glides HOME from here
   inst: ReturnType<typeof beginFlourish> | null; seeded: string; flipped: boolean;
   hiddenTop: THREE.Object3D | null;
   routeFrom: THREE.Vector3 | null; routeTo: THREE.Vector3 | null; dest: string | null;
@@ -82,8 +84,11 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   m.userData['drawGrabMesh'] = true; // S-1 (I-103): the orphan oracle counts this tag at idle
   ctx.scene.add(m);
   if (dt.mesh) dt.mesh.visible = false; // the grab card IS the top card — never two
+  let bound: { minX: number; maxX: number; minZ: number; maxZ: number } | null = null;
+  const tbl = ctx.theater.focusObject('table');
+  if (tbl) { const bb = new THREE.Box3().setFromObject(tbl); bound = { minX: bb.min.x + 30, maxX: bb.max.x - 30, minZ: bb.min.z + 40, maxZ: bb.max.z - 40 }; }
   theater = {
-    mesh: m, from, t: 0, inst: null, seeded: '', flipped: false,
+    mesh: m, from, t: 0, bound, settleFrom: null, inst: null, seeded: '', flipped: false,
     hiddenTop: dt.mesh, routeFrom: null, routeTo: null, dest: null, destPos: null,
     angle: 0, samples: [{ x: hit.event.clientX, y: hit.event.clientY, t: performance.now() }],
   };
@@ -92,13 +97,25 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
   return true;
 }
 
-export function grabMove(_ctx: PlayAreaContext, ev: PointerEvent): void {
+export function grabMove(ctx: PlayAreaContext, ev: PointerEvent): void {
   if (phase !== 'grabbing' || !theater) return;
   theater.samples.push({ x: ev.clientX, y: ev.clientY, t: performance.now() });
   if (theater.samples.length > 6) theater.samples.shift();
   const d = Math.hypot(ev.clientX - theater.samples[0]!.x, ev.clientY - theater.samples[0]!.y);
-  theater.angle = Math.min(TILT_MAX, d / 90); // lift + tilt with the drag, face still down
-  theater.mesh.position.set(theater.from.x, theater.from.y + 6 + theater.angle * 22, theater.from.z);
+  theater.angle = Math.min(TILT_MAX, d / 90); // tilt with the drag — CLAMPED below the reveal (unchanged law)
+  // R-1a2 (I-110, the owner's ruling): the card FOLLOWS the pointer on the deck-top plane
+  // ("drag it around before a flick"), clamped to the table; the tilt/reveal law holds.
+  let fx = theater.from.x, fz = theater.from.z;
+  const r = ctx.renderer.domElement.getBoundingClientRect();
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -theater.from.y);
+  const p = new THREE.Vector3();
+  if (ray.ray.intersectPlane(plane, p)) {
+    fx = theater.bound ? Math.max(theater.bound.minX, Math.min(theater.bound.maxX, p.x)) : p.x;
+    fz = theater.bound ? Math.max(theater.bound.minZ, Math.min(theater.bound.maxZ, p.z)) : p.z;
+  }
+  theater.mesh.position.set(fx, theater.from.y + 6 + theater.angle * 22, fz);
   theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
   theater.mesh.rotateY(theater.angle);
 }
@@ -127,6 +144,7 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
     theater.hiddenTop = target.mesh;
     theater.destPos = target.pos.clone();
     theater.dest = dest;
+    theater.from = new THREE.Vector3(theater.mesh.position.x, theater.from.y, theater.mesh.position.z); // R-1a2: the flip happens WHERE RELEASED
     theater.t = theater.angle / Math.PI; // momentum: the flip continues from the grabbed tilt
     phase = 'flipping';
     lastGesture = { verdict: 'flicked', velocity: vel };
@@ -134,12 +152,18 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
   } else {
     settleBack();
     lastGesture = { verdict: 'weak', velocity: vel };
-    ctx.status(`too soft (${vel.toFixed(2)} px/ms < ${FLICK_T}) — the card settles back face down`);
+    const travel = Math.hypot(z.x - a.x, z.y - a.y);
+    if (travel < 6) { // R-1a2 (I-110): a TAP — the stack PROVES itself (top-5 nudge)
+      nudgeStack(ctx.theater.focusObject('table:deck'));
+      ctx.status('the stack shifts — grab the top card and FLICK to flip it');
+    } else {
+      ctx.status(`too soft (${vel.toFixed(2)} px/ms < ${FLICK_T}) — the card settles back face down`);
+    }
   }
   return true; // the gesture consumed the click either way
 }
 
-function settleBack(): void { phase = 'settling'; if (theater) theater.t = 0; }
+function settleBack(): void { phase = 'settling'; if (theater) { theater.t = 0; theater.settleFrom = theater.mesh.position.clone(); } } // R-1a2: glide home from HERE
 
 /** CONTRACT v3 (S-1, I-103) — the ABORT: a live GRAB settles back face down (the weak-
  *  flick path — graceful for pointercancel AND for a rebuild arriving mid-grab). */
@@ -214,7 +238,11 @@ export function tickDraw(ctx: PlayAreaContext): void {
   if (phase === 'settling') {
     theater.t = Math.min(1, theater.t + 0.12);
     const back = 1 - theater.t;
-    theater.mesh.position.set(theater.from.x, theater.from.y + back * (6 + theater.angle * 22), theater.from.z);
+    const sf = theater.settleFrom ?? theater.from; // R-1a2: the dragged card GLIDES back to the deck
+    theater.mesh.position.set(
+      sf.x + (theater.from.x - sf.x) * theater.t,
+      theater.from.y + back * (6 + theater.angle * 22),
+      sf.z + (theater.from.z - sf.z) * theater.t);
     theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
     theater.mesh.rotateY(theater.angle * back + Math.sin(theater.t * Math.PI * 3) * 0.05 * back); // the nudge wiggle
     if (theater.t >= 1) finishTheater(ctx); // face down on the pile — nothing happened (no draw)

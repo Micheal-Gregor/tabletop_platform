@@ -19,6 +19,7 @@ import {
   dieGrabStart, dieGrabMove, dieGrabEnd, dieGrabAbort, dieSimTrace, // R-1a (I-109)
 } from '../die.js';
 import type { TableRect } from '../die.js';
+import { liveFlightTrace } from '../die-physics.js'; // R-1a2 (I-110): the hard-flick kill's oracle
 
 export { openRoundSequence } from '../die.js';
 
@@ -138,6 +139,7 @@ export const die: Component = {
       /** R-1a (I-109) physics oracles: the last burst-sim's trace (steps · frames ·
        *  settleFace · whether the reconcile offset was non-identity). VG8r's surface. */
       dieSimTrace,
+      dieFlightTrace: liveFlightTrace, // R-1a2: did the live flight ever LEAVE the felt?
       /** P-1 (I-83) home surfaces: the derived dice-region home the die starts from and
        *  returns to (die-returns-home asserts rest position ≈ home after a full cycle). */
       dieHome,

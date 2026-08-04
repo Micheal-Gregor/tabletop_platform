@@ -64,7 +64,6 @@ let dieRollCount = 0;
 /** The table area the die tumbles across (K-E, I-81) — derived live, never magic. */
 export type TableRect = { minX: number; maxX: number; minZ: number; maxZ: number; topY: number };
 let tableRect: TableRect | null = null;
-const TABLE_MARGIN = DIE_SIZE; // a margin so the whole cube settles ON the table, not over its edge
 
 let die: THREE.Mesh | null = null;
 let dieBaseY = DIE_SIZE / 2;
@@ -193,7 +192,7 @@ export function tickDie(): void {
     const w = phys.feltToWorld(tableRect, st.frame.px, st.frame.py, st.frame.pz);
     die.position.set(w.x, w.y, w.z);
     die.quaternion.set(st.frame.qx, st.frame.qy, st.frame.qz, st.frame.qw); // no reconcile — pure fidget theater
-    if (st.settled) { diePhase = 'rest'; restHold = 45; }
+    if (st.settled) { diePhase = 'rest'; restHold = st.escaped ? 3 : 45; } // an escapee heads straight home (I-110)
     return;
   }
   if (!dieReplay || !tableRect) return;

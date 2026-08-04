@@ -124,6 +124,8 @@ export function simulateToss(r: TableRect, startWorld: { x: number; z: number },
 
 // ── THE LIVE DRAG SESSION (the shaker's kinematic drag → flick) — grab-flick fidget ──
 let live: { world: RAPIER.World; body: RAPIER.RigidBody; rect: TableRect; flying: boolean } | null = null;
+let flightTrace: { maxAbsX: number; maxAbsZ: number; escaped: boolean } | null = null; // R-1a2: the hard-flick kill's oracle
+export const liveFlightTrace = () => flightTrace;
 export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): boolean {
   if (!ready || live) return false;
   const { world, body } = buildWorld(r);
@@ -131,6 +133,7 @@ export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): bool
   body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
   body.setTranslation({ x: s.px, y: 0.04, z: s.pz }, true);
   live = { world, body, rect: r, flying: false };
+  flightTrace = { maxAbsX: 0, maxAbsZ: 0, escaped: false };
   return true;
 }
 export function dragMove(worldX: number, worldZ: number): void {
@@ -144,24 +147,37 @@ export function dragMove(worldX: number, worldZ: number): void {
   live.world.step();
 }
 /** release → dynamic + the flick velocity (the shaker's throw energization).
- *  velWorld* arrive in WORLD UNITS PER SECOND; ÷M2W converts to m/s. */
+ *  velWorld* arrive in WORLD UNITS PER SECOND; ÷M2W converts to m/s.
+ *  R-1a2 (I-110, the owner's escape ruling): the speed is CAPPED at the tuned roll
+ *  ceiling and the lift bounded — max arc ≈ 9u, structurally under the 162u rails. */
+const FLICK_CAP = 3.2; // m/s — "I would put a cap on acceleration" (owner, 2026-08-04)
 export function dragEnd(velWorldX: number, velWorldZ: number): void {
   if (!live) return;
-  const vx = velWorldX / M2W, vz = velWorldZ / M2W;
+  let vx = velWorldX / M2W, vz = velWorldZ / M2W;
+  const raw = Math.hypot(vx, vz);
+  if (raw > FLICK_CAP) { const k = FLICK_CAP / raw; vx *= k; vz *= k; }
   const sp = Math.hypot(vx, vz);
   live.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
-  live.body.setLinvel({ x: vx, y: 0.25 + Math.min(sp * 0.2, 0.6), z: vz }, true);
+  live.body.setLinvel({ x: vx, y: 0.25 + Math.min(sp * 0.2, 0.45), z: vz }, true);
   live.body.setAngvel({ x: -vz * 200, y: (sp * 40) * 0.5, z: vx * 200 }, true);
   live.body.wakeUp();
   live.flying = true;
 }
-/** one live step; null = still going, a frame = the settle frame (the session closes). */
-export function dragStep(): { frame: SimFrame; settled: boolean } | null {
+/** one live step; null = still going, a frame = the settle frame (the session closes).
+ *  R-1a2 (I-110): the ESCAPE GUARD — a body outside the felt (+grace) or below the
+ *  floor closes the session AS SETTLED, so the caller's rest→return glide brings the
+ *  die home from wherever. Off the board now ALWAYS returns (defense in depth under
+ *  the cap; the guard's falsifier is the cap mutant killing the hard-flick check). */
+export function dragStep(): { frame: SimFrame; settled: boolean; escaped?: boolean } | null {
   if (!live) return null;
   if (!live.flying) return { frame: record(live.body), settled: false };
   live.world.step();
   const fr = record(live.body);
-  if (asleep(live.body)) { live.world.free(); live = null; return { frame: fr, settled: true }; }
+  const f = feltOf(live.rect);
+  const t = live.body.translation();
+  const escaped = t.y < -0.05 || Math.abs(t.x) > f.hx + 0.05 || Math.abs(t.z) > f.hz + 0.05;
+  if (flightTrace) { flightTrace.maxAbsX = Math.max(flightTrace.maxAbsX, Math.abs(t.x)); flightTrace.maxAbsZ = Math.max(flightTrace.maxAbsZ, Math.abs(t.z)); if (escaped) flightTrace.escaped = true; }
+  if (asleep(live.body) || escaped) { live.world.free(); live = null; return { frame: fr, settled: true, escaped }; }
   return { frame: fr, settled: false };
 }
 export const dragActive = (): boolean => live !== null;

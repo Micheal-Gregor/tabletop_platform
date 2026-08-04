@@ -34,6 +34,27 @@ export async function run(h) {
     check('VG8j/stacks-count-true', d0 && c0 && d0.count === 36 && c0.count === 0 && heightTrue,
       `deck:${d0?.count} (want 36, the committed Q-1 genesis) · discard:${c0?.count} (want 0) · height-true:${heightTrue} (sample ${ys.length}, Δy ${ys.length ? (ys[ys.length - 1] - ys[0]).toFixed(2) : '?'})`);
 
+    // deck-tap-nudge (R-1a2, I-110 — the owner's STACK PROOF: "tap the deck, the top 5
+    // cards should shift slightly... an actual stack of cards and not just the image of
+    // a stack"): a plain TAP (a claimed grab, motionless release) NUDGES the top five to
+    // slightly shifted PERSISTING poses — small but real, state invariant. Kill: drop the
+    // nudge → poses unchanged → false.
+    {
+      const hmN = await hashes();
+      const p0 = (await info('deck')).top;
+      const nxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+      await page.mouse.click(nxy.x, nxy.y);
+      await page.waitForFunction(() => window.__GAME3D__.deckNudging() === false, null, { timeout: 60000 }).catch(() => {});
+      await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+      const p1 = (await info('deck')).top;
+      const ds = p0.map((v, i) => Math.hypot(p1[i].x - v.x, p1[i].y - v.y, p1[i].z - v.z));
+      const maxD = Math.max(...ds);
+      const hmN1 = await hashes();
+      const nOk = maxD > 0.5 && maxD < 12 && (await info('deck')).count === 36 && hmN1.m === hmN.m && hmN1.h === hmN.h;
+      check('VG8j/deck-tap-nudge', nOk,
+        `top-5 shifted: max Δ ${maxD.toFixed(1)}u (want 0.5–12 — small but REAL) · deck 36 · state-invariant:${hmN1.m === hmN.m && hmN1.h === hmN.h} — an actual stack, not the image of one`);
+    }
+
     // v2-table-arrangement (T-1, I-89 — the owner's v1-board ruling as def law + the pile
     // exhibits): season art-banner TOP-LEFT · GLOBAL CARDS IN PLAY to its RIGHT (top band)
     // · standings UNDER the season · deck/discard/tradespeople/equipment in their pile row
@@ -85,6 +106,31 @@ export async function run(h) {
         `verdict:${g0?.verdict} (v ${g0?.velocity?.toFixed?.(3)} < T ${g0?.threshold}) · deck:${dW?.count} (still 36) · moves/hash invariant:${hmW1.m === hmW.m && hmW1.h === hmW.h} · onion stayed closed:${onionW === false} — the card settled back face down, NO draw`);
     }
 
+    // draw-drag-follows (R-1a2, I-110 — the owner: "drag it around before a flick"):
+    // mid-drag the grabbed top card sits far from the deck (the plane-follow), then the
+    // weak release GLIDES it back — every weak invariant holds. Kill: drop the follow →
+    // the card never leaves the deck → false.
+    {
+      const hmF = await hashes();
+      const fxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+      await page.mouse.move(fxy.x, fxy.y);
+      await page.mouse.down();
+      await page.mouse.move(fxy.x + 60, fxy.y + 30);
+      await page.waitForTimeout(400);
+      await page.mouse.move(fxy.x + 120, fxy.y + 55);
+      await page.waitForTimeout(400);
+      const thF = await page.evaluate(() => window.__GAME3D__.drawTheater());
+      const wander = thF && thF.card && thF.deck ? Math.hypot(thF.card.x - thF.deck.x, thF.card.z - thF.deck.z) : 0;
+      await page.mouse.move(fxy.x + 124, fxy.y + 57);
+      await page.mouse.up(); // slow → weak → the settle GLIDES back to the deck
+      await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+      const gF = await page.evaluate(() => window.__GAME3D__.drawGesture());
+      const dF = await info('deck');
+      const hmF1 = await hashes();
+      check('VG8j/draw-drag-follows', wander > 30 && gF?.verdict === 'weak' && dF.count === 36 && hmF1.m === hmF.m && hmF1.h === hmF.h,
+        `mid-drag wander ${wander.toFixed(0)}u from the deck (want >30 — the card FOLLOWS) · verdict:${gF?.verdict} · deck 36 · state-invariant:${hmF1.m === hmF.m && hmF1.h === hmF.h} — dragged around, flicked nowhere, home again`);
+    }
+
     // THE DRAW — Q-2b (I-91): a REAL GRAB + FLICK on the deck's top card (down → fast
     // moves → up; velocity far above the threshold); the gate then WAITS ON STATE.
     const dxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
@@ -101,12 +147,18 @@ export async function run(h) {
     // pre-reading theater the flip card sits AT THE DECK (a small in-place lift), never
     // traveling toward the camera. Kill: restore the flight destination → distance grows
     // to hundreds of world units → false.
+    // REWORKED at R-1a2 (I-110, a recorded supersession): the owner ruled the top card
+    // DRAGGABLE before the flick, so the flip happens WHERE RELEASED — the law is now
+    // AT-TABLE-LEVEL, NEVER A CAMERA FLIGHT: lift < 60u over the deck top, and within
+    // 150u horizontal for THIS drive. The restored flight-to-camera mutant (y rockets by
+    // hundreds) still dies by name.
     const th = await page.evaluate(() => window.__GAME3D__.drawTheater());
     let flipAtPile = false, flipDetail = 'NO-THEATER (missed the flip window)';
     if (th && th.card && th.deck) {
-      const d = Math.hypot(th.card.x - th.deck.x, th.card.y - th.deck.y, th.card.z - th.deck.z);
-      flipAtPile = d < 40;
-      flipDetail = `phase ${th.phase} · |card−deck| ${d.toFixed(1)} (<40 — flipping IN PLACE, no flight)`;
+      const lift = th.card.y - th.deck.y;
+      const horiz = Math.hypot(th.card.x - th.deck.x, th.card.z - th.deck.z);
+      flipAtPile = lift < 60 && horiz < 150;
+      flipDetail = `phase ${th.phase} · lift ${lift.toFixed(1)} (<60 — table level, no camera flight) · horiz ${horiz.toFixed(1)} (<150 for this drive)`;
     }
     check('VG8j/draw-flip-not-fly', flipAtPile, flipDetail);
     // one theater at a time (K7-A2 D1 carried into Q-2b): a second interaction mid-flip

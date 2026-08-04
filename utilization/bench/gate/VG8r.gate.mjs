@@ -81,6 +81,25 @@ export async function run(h) {
       `rolling-live:${liveSeen} · back-home:${homeOk} · contained:${contained} (the rails law) · state-invariant:${hm1.m === hm0.m && hm1.h === hm0.h} — real physics, pure theater`);
   }
 
+  // 3b · die-hard-flick-contained (R-1a2, I-110 — the owner's escape: "if I flick too
+  // hard it flied right off the board... put a cap"): a VIOLENT drag → the capped flick
+  // keeps the whole flight ON the felt (the trace never escapes) and the die comes home.
+  // Kill: drop the FLICK_CAP → the escape reproduces → trace.escaped → false.
+  {
+    const xy = await G(() => window.__GAME3D__.dieScreenXY());
+    await page.mouse.move(xy.x, xy.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 3; i++) await page.mouse.move(xy.x + i * 200, xy.y - i * 60);
+    await page.mouse.up();
+    await page.waitForFunction(() => window.__GAME3D__.diePhase() === 'idle', null, { timeout: 120000 }).catch(() => {});
+    const tr = await G(() => window.__GAME3D__.dieFlightTrace());
+    const rest = await G(() => window.__GAME3D__.dieRestInfo());
+    const home = await G(() => window.__GAME3D__.dieHome());
+    const homeOk = !!rest && !!home && Math.hypot(rest.x - home.x, rest.z - home.z) < 10;
+    check('VG8r/die-hard-flick-contained', !!tr && tr.escaped === false && homeOk,
+      `flight escaped:${tr?.escaped} (want false — the cap + the rails hold) · maxAbs ${tr?.maxAbsX?.toFixed?.(3)}/${tr?.maxAbsZ?.toFixed?.(3)} m · home:${homeOk} — flick as hard as you like`);
+  }
+
   // 4 · die-grab-click-falls-through: a PLAIN CLICK on the die (a claimed grab whose
   // release moved <6 units) still ROLLS — the fall-through protects every VG8m drive.
   // Kill: consume the motionless release → the click never reaches onPick → no roll.
