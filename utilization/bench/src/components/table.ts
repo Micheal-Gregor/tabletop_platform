@@ -40,6 +40,7 @@ function partition(ownDiscard: readonly string[]): { global: string[]; session: 
   return { global, session, pile };
 }
 let sessionGroup: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
+let tableRoot: THREE.Group | null = null; // G-1 (I-101): the live table group — the RENDERED-rects oracle walks THIS, never the def
 
 // ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
 // size-gate extraction). This adapter delegates: grab/flick/flip/onion/route. ──
@@ -111,6 +112,7 @@ export const table: Component = {
     t.rotation.x = -Math.PI / 2;
     t.scale.set(9, 7, 1);
     t.userData['focus'] = 'table';
+    tableRoot = t; // G-1 (I-101): the oracle's walk root
     return t;
   },
 
@@ -193,9 +195,39 @@ export const table: Component = {
     const ctx = cx!;
     return {
       expectedFromDefs: () => TOWN_TABLE_V2.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length,
-      /** T-1 (I-89): the v2 table def's region rects — the arrangement oracle (the def IS
-       *  the owner's spec; render≡def is VG8a's standing law). */
-      tableRegionRects: () => TOWN_TABLE_V2.regions.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h })),
+      /** T-1 (I-89), REWORKED at G-1 (I-101, closing K7-Q M2): the arrangement oracle now
+       *  reads the RENDER — it walks the live table group and inverts the placement
+       *  formula (quad center + geometry → def units). The def is never consulted, so a
+       *  face-revert mutant (layoutFace(TOWN_TABLE,…)) reports v1's numbers and FAILS. */
+      tableRegionRects: () => {
+        if (!tableRoot) return null;
+        const out: { id: string; x: number; y: number; w: number; h: number }[] = [];
+        for (const ch of tableRoot.children) {
+          const rid = ch.userData?.['region'] as string | undefined;
+          if (!rid) continue;
+          // a stack GROUP's footprint is its ghost (child 0, PlaneGeometry(r.w, r.h));
+          // a region QUAD carries its own PlaneGeometry(r.w, r.h).
+          const mesh = (ch as THREE.Group).isGroup ? (ch.children[0] as THREE.Mesh) : (ch as THREE.Mesh);
+          const geo = mesh?.geometry as THREE.PlaneGeometry | undefined;
+          const pw = geo?.parameters?.width, ph = geo?.parameters?.height;
+          if (typeof pw !== 'number' || typeof ph !== 'number') continue;
+          out.push({ id: rid, x: ch.position.x - pw / 2 + 50, y: 50 - ch.position.y - ph / 2, w: pw, h: ph });
+        }
+        return out;
+      },
+      /** G-1 (I-101, closing K7-Q M1): the partition law's RENDER side — live mesh counts
+       *  per family. Exactly-once = rendered ≡ derived, per family, asserted in VG8j. */
+      renderedPartition: () => {
+        const grp = ctx.theater.focusObject('table:discard');
+        let pile = 0;
+        if (grp) grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) pile++; });
+        let global = 0, session = 0;
+        ctx.scene.traverse((o: THREE.Object3D) => {
+          if (o.userData?.['family'] === 'global') global++;
+          else if (o.userData?.['family'] === 'session') session++;
+        });
+        return { pile, global, session };
+      },
       regionCount: () => { let n = 0; ctx.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['region']) n++; }); return n; },
       stamped: (regionId: string) => {
         let out: readonly string[] | null = null;
@@ -215,6 +247,8 @@ export const table: Component = {
       discardPool: dplay.discardPoolSize,
       discardTransitioning: dplay.discardFidgetTransitioning,
       discardFlickRead: dplay.lastFlickRead,
+      discardTweenTrace: dplay.discardTweenTrace, // G-1 (I-101): M6's motion teeth
+      discardReturnTrace: dplay.discardReturnTrace, // G-1 (I-101): M8's glide teeth
       /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */
       cardFamily: (id: string) => CARD_FAMILY[id] ?? 'discard',
       partitionView: () => {

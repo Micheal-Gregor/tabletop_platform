@@ -21,7 +21,7 @@ let cards: { key: string; mesh: THREE.Mesh; anchor: THREE.Vector3 }[] = [];
 // ── the grab/reset state machine ──
 let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster } | null = null;
 let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } | null = null;
-let lastReset: { moved: number; returned: boolean } | null = null;
+let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 
 function seatFront(ctx: PlayAreaContext, i: number): { c: THREE.Vector3; dir: number } | null {
   const b = ctx.theater.focusObject(`seat-${i}`);
@@ -103,7 +103,7 @@ export const seatPlay: Component = {
     if (!grab) return false;
     const moved = grab.card.mesh.position.distanceTo(grab.card.anchor);
     resetting = { card: grab.card, from: grab.card.mesh.position.clone(), t: 0 };
-    lastReset = { moved, returned: false };
+    lastReset = { moved, returned: false, frames: 0 };
     grab = null;
     ctx.status(moved > 8 ? 'tossed — the card glides back to its spot' : 'a nudge — it settles back');
     return true; // the gesture consumed the click
@@ -114,8 +114,10 @@ export const seatPlay: Component = {
     resetting.t = Math.min(1, resetting.t + 0.07);
     const e = resetting.t * resetting.t * (3 - 2 * resetting.t);
     const { card, from } = resetting;
+    const before = card.mesh.position.clone(); // G-1 (I-101): the glide trace
     card.mesh.position.lerpVectors(from, card.anchor, e);
     card.mesh.position.y += Math.sin(resetting.t * Math.PI) * 18; // a small carry arc
+    if (lastReset && card.mesh.position.distanceTo(before) > 1e-6) lastReset.frames++;
     if (resetting.t >= 1) {
       card.mesh.position.copy(card.anchor); // RESET — the anchor place it's supposed to sit
       if (lastReset) lastReset.returned = true;

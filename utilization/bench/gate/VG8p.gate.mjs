@@ -24,12 +24,14 @@ export async function run(h) {
   check('VG8p/crew-rows-true', rowsOk,
     `${rows?.length} seats · ${rows?.map((r) => `${r.seat}:${r.got}/${r.want}${r.inFront ? '' : '·NOT-IN-FRONT'}`).join(' ')}`);
 
-  // assets-count-true: rendered ≡ the viewer's projection assets (genesis 0 — the count
-  // law binds now; content arrives when new-van resolves. The zero-state re-kill trigger
-  // is carried on I-93, the I-76 precedent.)
+  // assets-count-true — G-1 (I-101, closing K7-Q M7): the check now PINS the genesis
+  // ZERO on both sides (want===0 AND got===0), so a projection drift OR a phantom asset
+  // mesh fails by name. It is DEFERRED-AT-ZERO on the record: the render-block falsifier
+  // (delete the asset render → caught) needs a seedable non-zero state, carried on I-93
+  // (the I-76 re-kill precedent). No silent vacuity — the zero is the assertion.
   const ac = await G(() => window.__GAME3D__.assetsCount());
-  check('VG8p/assets-count-true', !!ac && ac.want === ac.got,
-    `viewer assets rendered ${ac?.got} ≡ projection ${ac?.want}`);
+  check('VG8p/assets-count-true', !!ac && ac.want === 0 && ac.got === 0,
+    `genesis zero PINNED: rendered ${ac?.got} ≡ projection ${ac?.want} ≡ 0 · DEFERRED-until-nonzero (I-93 trigger)`);
 
   // seatplay-grab-reset: a REAL ~100-px drag on moe's crew card moves it off its anchor;
   // release → the reset glide returns it (Δ<5), rowHash/moveCount INVARIANT (pure theater).
@@ -47,8 +49,11 @@ export async function run(h) {
     const hm1 = await hashes();
     const back = pos && Math.hypot(pos.x - pos.ax, pos.y - pos.ay, pos.z - pos.az) < 5;
     const invariant = hm1.m === hm0.m && hm1.h === hm0.h;
-    resetOk = !!(st?.lastReset && st.lastReset.moved > 40 && st.lastReset.returned && back && invariant);
-    resetDetail = `dragged ${st?.lastReset?.moved?.toFixed?.(0)}u · returned:${st?.lastReset?.returned} · at-anchor:${back} · state-invariant:${invariant}`;
+    // G-1 (I-101, closing K7-Q M8): the return must be a GLIDE, not a teleport — the
+    // component counts frames where the pose actually changed; a snap mutant records ≤1.
+    const glided = (st?.lastReset?.frames ?? 0) >= 2;
+    resetOk = !!(st?.lastReset && st.lastReset.moved > 40 && st.lastReset.returned && glided && back && invariant);
+    resetDetail = `dragged ${st?.lastReset?.moved?.toFixed?.(0)}u · returned:${st?.lastReset?.returned} · glided:${glided} (${st?.lastReset?.frames} frames) · at-anchor:${back} · state-invariant:${invariant}`;
   }
   check('VG8p/seatplay-grab-reset', resetOk, resetDetail);
 

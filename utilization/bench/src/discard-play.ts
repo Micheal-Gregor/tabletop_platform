@@ -37,12 +37,19 @@ let flickRead: { cardId: string; idx: number } | null = null;
 
 // ── the fidget TWEEN (click = the 3-step animation) ──
 let tween: { pairs: { mesh: THREE.Object3D; from: THREE.Vector3; to: THREE.Vector3; fromR: number; toR: number }[]; next: THREE.Group; old: THREE.Group; t: number } | null = null;
+// G-1 (I-101) MOTION TRACES — oracle-only counters (M6/M8 teeth): frames where poses
+// actually CHANGED during the tween / the return glide. An identity-tween or snap-home
+// mutant records 0..1 frames and fails the gate BY NAME. Zero behavior change.
+let tweenTrace: { frames: number; maxMove: number } | null = null;
+let returnTrace: { frames: number; dist: number } | null = null;
 
 export const discardGrabbing = (): 'held' | 'loose' | 'returning' | null =>
   held ? 'held' : pool.some((g) => g.phase === 'loose') ? 'loose' : pool.length ? 'returning' : null;
 export const discardPoolSize = () => pool.length + (held ? 1 : 0);
 export const discardFidgetTransitioning = () => tween !== null;
 export const lastFlickRead = () => flickRead;
+export const discardTweenTrace = () => tweenTrace;
+export const discardReturnTrace = () => returnTrace;
 
 /** a rebuild resets the whole gesture pool — the fresh stack renders truth (K7-P D2). */
 export function resetDiscardPlay(): void {
@@ -146,6 +153,7 @@ export function startFidgetTween(ctx: PlayAreaContext, oldGroup: THREE.Group, ne
     };
   });
   tween = { pairs, next: nextGroup, old: oldGroup, t: 0 };
+  tweenTrace = { frames: 0, maxMove: 0 }; // G-1 (I-101): the motion trace opens with the tween
 }
 
 /** per-frame: the fidget tween · every pooled card's hold/return (I-95: independent). */
@@ -153,10 +161,14 @@ export function tickDiscardPlay(_ctx: PlayAreaContext): void {
   if (tween) {
     tween.t = Math.min(1, tween.t + 0.08);
     const e = tween.t * tween.t * (3 - 2 * tween.t);
+    let stepMove = 0; // G-1 (I-101): how far anything ACTUALLY moved this frame
     for (const p of tween.pairs) {
+      const before = p.mesh.position.clone();
       p.mesh.position.lerpVectors(p.from, p.to, e);
       p.mesh.rotation.z = p.fromR + (p.toR - p.fromR) * e;
+      stepMove = Math.max(stepMove, p.mesh.position.distanceTo(before));
     }
+    if (tweenTrace && stepMove > 1e-6) { tweenTrace.frames++; tweenTrace.maxMove = Math.max(tweenTrace.maxMove, stepMove); }
     if (tween.t >= 1) { // swap at IDENTICAL poses — invisible
       tween.old.parent?.remove(tween.old);
       tween.next.visible = true;
@@ -171,12 +183,15 @@ export function tickDiscardPlay(_ctx: PlayAreaContext): void {
       continue;
     }
     if (g.phase === 'returning' && g.fromPos) {
+      if (g.t === 0) returnTrace = { frames: 0, dist: 0 }; // G-1 (I-101): the glide trace opens
       g.t = Math.min(1, g.t + 0.06);
       const e = g.t * g.t * (3 - 2 * g.t);
       g.group.updateWorldMatrix(true, false);
       const home = g.group.localToWorld(g.homeLocal.pos.clone()); // the slot, recomputed LIVE
+      const before = g.mesh.position.clone();
       g.mesh.position.lerpVectors(g.fromPos, home, e);
       g.mesh.position.y += Math.sin(g.t * Math.PI) * 26; // the carry arc
+      if (returnTrace && g.mesh.position.distanceTo(before) > 1e-6) { returnTrace.frames++; returnTrace.dist = Math.max(returnTrace.dist, g.fromPos.distanceTo(home)); }
       if (g.t >= 1) {
         delete g.mesh.userData['discardLoose'];
         (g.group as THREE.Group).attach(g.mesh); // back in the pile — the same object

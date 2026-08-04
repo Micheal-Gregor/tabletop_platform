@@ -140,6 +140,20 @@ export async function run(h) {
       check('VG8j/route-to-discard', routeObserved && routeEndOk,
         `route-observed:${routeObserved} · dest:${routeRec?.dest} · end≈target:${routeEndOk} — the card TRAVELS to the discard (no teleport)`);
 
+      // draw-theater-hk11 — G-1 (I-101, closing K7-Q B3): the consumed-close window is
+      // captured HERE, immediately after the route completes, so it spans ONLY the close.
+      // (It used to be read after the Q-6b block, whose real draw contaminated it.)
+      const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase(), z: window.__GAME3D__.zoomState() }));
+      const hmClose = await hashes();
+      const dClose = await info('deck');
+      const consumed = hmClose.m === hm1.m && hmClose.h === hm1.h && dClose.count === d1.count && dClose.fidget === d1.fidget;
+      check('VG8j/draw-theater-hk11',
+        o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
+        && d1.count === d0.count - 1 && c1.count === 1 && c1.topFace === 'job-posting'
+        && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
+        && closed.o === false && closed.p === 'idle' && consumed,
+        `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} (double-click made ONE) · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
+
       // slot-partition-law (Q-2c, I-92): the family DATA is pinned (a map regression fails
       // here) and the DERIVED VIEW sums — pile + global + session ≡ ownDiscard. At this
       // state: one drawn card (job-posting → the pile), slots empty. LIVE global/session
@@ -153,8 +167,13 @@ export async function run(h) {
       const pv = await page.evaluate(() => window.__GAME3D__.partitionView());
       const famOk = fam.g === 'global' && fam.s === 'session' && fam.d === 'discard' && fam.levy === 'global';
       const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.pile[0] === 'job-posting';
-      check('VG8j/slot-partition-law', famOk && sumOk,
-        `family{gbl-boom:${fam.g} svc-marketing:${fam.s} job-posting:${fam.d} town-levy:${fam.levy}} · partition sums:${sumOk} (${pv?.pile?.length}+${pv?.global?.length}+${pv?.session?.length}=${pv?.total})`);
+      // G-1 (I-101, closing K7-Q M1): the derived sum is true by construction — the LAW
+      // needs the RENDER side. Exactly-once, per family: live meshes ≡ the derived view
+      // (a deleted render block or a double-render fails BY NAME at the exercised states).
+      const rp = await page.evaluate(() => window.__GAME3D__.renderedPartition());
+      const renderOk = !!rp && rp.pile === pv.pile.length && rp.global === pv.global.length && rp.session === pv.session.length;
+      check('VG8j/slot-partition-law', famOk && sumOk && renderOk,
+        `family{gbl-boom:${fam.g} svc-marketing:${fam.s} job-posting:${fam.d} town-levy:${fam.levy}} · partition sums:${sumOk} (${pv?.pile?.length}+${pv?.global?.length}+${pv?.session?.length}=${pv?.total}) · RENDERED≡derived:${renderOk} (pile ${rp?.pile}/${pv?.pile?.length} · global ${rp?.global}/${pv?.global?.length} · session ${rp?.session}/${pv?.session?.length})`);
 
       // ── Q-6 (I-94): THE LIVE DISCARD (the pile now holds job-posting, face up) ──
       // discard-toss-return: a REAL slow 130-px drag pulls the top card OFF the pile
@@ -165,10 +184,16 @@ export async function run(h) {
         const d0q = await info('discard');
         const top0 = d0q.top[d0q.top.length - 1];
         const txy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        // G-1 (I-101, closing K7-Q M10): the slow drag must be ARITHMETICALLY below the
+        // flick threshold — 143 px over ≥810 ms ≈ 0.18 px/ms vs T 0.35 (>48% margin),
+        // never a bet on main-thread latency. Waits SHAPE the input (I-91's timing note);
+        // every assertion still waits on STATE.
         await page.mouse.move(txy.x, txy.y);
         await page.mouse.down();
         await page.mouse.move(txy.x + 50, txy.y - 25);
-        await page.waitForTimeout(350); // slow input shape — below the flick threshold
+        await page.waitForTimeout(400);
+        await page.mouse.move(txy.x + 90, txy.y - 45);
+        await page.waitForTimeout(400);
         await page.mouse.move(txy.x + 130, txy.y - 60);
         await page.mouse.up();
         let loose = false;
@@ -178,8 +203,12 @@ export async function run(h) {
         const top1 = d1q.top[d1q.top.length - 1];
         const back = !!(top0 && top1) && Math.hypot(top1.x - top0.x, top1.y - top0.y, top1.z - top0.z) < 3;
         const hmT1 = await hashes();
-        check('VG8j/discard-toss-return', loose && back && d1q.count === d0q.count && hmT1.m === hmT.m && hmT1.h === hmT.h,
-          `loose-observed:${loose} · back-at-slot:${back} (Δ ${top0 && top1 ? Math.hypot(top1.x - top0.x, top1.y - top0.y, top1.z - top0.z).toFixed(2) : '?'}) · count ${d0q.count}→${d1q.count} · state-invariant:${hmT1.m === hmT.m && hmT1.h === hmT.h}`);
+        // G-1 (I-101, closing K7-Q M8): the return is a GLIDE — the component counted the
+        // frames the card actually moved; a snap-home mutant records ≤1 and fails by name.
+        const rt = await page.evaluate(() => window.__GAME3D__.discardReturnTrace());
+        const glided = !!rt && rt.frames >= 2;
+        check('VG8j/discard-toss-return', loose && back && glided && d1q.count === d0q.count && hmT1.m === hmT.m && hmT1.h === hmT.h,
+          `loose-observed:${loose} · back-at-slot:${back} (Δ ${top0 && top1 ? Math.hypot(top1.x - top0.x, top1.y - top0.y, top1.z - top0.z).toFixed(2) : '?'}) · glided:${glided} (${rt?.frames} frames over ${rt?.dist?.toFixed?.(0)}u) · count ${d0q.count}→${d1q.count} · state-invariant:${hmT1.m === hmT.m && hmT1.h === hmT.h}`);
       }
 
       // discard-flick-reads: a FAST flick on the pile card opens the reading board on
@@ -212,33 +241,63 @@ export async function run(h) {
         try { await page.waitForFunction(() => window.__GAME3D__.discardTransitioning() === true, null, { timeout: 8000 }); transitioning = true; } catch { /* named below */ }
         await page.waitForFunction(() => window.__GAME3D__.discardTransitioning() === false, null, { timeout: 60000 }).catch(() => {});
         const f1 = await info('discard');
-        check('VG8j/discard-fidget-animates', transitioning && f1.fidget === 1 && f1.count === 1,
-          `transition-observed:${transitioning} (the cards MOVED, no snap) · fidget-state:${f1?.fidget} · count:${f1?.count}`);
+        // G-1 (I-101, closing K7-Q M6): the flag alone was hollow — an identity tween
+        // (to = from) held it for ~13 frames with ZERO motion. The component now counts
+        // frames where poses actually changed and the largest per-frame move; both must
+        // be real. Kill: identity tween → maxMove 0 → false; instant-apply → frames 0.
+        const tt = await page.evaluate(() => window.__GAME3D__.discardTweenTrace());
+        const trulyMoved = !!tt && tt.frames >= 2 && tt.maxMove > 0.05;
+        check('VG8j/discard-fidget-animates', transitioning && trulyMoved && f1.fidget === 1 && f1.count === 1,
+          `transition-observed:${transitioning} · MOVED:${trulyMoved} (${tt?.frames} frames, max step ${tt?.maxMove?.toFixed?.(2)}u) · fidget-state:${f1?.fidget} · count:${f1?.count}`);
+      }
+
+      // FORCED MISMATCH (the VG7d committed-drill precedent) — G-1 (I-101, closing K7-Q
+      // B2): the drill is driven by the SAME REAL DRAG as every draw (a plain click
+      // stopped drawing at Q-2b — the dead drive was the K7-Q headline finding), and it
+      // is REPOSITIONED: post-Q-6b the drill IS the second draw (seeded `new-van`, its
+      // written expectation) and it fills the pile to 2 — exactly the state
+      // discard-multi-card needs, whose own draw is RETIRED (a third draw would pull
+      // `crossroads`: a gated window with no UI until A8, refusing end-turn). HK-11: the
+      // flip announces the WRONG card, the verdict flags it, TRUTH WINS on the route.
+      {
+        await page.evaluate(() => window.__GAME3D__.forceFlipMismatch(true));
+        const dxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
+        await page.mouse.move(dxy2.x, dxy2.y);
+        await page.mouse.down();
+        for (let i = 1; i <= 4; i++) await page.mouse.move(dxy2.x + i * 12, dxy2.y - i * 10);
+        await page.mouse.up();
+        let f2 = true;
+        try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
+        catch { f2 = false; }
+        const o2 = f2 ? await page.evaluate(() => window.__GAME3D__.onionState()) : null;
+        await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
+        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+        const c2 = await info('discard');
+        const ownDiscardTrue = c2.count === 2 && c2.topFace === 'new-van'; // K7-A2 D3: the VIEWER'S ownDiscard, both cards
+        check('VG8j/forced-mismatch-truth-wins',
+          f2 && o2 && o2.verdict && o2.verdict.mismatch === true && o2.verdict.displayed === 'WRONG-CARD'
+          && o2.verdict.seeded === 'new-van' && o2.title === 'new-van' && ownDiscardTrue,
+          f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins) · own-discard:${c2.count}/${c2.topFace}` : 'second flight never landed (timeout)');
       }
 
       // discard-multi-card (Q-6b, I-95 — THE OWNER'S EXACT SCENARIO: "drag some cards out
       // of the way and then flick a card I couldn't reach before, it should pop open"):
-      // a second flick-draw fills the pile to 2 (new-van routes in); drag the TOP card
-      // away slowly → LOOSE; WHILE it is loose, grab + FLICK the card underneath → the
-      // reading board OPENS on it, one card still out. Kill: restore the single-gesture
-      // lock → the under-card flick is refused → no onion → false.
+      // the DRILL above filled the pile to 2 (new-van on top — G-1/I-101, no draw of its
+      // own); drag the TOP card away slowly → LOOSE; WHILE it is loose, grab + FLICK the
+      // card underneath → the reading board OPENS on it, one card still out. Kill:
+      // restore the single-gesture lock → the under-card flick is refused → no onion.
       {
-        const d2xy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
-        await page.mouse.move(d2xy.x, d2xy.y);
-        await page.mouse.down();
-        for (let i = 1; i <= 4; i++) await page.mouse.move(d2xy.x + i * 12, d2xy.y - i * 10);
-        await page.mouse.up();
-        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }).catch(() => {});
         const stg2 = await page.locator('#stage canvas').boundingBox();
-        await page.mouse.click(stg2.x + 20, stg2.y + 20); // close → routes new-van to the pile
-        await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
         const dM = await info('discard');
-        // drag the TOP card (new-van) out of the way — slow → LOOSE
+        // drag the TOP card (new-van) out of the way — slow → LOOSE. G-1 (I-101, M10):
+        // 165 px over ≥810 ms ≈ 0.20 px/ms vs T 0.35 — arithmetically sub-threshold.
         const mxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
         await page.mouse.move(mxy.x, mxy.y);
         await page.mouse.down();
         await page.mouse.move(mxy.x + 60, mxy.y + 30);
-        await page.waitForTimeout(350);
+        await page.waitForTimeout(400);
+        await page.mouse.move(mxy.x + 105, mxy.y + 50);
+        await page.waitForTimeout(400);
         await page.mouse.move(mxy.x + 150, mxy.y + 70);
         await page.mouse.up();
         let loose2 = false;
@@ -259,16 +318,8 @@ export async function run(h) {
         check('VG8j/discard-multi-card', loose2 && popped && oT2 === 'job-posting' && poolAt >= 2 && dM.count === 2 && dEnd.count === 2,
           `top-card-loose:${loose2} · under-card flick POPPED:${popped}/${oT2} (want job-posting) · cards-out-at-once:${poolAt} · pile ${dM?.count}→${dEnd?.count} (want 2→2)`);
       }
-      const closed = await page.evaluate(() => ({ o: window.__GAME3D__.onionState().open, p: window.__GAME3D__.drawPhase(), z: window.__GAME3D__.zoomState() }));
-      const hmClose = await hashes();
-      const dClose = await info('deck');
-      const consumed = hmClose.m === hm1.m && hmClose.h === hm1.h && dClose.count === d1.count && dClose.fidget === d1.fidget;
-      check('VG8j/draw-theater-hk11',
-        o1.open === true && o1.title === 'job-posting' && o1.verdict && o1.verdict.mismatch === false
-        && d1.count === d0.count - 1 && c1.count === 1 && c1.topFace === 'job-posting'
-        && hm1.m === hm0.m + 1 && hm1.h !== hm0.h
-        && closed.o === false && closed.p === 'idle' && consumed,
-        `onion:${o1.open}/${o1.title} mismatch:${o1.verdict?.mismatch} · deck ${d0.count}→${d1.count} · discard ${c0.count}→${c1.count} top:${c1.topFace} · moves ${hm0.m}→${hm1.m} (double-click made ONE) · hash-changed:${hm1.h !== hm0.h} · closed:${closed.o === false} · close-consumed:${consumed}`);
+      // (G-1/I-101: the closed/hmClose/dClose capture and the draw-theater-hk11 check
+      // moved UP — emitted right after the route, before the discard family. B3 closed.)
 
       // VG8k — A3 (I-69): the reading board presents the FORTUNE ANATOMY, not A2's text
       // panel. Art-dominance is a RENDERED property (I-57a): art.h > title.h AND inside the
@@ -297,40 +348,41 @@ export async function run(h) {
       check('VG8l/fortune-opaque', !!(oa && oa.opaque && oa.overVeil),
         oa ? `opaque:${oa.opaque} (minOpacity ${oa.minOpacity} · transparent-pass:${oa.transparentPass}) · over-veil:${oa.overVeil} (card order ${oa.cardOrder} > veil ${oa.veilOrder})` : 'onionRegions null — board not open');
 
-      // FORCED MISMATCH (the VG7d committed-drill precedent): HK-11 flags, TRUTH WINS
-      await page.evaluate(() => window.__GAME3D__.forceFlipMismatch(true));
-      const dxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('deck'));
-      await page.mouse.click(dxy2.x, dxy2.y);
-      let f2 = true;
-      try { await page.waitForFunction(() => window.__GAME3D__.drawPhase() === 'reading', null, { timeout: 60000 }); }
-      catch { f2 = false; }
-      const o2 = f2 ? await page.evaluate(() => window.__GAME3D__.onionState()) : null;
-      await page.mouse.click(stg3.x + stg3.width / 2, stg3.y + stg3.height / 2);
-      const c2 = await info('discard');
-      const ownDiscardTrue = c2.count === 2 && c2.topFace === 'new-van'; // K7-A2 D3: the VIEWER'S ownDiscard, both cards
-      check('VG8j/forced-mismatch-truth-wins',
-        f2 && o2 && o2.verdict && o2.verdict.mismatch === true && o2.verdict.displayed === 'WRONG-CARD'
-        && o2.verdict.seeded === 'new-van' && o2.title === 'new-van' && ownDiscardTrue,
-        f2 ? `flagged:${o2.verdict?.mismatch} displayed:${o2.verdict?.displayed} seeded:${o2.verdict?.seeded} · shown:${o2.title} (truth wins) · own-discard:${c2.count}/${c2.topFace}` : 'second flight never landed (timeout)');
+      // (G-1/I-101: the FORCED-MISMATCH drill moved UP — it now IS the second draw,
+      // driven by the real drag, feeding discard-multi-card. B2 closed.)
 
       // FIDGET = PURE THEATER (I-67e): three discard clicks cycle loose → spread → NEAT
       // EXACT; rowHash AND moveCount are invariant through every fidget click.
+      // G-1 (I-101, the Q3-D2 red + the I-80 float-flake fold): the counter is NORMALIZED
+      // to 0 first (discard-fidget-animates left it at 1 — the never-reset counter made
+      // the cycle land 2→0→1 against a stale pose baseline), the pose baseline is captured
+      // AFTER normalization, each click WAITS OUT its tween (post-Q-6 the fidget ANIMATES;
+      // a click during a live tween is refused while the counter still advances — M5,
+      // carried), and the pose tolerance is 1e-6 (the recorded 1e-9 flake, I-80).
+      for (let i = 0; i < 3; i++) {
+        const fNow = (await info('discard')).fidget;
+        if (fNow === 0) break;
+        const nxy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
+        await page.mouse.click(nxy.x, nxy.y);
+        await page.waitForFunction(() => window.__GAME3D__.discardTransitioning() === false, null, { timeout: 60000 }).catch(() => {});
+      }
       const hm2 = await hashes();
       const p0 = (await info('discard')).top;
       const states = [];
       for (let i = 0; i < 3; i++) {
         const rxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('discard'));
         await page.mouse.click(rxy2.x, rxy2.y);
+        await page.waitForFunction(() => window.__GAME3D__.discardTransitioning() === false, null, { timeout: 60000 }).catch(() => {});
         states.push(await info('discard'));
       }
       const hm3 = await hashes();
-      const posEq = (a, b) => a.length === b.length && a.every((v, i) => Math.abs(v.x - b[i].x) < 1e-9 && Math.abs(v.y - b[i].y) < 1e-9 && Math.abs(v.z - b[i].z) < 1e-9);
+      const posEq = (a, b) => a.length === b.length && a.every((v, i) => Math.abs(v.x - b[i].x) < 1e-6 && Math.abs(v.y - b[i].y) < 1e-6 && Math.abs(v.z - b[i].z) < 1e-6);
       const moved1 = !posEq(states[0].top, p0);
       const moved2 = !posEq(states[1].top, states[0].top);
       const restored = posEq(states[2].top, p0) && states[2].fidget === 0;
       const pure = hm3.h === hm2.h && hm3.m === hm2.m;
       check('VG8j/fidget-pure-theater', moved1 && moved2 && restored && pure,
-        `peek-moved:${moved1} · spread-moved:${moved2} · neat-restored-exact:${restored} · rowHash+moves-invariant:${pure}`);
+        `normalized-then: peek-moved:${moved1} · spread-moved:${moved2} · neat-restored-exact:${restored} · rowHash+moves-invariant:${pure}`);
 
       // END-TURN + the I-62b OBLIGATION: after real state change the frozen-panel class
       // dies — standings (★ moves), chrome, log, and the deck (now PETE's, 2 by the pack)

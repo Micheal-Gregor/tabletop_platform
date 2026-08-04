@@ -53,6 +53,20 @@ const server = createServer((req, res) => {
 await new Promise((r) => server.listen(GATE_PORT, r));
 
 const exe = process.env.PLAYWRIGHT_CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+// G-1 (I-101): the NAMED FRIENDLY FAILURE — the carried run.mjs next-touch, reproduced
+// in the wild at I-100 (the owner hit the raw Playwright throw from a shell without the
+// env var). A missing browser now names the fix in both shells and exits 2.
+if (!existsSync(exe)) {
+  console.error(
+    `VISUAL GATE: no Chromium executable at "${exe}".\n` +
+    (process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? 'PLAYWRIGHT_CHROMIUM_PATH is set but points at nothing — check the path.'
+      : 'Set PLAYWRIGHT_CHROMIUM_PATH to your browser first:\n' +
+        '  PowerShell:  $env:PLAYWRIGHT_CHROMIUM_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"\n' +
+        '  cmd.exe:     set PLAYWRIGHT_CHROMIUM_PATH=C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'));
+  server.close();
+  process.exit(2);
+}
 const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 1400, height: 950 } });
 const results = [];
