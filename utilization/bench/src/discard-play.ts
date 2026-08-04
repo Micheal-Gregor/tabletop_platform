@@ -140,11 +140,12 @@ export function discardGrabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean 
     g.phase = 'returning'; g.t = 0; g.fromPos = g.mesh.position.clone();
     ctx.status(`reading ${g.cardId} — drawn · discard #${g.total - g.idx} of ${g.total}`);
   } else {
-    // R-1b (I-122): the TOSS now SLIDES with real momentum — a burst sim replayed
-    // (record-and-replay; no live session, so a die drag never contends). Fallbacks
-    // (physics cold · no table · a degenerate ≤1-step sim, i.e. drag-stop-release)
-    // keep the existing loose-where-dropped behavior — both are the registered
-    // interpretation, and both END in the same loose→return-glide pipeline.
+    // R-1b (I-122) as SUPERSEDED at I-124/I-125 (K7-U M-1 — the dead text died here):
+    // the TOSS SLIDES with real momentum — a burst sim replayed (record-and-replay; no
+    // live session, so a die drag never contends). The REAL fallbacks: physics cold ·
+    // no table · a STALE plane window at release (the I-125 time-gate — a stopped hand
+    // drops the card dead) · a near-still release. Every path ends in the same
+    // loose→return-glide pipeline.
     const slid = beginSlide(ctx, g);
     g.phase = slid ? 'sliding' : 'loose'; g.hold = 0;
     ctx.status(slid ? 'tossed — it slides, then finds its way back' : 'tossed — it will find its way back to the pile');

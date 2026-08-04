@@ -588,7 +588,12 @@ export async function run(h) {
       const hdrOk = after.hdr.includes(`${after.v.active}'s turn`);
       const logOk = after.log && after.log.some((l) => l === 'moe · turn:end') && after.log.some((l) => l === 'moe · deck:draw'); // the engine's intent type names
       const d2 = await info('deck');
-      const deckIsPetes = d2.count === 36; // P-3 (I-131): EVERY seat's deck is the full set — pete's holds 36
+      // K7-U B-1's closure: BOTH deck-count asserts below derive from ONE source — the
+      // implementation's own order length (a stale hand-pin here made this check
+      // structurally unsatisfiable: :591 wanted 36 while :603 still wanted the
+      // pre-shuffle 2 over the same untouched deck).
+      const PETE_DECK = (await page.evaluate(() => window.__GAME3D__.deckOrder('pete'))).length;
+      const deckIsPetes = d2.count === PETE_DECK; // P-3 (I-131): EVERY seat's deck is the full set
       const c3 = await info('discard');
       // K7-A2 D3: ownDiscard is the VIEWER'S — invariant across the turn change. P-3
       // (I-131): the values DERIVE — the drill drew 2 + whatever the decide leg needed;
@@ -600,9 +605,9 @@ export async function run(h) {
       await page.mouse.click(dxy3.x, dxy3.y);
       const dFid = await info('deck');
       const hm5 = await hashes();
-      const fidgetNotDraw = dFid.fidget === 1 && hm5.h === hm4.h && hm5.m === hm4.m && dFid.count === 2;
+      const fidgetNotDraw = dFid.fidget === 1 && hm5.h === hm4.h && hm5.m === hm4.m && dFid.count === PETE_DECK; // K7-U B-1: derived, same source as :591
       check('VG8j/state-change-recheck', standingsOk && hdrOk && logOk && deckIsPetes && ownDiscardHeld && fidgetNotDraw,
-        `active:${after.v.active} · standings-rederived:${standingsOk} · hdr:${hdrOk} · log(end-turn+draw):${logOk} · deck-now-petes(2):${deckIsPetes} · own-discard-held:${ownDiscardHeld} · deck-fidget-not-draw:${fidgetNotDraw}`);
+        `active:${after.v.active} · standings-rederived:${standingsOk} · hdr:${hdrOk} · log(end-turn+draw):${logOk} · deck-now-petes(${PETE_DECK}):${deckIsPetes} · own-discard-held:${ownDiscardHeld} · deck-fidget-not-draw:${fidgetNotDraw}`);
     }
     await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
     await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
