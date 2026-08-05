@@ -46,6 +46,7 @@ function partition(ownDiscard: readonly string[]): { global: string[]; session: 
 }
 let tableRoot: THREE.Group | null = null; // G-1 (I-101): the live table group — the RENDERED-rects oracle walks THIS, never the def
 let pendingPools: { rid: string; cls: string; count: number; excl: Set<string> }[] = []; // C-1b (I-149)
+let poolGroups: THREE.Group[] = []; // I-153: last build's world-space pool stacks — purged each build (stale first-match ghosts poison focusObject)
 
 // ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
 // size-gate extraction). This adapter delegates: grab/flick/flip/onion/route. ──
@@ -128,9 +129,11 @@ export const table: Component = {
     // the pool stacks need t's WORLD pose — set it now (position/rotation are final),
     // then build them as SCENE-level groups (world-sized instances; count law carried).
     t.updateMatrixWorld(true);
+    for (const old of poolGroups) old.parent?.remove(old); // I-153: purge before rebuild
+    poolGroups = [];
     for (const pp of pendingPools) {
-      const g2 = worldPoolStack(cx!, pp.rid, pp.cls, pp.count, pp.excl);
-      if (g2) cx!.register(g2);
+      const g2 = worldPoolStack(t, pp.rid, pp.cls, pp.count, pp.excl); // I-153: THIS build's table, not the scene's previous one
+      if (g2) { cx!.register(g2); poolGroups.push(g2); }
     }
     pendingPools = [];
     return t;

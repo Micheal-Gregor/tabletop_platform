@@ -8,16 +8,19 @@
  * absence; presence arrives with transport/F7).
  */
 import * as THREE from 'three';
-import type { PlayAreaContext } from './component.js';
 import { cardInstance, instancesOfClass } from './card-world.js';
 import { CARD_T } from './card3d.js';
 import { TOWN_TABLE_V2 } from '../../../packs/boty/src/index.js';
 
 export function worldPoolStack(
-  ctx: PlayAreaContext, rid: string, cls: string, count: number, excluded: ReadonlySet<string>,
+  t: THREE.Object3D, rid: string, cls: string, count: number, excluded: ReadonlySet<string>,
 ): THREE.Group | null {
+  // I-153 (owner-caught: 'the 4 new decks aren't visible until I draw'): the table is
+  // passed IN — the old focusObject('table') lookup found only the PREVIOUS build's
+  // table, so the GENESIS build (no predecessor) silently skipped every pool. The
+  // caller hands the just-built group; with no parent yet its world pose ≡ its final
+  // scene-root pose, so the rects are right on build ONE.
   const r = TOWN_TABLE_V2.regions.find((rg) => rg.id === rid);
-  const t = ctx.theater.focusObject('table');
   if (!r || !t) return null;
   t.updateWorldMatrix(true, true);
   const tb = new THREE.Box3().setFromObject(t);
