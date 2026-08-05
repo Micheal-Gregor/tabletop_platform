@@ -16,10 +16,12 @@ import { panelTexture } from '../surfaces.js';
 import { planSeatRows } from '../seat-rows.js'; // L-4 (I-131): the pure row planner
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
+import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
 
 let cx: PlayAreaContext | null = null;
 let root: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
 let cards: { key: string; mesh: THREE.Mesh; anchor: THREE.Vector3 }[] = [];
+export const seatPlayCards = () => cards; // the oracle module's read (O-2 size extraction)
 
 // ── the grab/reset state machine ──
 let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster } | null = null;
@@ -30,7 +32,7 @@ let lastReset: { moved: number; returned: boolean; frames: number } | null = nul
  *  board seat'. Everything at a seat lays out in the BOARD'S OWN frame: `n` = the
  *  board's horizontal normal (toward the player), `lat` = its side axis, `yaw` its
  *  heading. Rows step toward the table along −n; cards yaw with the board. */
-function seatFrame(ctx: PlayAreaContext, i: number): { c: THREE.Vector3; n: THREE.Vector3; lat: THREE.Vector3; yaw: number } | null {
+export function seatFrame(ctx: PlayAreaContext, i: number): { c: THREE.Vector3; n: THREE.Vector3; lat: THREE.Vector3; yaw: number } | null {
   const b = ctx.theater.focusObject(`seat-${i}`);
   if (!b) return null;
   b.updateWorldMatrix(true, true);
@@ -82,7 +84,7 @@ export const seatPlay: Component = {
         const zOff = -(46 + r * 68); // NEGATIVE toward-table = positive player side below
         const widths = row.items.map((it) => it.w * 56);
         const natural = widths.reduce((a, b) => a + b, 0);
-        const MAXW = 380; // the row's space — beyond it, respace to OVERLAP (I-130)
+        const MAXW = 340; // O-2 (I-146): the station box's row column (right of the folder)
         const scale = row.overlap || natural > MAXW ? MAXW / natural : 1;
         let cum = 0;
         row.items.forEach((it) => {
@@ -222,59 +224,8 @@ export const seatPlay: Component = {
   gate() {
     const ctx = cx!;
     return {
-      /** count-true crew rows: per seat — want (projection) vs got (meshes) + in-front. */
-      crewRows: () => {
-        const v = ctx.projection();
-        return v.seats.map((s, i) => {
-          const want = v.crew.filter((m) => m.outfit === s.id).length;
-          const got = cards.filter((c) => c.key.startsWith('crew:') && c.mesh.userData['focus'] === `seat-${i}`).length;
-          const sf = seatFrame(ctx, i);
-          const row = cards.find((c) => c.key.startsWith('crew:') && c.mesh.userData['focus'] === `seat-${i}`);
-          // I-144 (supersedes the L-5b table-side law): the rows live BEHIND the board
-          // (the PLAYER side) — the offset along the board normal is POSITIVE.
-          const inFront = !!(row && sf) && row.mesh.position.clone().sub(sf.c).dot(sf.n) > 0;
-          return { seat: s.id, want, got, inFront };
-        });
-      },
-      assetsCount: () => {
-        const v = ctx.projection();
-        const want = v.seats.find((s) => s.id === ctx.viewSeat)?.assets.length ?? 0;
-        return { want, got: cards.filter((c) => c.key.startsWith('asset:')).length };
-      },
-      seatPlayGrabState: () => ({ grabbing: !!grab, resetting: !!resetting, lastReset }),
-      /** L-4 (I-131) oracles: the PLAN vs the RENDER for a seat (row kinds/counts/
-       *  overlap ≡ meshes by key prefix), and the hand's below-the-books geometry. */
-      seatRowsInfo: (i: number) => {
-        const v = ctx.projection();
-        const seat = v.seats[i];
-        if (!seat) return null;
-        const mine = seat.id === ctx.viewSeat;
-        const session = v.ownDiscard.filter((id) => CARD_FAMILY[id] === 'session');
-        const plan = planSeatRows(
-          v.crew.filter((m) => m.outfit === seat.id).map((m) => ({ id: m.id, paired: false })),
-          mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}` })) : [],
-          mine ? session.map((id) => ({ id })) : [],
-        );
-        const of = (p: string) => cards.filter((c) => c.key.startsWith(p) && c.mesh.userData['focus'] === `seat-${i}` && !c.mesh.userData['hand']).length;
-        return {
-          plan: plan.map((r) => ({ kind: r.kind, n: r.items.length, overlap: r.overlap })),
-          got: { crew: of('crew:'), equipment: of('asset:'), local: of('local:') },
-          match: plan.filter((r) => r.kind === 'trades').reduce((a, r) => a + r.items.length, 0) === of('crew:')
-            && plan.filter((r) => r.kind === 'equipment').reduce((a, r) => a + r.items.length, 0) === of('asset:')
-            && plan.filter((r) => r.kind === 'local').reduce((a, r) => a + r.items.length, 0) === of('local:'),
-        };
-      },
-      handInfo: () => {
-        const hand = cards.filter((c) => c.mesh.userData['hand']);
-        const ledger = ctx.theater.focusObject('ledger');
-        const sf = seatFrame(ctx, 0); // the viewer's seat frame
-        if (!ledger || !sf) return { count: hand.length, belowBooks: false };
-        const lc = new THREE.Box3().setFromObject(ledger).getCenter(new THREE.Vector3());
-        // L-5b (I-132): below the books = a POSITIVE step along the seat frame's normal
-        // (away from the table) from the ledger — frame-relative, corner-safe.
-        const belowBooks = hand.length === 0 || hand.every((c) => c.mesh.position.clone().sub(lc).dot(sf.n) > 0);
-        return { count: hand.length, belowBooks, want: Math.min(3, ctx.projection().ownDiscard.length) };
-      },
+      seatPlayGrabState: () => ({ grabbing: !!grab, resetting: !!resetting, lastReset }), // stays home — private state
+      ...seatPlayOracles(() => cx!), // O-2 size extraction (the table-oracles precedent) — crewRows · seatRowsInfo · stationBoxInfo · handInfo live in seat-play-oracles.ts VERBATIM
       seatPlayCardXY: (key: string) => {
         const card = cards.find((c) => c.key === key || c.key.startsWith(key));
         if (!card) return null;

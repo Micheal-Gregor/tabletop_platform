@@ -19,6 +19,7 @@ import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pil
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
 import { getTableMode, setTableMode } from '../playarea.js'; // I-145: the orientation mode
+import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
 import { SEAT_YAWS } from '../stage.js';
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
@@ -104,6 +105,13 @@ export const table: Component = {
     // O-3 (I-139): BBB + networking are REAL card decks — count-true from the pools.
     t.add(cardStack(bbR, 'bbb-pile', v.pools.bbb, null, 0));
     t.add(cardStack(nwR, 'networking-pile', v.pools.networking, null, 0));
+    // O-5 (I-146): THICKNESS — the table is a SLAB on the counter stratum (the A2b
+    // thin-box lesson at scale): a 16-unit body under the face, diffuse, NO region tag
+    // (the count law holds by construction; every consumer reads live bboxes).
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 16), new THREE.MeshBasicMaterial({ color: 0xdfe5df }));
+    slab.position.z = -8.2;
+    slab.userData['slab'] = true;
+    t.add(slab);
     // I-145: the ORIENTATION MODE (a template option) — 'rotate-to-active' premultiplies
     // the world-yaw so the board's bottom edge faces the active player (the I-133
     // quaternion lesson: flat FIRST, then yawed); 'fixed' (BOTY's config) stays still.
@@ -177,36 +185,8 @@ export const table: Component = {
       // viewer's turn means an edge case (e.g. read-mode entry) — hint, don't act.
       if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('the EVENT DECK — grab the top card and FLICK to flip it'); }
       else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`event deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
-    } else if (region === 'bbb-pile' || region === 'networking-pile') {
-      // O-3 (I-139): YOUR turn → draw from the pool through the doors — the card joins
-      // your LOCAL row ('BBB card drawn, buy insurance, put in local card area');
-      // off-turn → the deck's own tap-nudge (object-logic parity, I-138/O-3).
-      const v4 = ctx.projection();
-      const pool = region === 'bbb-pile' ? 'bbb' : 'networking';
-      if (v4.seats[v4.turn.seatIdx]!.id === ctx.viewSeat) {
-        if (ctx.submit('pool-draw', { pool })) {
-          ctx.rebuild();
-          ctx.status(`drawn from ${pool.toUpperCase()} — the card joins your local row`);
-        }
-      } else {
-        nudgeStack(ctx.theater.focusObject(`table:${region}`));
-        ctx.status(`the ${pool.toUpperCase()} deck — draw on your turn`);
-      }
-    } else if (region === 'tradespeople-pile' || region === 'equipment-pile') {
-      // A16 (I-137): YOUR turn → the pile's verb through the doors (hire / buy); a
-      // refusal (empty pool, off-turn) speaks via submitVerb's status. The hire-flight
-      // flourish is the registered polish row — the rebuild renders truth today.
-      const v3 = ctx.projection();
-      if (v3.seats[v3.turn.seatIdx]!.id === ctx.viewSeat) {
-        const verb = region === 'tradespeople-pile' ? 'hire' : 'buy-equipment';
-        if (ctx.submit(verb, {})) {
-          ctx.rebuild();
-          ctx.status(verb === 'hire' ? 'hired — a new tradesperson joins your crew' : 'bought — the equipment joins your rack');
-        }
-      } else {
-        nudgeStack(ctx.theater.focusObject(`table:${region}`)); // O-3: nudge parity on every pile
-        ctx.status(`${region === 'tradespeople-pile' ? 'the tradesperson pool' : 'the equipment pool'} — hire on your turn`);
-      }
+    } else if (region === 'bbb-pile' || region === 'networking-pile' || region === 'tradespeople-pile' || region === 'equipment-pile') {
+      handlePileClick(ctx, region); // O-3/A16 (I-137/I-139) — the pile verbs + off-turn nudge live in pile-actions.ts VERBATIM (size extraction)
     } else if (region === 'discard') {
       // Q-6 (I-94): the 3-step fidget, ANIMATED — the cards TWEEN to the next state's
       // poses (no rebuild snap; the "cheap image thing" closed).
@@ -271,6 +251,7 @@ export const table: Component = {
       orphanGrabMeshes: () => ({ phase: draw.drawPhaseState(), count: oracles.orphanGrabMeshCount(cx!) }),
       deckNudging: stackNudging, // R-1a2 (I-110): the tap-nudge state (the gate waits on it)
       tableMode: getTableMode, // I-145: the orientation mode (template data)
+      slabCount: () => { let n = 0; cx!.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['slab']) n++; }); return n; }, // O-5: table 1 + boards 6
       setTableMode: (m: 'fixed' | 'rotate-to-active') => { setTableMode(m); cx!.rebuild(); }, // the drill door
       tableYawDeg: () => { const t2 = cx!.theater.focusObject('table'); if (!t2) return null; const q = t2.getWorldQuaternion(new THREE.Quaternion()); const up = new THREE.Vector3(0, 0, -1).applyQuaternion(q); return (Math.atan2(up.x, up.z) * 180) / Math.PI; }, // the board's 'up-edge' heading
       // S-1b (I-104): these five were DROPPED by the S-1 extraction surgery — the full

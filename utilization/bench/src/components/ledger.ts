@@ -44,7 +44,7 @@ export const ledgerComponent: Component = {
       const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
       n.y = 0; n.normalize(); // toward the player, horizontal
       const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
-      book.position.copy(c).addScaledVector(lat, -225).addScaledVector(n, 130).setY(2);
+      book.position.copy(c).addScaledVector(lat, -180).addScaledVector(n, 130).setY(2); // O-2 (I-146): the station box's folder column (lat −180, inside ±240)
       // I-133 (the owner's screenshot catch — 'the folder rotated 45° instead of staying
       // flat'): the world-yaw PREMULTIPLIES the built pose. Setting rotation.y MUTATED
       // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
@@ -146,7 +146,7 @@ export const ledgerComponent: Component = {
         const lat = new THREE.Vector3(n.z, 0, -n.x);
         const f = new THREE.Box3().setFromObject(bookRoot).getCenter(new THREE.Vector3());
         const latCoord = f.clone().sub(c).dot(lat);
-        return { folderLat: latCoord, boardLeftLat: -130, left: latCoord < -130 };
+        return { folderLat: latCoord, boardLeftLat: -130, left: latCoord < -130 }; // (−180 sits left of the board's −130 edge ✓)
       },
       /** a standing page's world bbox width/height — the PORTRAIT (report-sized) oracle. */
       ledgerPageBBox: (kind: 'pnl' | 'balance') => {

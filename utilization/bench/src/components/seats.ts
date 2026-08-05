@@ -58,6 +58,12 @@ export const seats: Component = {
       b.position.set(st.x, 130, st.z);
       b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), st.yaw)
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));
+      // O-5 (I-146): the board's BACKING SLAB — physical mass (4 world units), diffuse,
+      // behind the face, no region tag (the count law holds).
+      const bslab = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 4), new THREE.MeshBasicMaterial({ color: 0xe8e4dc }));
+      bslab.position.z = -2.4;
+      bslab.userData['slab'] = true;
+      b.add(bslab);
       // the BACK of a seat screen shows ONLY the shop graphic (I-65c) — which shop, no data
       const back = panel(['[shop art]'], 100, 100, s);
       back.rotation.y = Math.PI;
@@ -70,10 +76,23 @@ export const seats: Component = {
     return null;
   },
 
-  // Phase 2: a board hit → its seat preset (I-65b). seatIdx wins over the accumulated region.
+  // Phase 2: O-6 (I-146) — the ACTIONS strip is LIVE: a click on YOUR board's actions
+  // region on YOUR turn submits END-TURN (the SVG's board-foot law); any other board
+  // hit glides to its seat preset (I-65b).
   onPick(ctx, hit: PickInfo) {
     const idx = hit.tags['seatIdx'];
-    if (typeof idx === 'number') { ctx.theater.glideTo(`seat-${idx}`); return true; }
+    if (typeof idx === 'number') {
+      if (hit.tags['region'] === 'actions') {
+        const v = ctx.projection();
+        const me = v.seats.findIndex((x) => x.id === ctx.viewSeat);
+        if (idx === me && v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) {
+          if (ctx.submit('end-turn', {})) { ctx.rebuild(); ctx.status('end turn — from the board (O-6)'); }
+          return true;
+        }
+      }
+      ctx.theater.glideTo(`seat-${idx}`);
+      return true;
+    }
     return false;
   },
 
@@ -144,6 +163,19 @@ export const seats: Component = {
         const q = grp.getWorldQuaternion(new THREE.Quaternion());
         const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
         return { x: p.x, z: p.z, yawDeg: (Math.atan2(n.x, n.z) * 180) / Math.PI };
+      },
+      /** O-6 (I-146): a board REGION's centre in canvas pixels — the actions drive. */
+      boardRegionXY: (i: number, region: string) => {
+        const grp = ctx.theater.focusObject(`seat-${i}`);
+        if (!grp) return null;
+        let hit: THREE.Object3D | null = null;
+        grp.traverse((o: THREE.Object3D) => { if (o.userData?.['region'] === region) hit = o; });
+        if (!hit) return null;
+        const p = (hit as THREE.Object3D).getWorldPosition(new THREE.Vector3());
+        ctx.camera.updateMatrixWorld();
+        p.project(ctx.camera);
+        const r = ctx.renderer.domElement.getBoundingClientRect();
+        return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
       },
       /** VG8e's input-drive helper: a board's center projected to canvas pixel coords. */
       boardScreenXY: (i: number) => {

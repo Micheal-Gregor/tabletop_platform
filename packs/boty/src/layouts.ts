@@ -78,10 +78,10 @@ export const SHOP_OVERLAY: LayoutOverlay = {
   override: [
     { id: 'identity', role: 'title', x: 2, y: 20, w: 44, h: 8 }, // "Jumpin_Jack · mechanic"
     { id: 'counters', role: 'counters', x: 52, y: 20, w: 46, h: 8 }, // "$3,350 · overhead $100/turn"
-    { id: 'crew', role: 'crew-zone', x: 2, y: 40, w: 30, h: 26 }, // TRADESPEOPLE portrait rack (hire/fire)
-    { id: 'equipment', role: 'equipment-rack', x: 34, y: 40, w: 30, h: 26 }, // buy/rent + owned w/ dispose
-    { id: 'local-play', role: 'play-zone', x: 66, y: 40, w: 32, h: 26 },
-    { id: 'hand', role: 'hand-anchor', x: 66, y: 68, w: 32, h: 12 },
+    // O-6 (I-146): crew-zone + equipment-rack RETIRED as regions — 'now cards laid down
+    // in front' (behind the board with the folder and hand, I-144); suppressed below.
+    { id: 'local-play', role: 'play-zone', x: 2, y: 40, w: 62, h: 26 }, // widened into the freed band
+    { id: 'hand', role: 'hand-anchor', x: 66, y: 40, w: 32, h: 26 },
   ],
   add: [
     { id: 'art-banner', role: 'art', x: 2, y: 2, w: 96, h: 16 }, // the shop interior art
@@ -89,8 +89,9 @@ export const SHOP_OVERLAY: LayoutOverlay = {
     { id: 'jobs-list', role: 'jobs-list', x: 2, y: 68, w: 62, h: 12 }, // rows: progress·net·due·crew·sticky·Hold
     { id: 'ar', role: 'receivables', x: 2, y: 82, w: 30, h: 9 }, // "AR — owed to you"
     { id: 'ap', role: 'payables', x: 34, y: 82, w: 30, h: 9 }, // "AP — you owe"
-    { id: 'actions', role: 'actions', x: 66, y: 82, w: 32, h: 9 }, // Bank Credit · End turn
+    { id: 'actions', role: 'actions', x: 66, y: 82, w: 32, h: 9 }, // Bank Credit · End turn — LIVE at O-6 (I-146)
   ],
+  suppress: ['crew', 'equipment'], // O-6 (I-146): the rack regions retire — cards carry the truth now
 };
 export const SHOP_BOARD: LayoutDef = extendLayout(BOARD_PARENT, SHOP_OVERLAY);
 

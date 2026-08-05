@@ -254,6 +254,17 @@ export async function run(h) {
       rowsInfo.map((r, i) => `${i}:${r ? (r.match ? `ok(${r.got.crew}c/${r.got.equipment}e/${r.got.local}l)` : 'MISMATCH') : 'NULL'}`).join(' · ')
       + ` · hand:${hand ? `${hand.count}/${hand.want} below-books:${hand.belowBooks}` : 'NULL'} (I-131)`);
 
+    // O-2 (I-146) · station-box-contained: every viewer-station mesh inside the box
+    // rect (frame-relative). KILL: move any packing offset out → named card listed.
+    const sb = await page.evaluate(() => window.__GAME3D__.stationBoxInfo());
+    check('VG8g5/station-box-contained', !!sb && sb.contained && sb.checked > 0,
+      sb ? `${sb.checked} station meshes · outside: ${sb.outside.length ? sb.outside.join(', ') : 'NONE'} (box ±${sb.box.halfW}×${sb.box.depth} — I-146)` : 'NULL');
+
+    // O-5 (I-146) · slabs-present: the table's slab + six board backings — thickness
+    // as geometry (1 + 6 = 7 slab bodies). KILL: drop a slab → count short.
+    const slabs = await page.evaluate(() => window.__GAME3D__.slabCount());
+    check('VG8g6/slabs-present', slabs === 7, `${slabs} slab bodies (want 7: the table + six boards — O-5/I-146)`);
+
     // L-3 (I-130) · medal-in-region: the 3D BOTY medal STANDS in the freed bottom-right
     // medal region — parts built, resting ON the table, centre INSIDE the region rect
     // (geometry state, never pixels). The re-rowed table (dice far right · BBB +

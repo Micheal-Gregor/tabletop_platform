@@ -58,3 +58,9 @@ export type TableMode = 'fixed' | 'rotate-to-active';
 let tableMode: TableMode = 'fixed'; // BOTY's configuration (I-145)
 export const getTableMode = (): TableMode => tableMode;
 export const setTableMode = (m: TableMode): void => { tableMode = m; }; // the drill door (theater-only config)
+
+/** O-2 (I-146): THE STATION BOX — the seat's defined content rect BEHIND the board
+ *  (the I-144 side), in the seat's own frame: lat ±(chord/2 − buffer), depth 300 out
+ *  from the board line. Contents PACK into it (folder column left · rows right · hand
+ *  below the folder); the gate asserts containment on the viewer's station. */
+export const STATION_BOX = { halfW: 240, depth: 300 } as const;

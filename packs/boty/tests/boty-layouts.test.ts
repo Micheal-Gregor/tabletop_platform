@@ -61,16 +61,18 @@ describe('GBC-58 · the four children build lawfully; shadowing EXACT and querya
     expect(ROUND_CARD.regions.find((r) => r.id === 'action')!.role).toBe('action-button');
   });
 
-  it('shop-board: every parent region overridden into the v1 anatomy, six adds, nothing suppressed', () => {
+  it('shop-board: the O-6 anatomy — crew + equipment RETIRED as regions (I-146)', () => {
+    // O-6 (I-146, owner-ruled): 'minus tradesperson and equipment which are now cards
+    // laid down in front' — the rack regions are SUPPRESSED on the record; the cards
+    // behind the board carry the truth. The old nothing-suppressed pin superseded.
     expect(SHOP_BOARD.shadowed).toEqual({
-      overridden: ['identity', 'counters', 'crew', 'equipment', 'local-play', 'hand'],
+      overridden: ['identity', 'counters', 'local-play', 'hand'],
       added: ['art-banner', 'building-tier', 'jobs-list', 'ar', 'ap', 'actions'],
-      suppressed: [],
+      suppressed: ['crew', 'equipment'],
     });
-    expect(SHOP_BOARD.regions.length).toBe(BOARD_PARENT.regions.length + 6);
-    // the parent's semantic roles survive the override (contract intact, geometry tailored)
-    expect(SHOP_BOARD.regions.find((r) => r.id === 'crew')!.role).toBe('crew-zone');
-    expect(SHOP_BOARD.regions.find((r) => r.id === 'equipment')!.role).toBe('equipment-rack');
+    expect(SHOP_BOARD.regions.length).toBe(BOARD_PARENT.regions.length + 6 - 2);
+    expect(SHOP_BOARD.regions.find((r) => r.id === 'crew')).toBeUndefined();
+    expect(SHOP_BOARD.regions.find((r) => r.id === 'equipment')).toBeUndefined();
   });
 
   it('town-table: standings + log + art-banner ADDED (EXT-5 F6); the shared-center parent regions untouched', () => {

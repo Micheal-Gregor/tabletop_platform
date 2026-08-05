@@ -118,6 +118,21 @@ export async function run(h) {
   check('VG8s/pile-click-buys', bought && a1.want === a0.want + 1 && a1.got === a1.want && pc2.equipment === pc0.equipment - 1 && hm7.m === hm6.m + 1,
     `assets ${a0.got}→${a1.got} RENDERED ≡ projection ${a1.want} (the I-93 nonzero trigger FIRES) · equipment pool ${pc0.equipment}→${pc2.equipment} · moves ${hm6.m}→${hm7.m} (want +1)`);
 
+  // 7 · O-6 (I-146) · board-actions-end-turn: the actions strip on YOUR board, YOUR
+  // turn → the END-TURN verb (the SVG's board-foot law). KILL: cut the actions branch →
+  // the click glides instead → active holds → fails.
+  const hmE = await hashes();
+  const axy = await page.evaluate(() => window.__GAME3D__.boardRegionXY(0, 'actions'));
+  let ended = false;
+  if (axy) {
+    await page.mouse.click(axy.x, axy.y);
+    try { await page.waitForFunction(() => window.__GAME3D__.viewData().active !== 'moe', null, { timeout: 8000 }); ended = true; } catch { /* named below */ }
+  }
+  const hmE1 = await hashes();
+  const vE = await page.evaluate(() => window.__GAME3D__.viewData());
+  check('VG8s/board-actions-end-turn', ended && vE.active === 'pete' && hmE1.m === hmE.m + 1,
+    `actions-click → active ${vE.active} (want pete) · moves ${hmE.m}→${hmE1.m} (want +1 — the board-foot end turn, O-6/I-146)`);
+
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
 }
