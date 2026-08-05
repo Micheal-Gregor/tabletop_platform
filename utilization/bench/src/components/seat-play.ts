@@ -16,11 +16,12 @@ import { panelTexture } from '../surfaces.js';
 import { planSeatRows } from '../seat-rows.js'; // L-4 (I-131): the pure row planner
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
+import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
 import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
 
 let cx: PlayAreaContext | null = null;
 let root: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
-let cards: { key: string; mesh: THREE.Mesh; anchor: THREE.Vector3 }[] = [];
+let cards: { key: string; mesh: THREE.Object3D; anchor: THREE.Vector3 }[] = [];
 export const seatPlayCards = () => cards; // the oracle module's read (O-2 size extraction)
 
 // ── the grab/reset state machine ──
@@ -95,54 +96,43 @@ export const seatPlay: Component = {
           const label = it.kind === 'equipment' ? it.id.split(':')[0]! : it.id;
           // A6 (I-136): an ASSIGNED tradesperson wears its status (the SVG's crew-busy)
           const assigned = (it.kind === 'trades' || it.kind === 'pair') && crew.find((m) => m.id === it.id)?.assignedTo !== undefined;
-          const mesh = new THREE.Mesh(
-            new THREE.PlaneGeometry(it.kind === 'pair' ? 62 : 44, isLocal ? 60 : 66),
-            new THREE.MeshBasicMaterial({ map: panelTexture([label, assigned ? '⚒ working' : `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
-          );
+          // C-1a (I-149, THE PERMANENCE CONSTITUTION): the station card is a Card3D
+          // INSTANCE from the world — the SAME physical object every build, re-claimed
+          // and POSED, never recreated ('they're moved around'). The instance is looked
+          // up bare (pool/crew cards) then seat-scoped (event-set cards); a non-card
+          // asset (a capitalized ref like 'van') keeps a plain plate — it is not a card.
+          const inst = cardInstance(label) ?? cardInstance(`${ctx.viewSeat}::${label}`);
+          let mesh: THREE.Object3D;
+          if (inst) {
+            inst.setFace([label, assigned ? '⚒ working' : `${seat.id}'s ${it.kind}`]);
+            mesh = inst.group;
+          } else {
+            mesh = new THREE.Mesh(
+              new THREE.PlaneGeometry(it.kind === 'pair' ? 62 : 44, isLocal ? 60 : 66),
+              new THREE.MeshBasicMaterial({ map: panelTexture([label, `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
+            );
+          }
           // L-5b (I-132): the SEAT FRAME LAW — position in the board's frame (lateral +
           // toward-table steps), orientation yawed WITH the board (corner rows run at 45°).
           const pos = sf.c.clone().addScaledVector(sf.lat, latOff + 70).addScaledVector(sf.n, -zOff); // +70 lat: clear of the folder's left-end claim (I-144; the box packs it at O-2)
           if (isLocal || it.kind === 'equipment') {
             mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2))); // flat, footprint parallel
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2))); // flat, face UP, footprint parallel
             mesh.position.set(pos.x, 2.5, pos.z);
           } else {
-            mesh.rotation.y = sf.yaw; // standing, facing the player like the board
+            mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)); // standing, facing the player
             mesh.position.set(pos.x, 34, pos.z);
           }
           const key = `${it.kind === 'pair' ? 'crew' : it.kind === 'trades' ? 'crew' : it.kind === 'equipment' ? 'asset' : 'local'}:${it.id}`;
-          mesh.userData = { seatPlayCard: key, focus: `seat-${i}` };
+          mesh.userData = { ...mesh.userData, seatPlayCard: key, focus: `seat-${i}` }; // MERGED — the card3d identity persists (I-149)
           if (isLocal) mesh.userData = { ...mesh.userData, card: true, slotCard: it.id, family: 'session' }; // the partition oracle's walk
           cards.push({ key, mesh, anchor: mesh.position.clone() });
           g.add(mesh);
         });
       });
-      // L-4 (I-131): the HAND stages BELOW THE BOOKS — the viewer's face-down mini
-      // stack (count = the SVG hand law: ownDiscard top-3). A9's fan/fidget rides its
-      // own increment; exact books alignment refines there (registered).
-      if (mine) {
-        const ledger = ctx.theater.focusObject('ledger');
-        if (ledger) {
-          ledger.updateWorldMatrix(true, true);
-          const lc = new THREE.Box3().setFromObject(ledger).getCenter(new THREE.Vector3());
-          const n = Math.min(3, v.ownDiscard.length);
-          for (let k = 0; k < n; k++) {
-            const mesh = new THREE.Mesh(
-              new THREE.PlaneGeometry(40, 60),
-              new THREE.MeshBasicMaterial({ color: 0x5a4a3a, side: THREE.DoubleSide }), // face DOWN — a back, no data (redaction)
-            );
-            // L-5b (I-132): below the books = a step AWAY from the table along the seat
-            // frame's normal; the stagger runs along the side axis; footprint parallel.
-            mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
-            const hp = lc.clone().addScaledVector(sf.n, 95 + k * 4).addScaledVector(sf.lat, k * 6);
-            mesh.position.set(hp.x, 2 + k * 0.8, hp.z);
-            mesh.userData = { seatPlayCard: `hand:${k}`, focus: `seat-${i}`, hand: true };
-            cards.push({ key: `hand:${k}`, mesh, anchor: mesh.position.clone() });
-            g.add(mesh);
-          }
-        }
-      }
+      // C-1a (I-149): the OLD hand staging RETIRED — it duplicated in-play cards (the
+      // same physical card in two places), which the permanence constitution forbids.
+      // The REAL hand (networking cards, face-down, flip-all pickup) arrives at C-1d.
     }
     root = g;
     ctx.scene.add(g);

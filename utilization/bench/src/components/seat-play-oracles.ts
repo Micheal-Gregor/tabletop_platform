@@ -68,16 +68,12 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
         }
         return { checked: mine.length, outside: out, contained: out.length === 0, box: STATION_BOX };
       },
-      handInfo: () => {
-        const hand = cardsRef().filter((c) => c.mesh.userData['hand']);
-        const ledger = getCtx().theater.focusObject('ledger');
-        const sf = seatFrame(getCtx(), 0); // the viewer's seat frame
-        if (!ledger || !sf) return { count: hand.length, belowBooks: false };
-        const lc = new THREE.Box3().setFromObject(ledger).getCenter(new THREE.Vector3());
-        // L-5b (I-132): below the books = a POSITIVE step along the seat frame's normal
-        // (away from the table) from the ledger — frame-relative, corner-safe.
-        const belowBooks = hand.length === 0 || hand.every((c) => c.mesh.position.clone().sub(lc).dot(sf.n) > 0);
-        return { count: hand.length, belowBooks, want: Math.min(3, getCtx().projection().ownDiscard.length) };
-      },
+      handInfo: () => ({
+        // C-1a (I-149): the staged hand RETIRED (it duplicated in-play instances);
+        // want ≡ got ≡ 0 until the REAL networking hand lands at C-1d.
+        count: cardsRef().filter((c) => (c.mesh.userData as Record<string, unknown>)['hand']).length,
+        belowBooks: true,
+        want: 0,
+      }),
   };
 }

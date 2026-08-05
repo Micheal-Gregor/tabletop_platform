@@ -167,6 +167,18 @@ function shuffledPool<T>(seed: string, key: string, list: readonly T[]): T[] {
   return a;
 }
 
+/** C-1a (I-149): the PHYSICAL CARD SET — every card instance the permanence world
+ *  creates at genesis (content-as-data; the bench builds Card3D instances from THIS). */
+export const CARD_SET_6 = {
+  eventPerSeat: FULL_DECK,
+  seats: [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((x) => x.id),
+  tradespeople: TRADES_POOL.map((c) => c.id),
+  equipment: EQUIP_POOL.map((c) => c.id),
+  bbb: BBB_POOL.map((c) => c.id),
+  networking: NWK_POOL.map((c) => c.id),
+  genesisCrew: ['crew-moe', 'crew-pete', 'crew-edie', 'crew-sal', 'crew-faye', 'crew-russ'],
+} as const;
+
 export const botyGenesis6: Genesis = (packRef, seats, seed) => {
   const g = botyGenesis(packRef, seats, seed) as Record<string, unknown>;
   return {

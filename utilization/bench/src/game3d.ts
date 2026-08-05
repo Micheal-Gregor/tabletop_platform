@@ -17,7 +17,8 @@ import type { EngineCore, RuleRegistry as RegistryT } from '@tabletop/engine';
 import { LockstepController, RuleRegistry, rebuild } from '@tabletop/engine';
 import type { SeatView } from '@tabletop/presentation';
 import { emit, project } from '@tabletop/presentation';
-import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob } from '../../../packs/boty/src/index.js';
+import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob, CARD_SET_6 } from '../../../packs/boty/src/index.js';
+import { createCardWorld, cardWorldInfo } from './card-world.js'; // C-1a (I-149): the permanence world
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS, RING_N } from './stage.js';
 import { ringRadius, stationLook, stationPos } from './playarea.js'; // PA-1/PA-2 (I-141/I-142)
 import * as cam from './camera.js';
@@ -50,6 +51,17 @@ let forceMoveThrow = false; // S-1c (I-107): the VG8q move-throw drill — K7-S 
 const grabActive = (): boolean => claims.size > 0; // the camera wheel gates on this
 
 manifestBackdrop(); // the owner-ruled backdrop (I-67h) — the function lives in backdrop.ts (S-1c)
+
+// C-1a (I-149): THE CARD WORLD — every physical card created ONCE, here, at genesis
+// ('nothing is created or destroyed'); every later state change MOVES instances.
+createCardWorld([
+  ...CARD_SET_6.seats.flatMap((seat) => CARD_SET_6.eventPerSeat.map((id) => ({ id: `${seat}::${id}`, cls: 'event' as const }))),
+  ...CARD_SET_6.tradespeople.map((id) => ({ id, cls: 'tradesperson' as const })),
+  ...CARD_SET_6.genesisCrew.map((id) => ({ id, cls: 'tradesperson' as const })),
+  ...CARD_SET_6.equipment.map((id) => ({ id, cls: 'equipment' as const })),
+  ...CARD_SET_6.bbb.map((id) => ({ id, cls: 'bbb' as const })),
+  ...CARD_SET_6.networking.map((id) => ({ id, cls: 'networking' as const })),
+]);
 
 // ── the harness write path (submitVerb): the verb through the same doors (I-67f) ──
 function submitVerb(verb: string, args: Record<string, unknown>): boolean {
@@ -273,6 +285,8 @@ const gate: Record<string, unknown> = {
   viewCrew: () => projectNow().crew,
   // A16 (I-137): the pools' counts — the arrangement + hire/buy legs derive from these.
   poolCounts: () => projectNow().pools,
+  // C-1a (I-149): the CONSERVATION oracle — instances constant, recreates 0, forever.
+  cardWorldInfo,
   // PA-1 (I-141): the ring template's surfaces — the seat-pose and glide laws derive.
   ringInfo: () => ({ r: ringRadius(RING_N), n: RING_N }),
   ringLook: (i: number) => stationLook(i, RING_N),

@@ -118,6 +118,13 @@ export async function run(h) {
   check('VG8s/pile-click-buys', bought && a1.want === a0.want + 1 && a1.got === a1.want && pc2.equipment === pc0.equipment - 1 && hm7.m === hm6.m + 1,
     `assets ${a0.got}→${a1.got} RENDERED ≡ projection ${a1.want} (the I-93 nonzero trigger FIRES) · equipment pool ${pc0.equipment}→${pc2.equipment} · moves ${hm6.m}→${hm7.m} (want +1)`);
 
+  // 6b · C-1a (I-149) · card-world-conserved: after a venture, an assign, a work, a
+  // hire, and a buy — the physical card count is UNCHANGED and NOTHING was recreated
+  // ('nothing is created or destroyed'). KILL: recreate any instance → attempts > 0.
+  const cw = await page.evaluate(() => window.__GAME3D__.cardWorldInfo());
+  check('VG8s/card-world-conserved', !!cw && cw.instances === cw.createdAtGenesis && cw.recreateAttempts === 0 && cw.instances > 200,
+    `instances ${cw?.instances} ≡ genesis ${cw?.createdAtGenesis} · recreate-attempts ${cw?.recreateAttempts} (want 0) — the permanence constitution holds (I-149)`);
+
   // 7 · O-6 (I-146) · board-actions-end-turn: the actions strip on YOUR board, YOUR
   // turn → the END-TURN verb (the SVG's board-foot law). KILL: cut the actions branch →
   // the click glides instead → active holds → fails.
