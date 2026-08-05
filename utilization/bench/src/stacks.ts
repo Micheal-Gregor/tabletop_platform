@@ -79,10 +79,15 @@ export function cardStack(r: { x: number; y: number; w: number; h: number }, rid
 // slightly shifted PERSISTING poses (local ±0.5 → world ≈±4u · rot ±0.05 rad ≈ ±3°),
 // tweened ~11 frames; the next rebuild re-canonicalizes. Pure theater, generic to any
 // stack group. Seeded per tap (deterministic for the gate's first-tap assertion).
-let nudge: { items: { m: THREE.Object3D; fx: number; tx: number; fy: number; ty: number; fr: number; tr: number }[]; t: number } | null = null;
+let nudge: { items: { m: THREE.Object3D; fx: number; tx: number; fy: number; ty: number; fr: number; tr: number }[]; t: number; world: boolean } | null = null;
 let nudgeCount = 0;
 export function nudgeStack(grp: THREE.Object3D | null): boolean {
   if (!grp || nudge) return false;
+  // I-155 (owner-caught 'they feel like placeholders'): a WORLD-SPACE instance stack
+  // (C-1b/C-1b2) nudges in WORLD units — the table-local ±0.5 was ~9× too small to see,
+  // and the in-plane axes are x/z there (y is UP). Same tween, same purity, either frame.
+  const world = !!(grp.userData && grp.userData['worldStack']);
+  const AMP = world ? 4.5 : 0.5;
   const cards: THREE.Object3D[] = [];
   grp.traverse((o: THREE.Object3D) => { if (o.userData?.['card']) cards.push(o); });
   cards.sort((a, b) => (a.userData['idx'] as number) - (b.userData['idx'] as number));
@@ -90,15 +95,20 @@ export function nudgeStack(grp: THREE.Object3D | null): boolean {
   if (!top.length) return false;
   const rnd = lcg(0x57ac + Math.imul(++nudgeCount, 40503));
   // R-1a3 (I-111, owner-ruled): every THIRD tap RE-CENTERS the top five to the neat
-  // column ("so the pile doesn't get too loose") — same tween, same purity.
+  // column ("so the pile doesn't get too loose") — the world stack's column is its
+  // GHOST footprint's center, never 0,0 (that is the scene origin out there).
   const recenter = nudgeCount % 3 === 0;
+  const ghost = world ? (grp as THREE.Group).children.find((c) => c.userData?.['ghost']) : null;
+  const hx = ghost ? ghost.position.x : 0, hz = ghost ? ghost.position.z : 0;
+  const ax = (m: THREE.Object3D) => m.position.x;
+  const ay = (m: THREE.Object3D) => (world ? m.position.z : m.position.y);
   nudge = {
-    t: 0,
+    t: 0, world,
     items: top.map((m) => recenter
-      ? { m, fx: m.position.x, tx: 0, fy: m.position.y, ty: 0, fr: m.rotation.z, tr: 0 }
+      ? { m, fx: ax(m), tx: world ? hx : 0, fy: ay(m), ty: world ? hz : 0, fr: m.rotation.z, tr: 0 }
       : {
-        m, fx: m.position.x, tx: m.position.x + (rnd() - 0.5) * 1.0,
-        fy: m.position.y, ty: m.position.y + (rnd() - 0.5) * 1.0,
+        m, fx: ax(m), tx: ax(m) + (rnd() - 0.5) * 2 * AMP,
+        fy: ay(m), ty: ay(m) + (rnd() - 0.5) * 2 * AMP,
         fr: m.rotation.z, tr: m.rotation.z + (rnd() - 0.5) * 0.1,
       }),
   };
@@ -111,7 +121,8 @@ export function tickStackNudge(): void {
   const e = nudge.t * nudge.t * (3 - 2 * nudge.t);
   for (const it of nudge.items) {
     it.m.position.x = it.fx + (it.tx - it.fx) * e;
-    it.m.position.y = it.fy + (it.ty - it.fy) * e;
+    if (nudge.world) it.m.position.z = it.fy + (it.ty - it.fy) * e; // I-155: the world stack's second in-plane axis
+    else it.m.position.y = it.fy + (it.ty - it.fy) * e;
     it.m.rotation.z = it.fr + (it.tr - it.fr) * e;
   }
   if (nudge.t >= 1) nudge = null;

@@ -58,7 +58,7 @@ export function eventStackTargets(t: THREE.Object3D, rid: string, count: number,
 
 function stackGroup(rid: string, f: Frame): THREE.Group {
   const grp = new THREE.Group();
-  grp.userData = { region: rid, role: rid, def: TOWN_TABLE_V2.id, worldStack: true }; // the count-law object
+  grp.userData = { region: rid, role: rid, def: TOWN_TABLE_V2.id, worldStack: true, focus: 'table' }; // the count-law object · I-155: the FOCUS TAG — onPick gates on it; without it every world pile was click-dead (owner-caught)
   // the footprint GHOST: keeps the region clickable/boxed even at zero cards (I-67a's
   // ghost, carried to world space) — and the arrangement oracle's render-true rect.
   const ghost = new THREE.Mesh(
