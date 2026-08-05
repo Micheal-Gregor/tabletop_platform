@@ -20,13 +20,25 @@ const host = () => {
     const r = ctl.submit('bench-3d', emit(verb, seat, args as never) as never);
     if (r && typeof r === 'object' && 'refused' in (r as object)) throw new Error(`REFUSED ${(r as { rule: string }).rule}`);
   };
-  return { pv, sub };
+  const st = () => rebuild(ctl.row(), botyGenesis6, wire()).getState(); // I-152: the free-first law reads the pool top's cost
+  return { pv, sub, st };
 };
 
 describe('A16: the pools (I-137)', () => {
   it('genesis pools are seeded, shuffled, and COUNTED in the projection (8 + 8)', () => {
     const { pv } = host();
     expect(pv().pools).toEqual({ tradespeople: 8, equipment: 8, bbb: 5, networking: 5 }); // O-3 (I-139): all four pools
+  });
+
+  it('the FIRST hire is a free draw; the second levies the card cost (I-152, owner-ruled)', () => {
+    const { pv, sub, st } = host();
+    const cash = () => pv().seats.find((s) => s.id === 'moe')!.cash;
+    const c0 = cash();
+    sub('hire', 'moe');
+    expect(cash()).toBe(c0); // FREE — 'the first tradesperson is a free draw'
+    const nextCost = (st()['pools'] as { tradespeople: readonly { cost: number }[] }).tradespeople[0]!.cost;
+    sub('hire', 'moe');
+    expect(cash()).toBe(c0 - nextCost); // the second pays (kill the firstHire branch → the first levies → the pin above fails)
   });
 
   it('hire pops the top: crew +1 (with a trade), pool −1', () => {

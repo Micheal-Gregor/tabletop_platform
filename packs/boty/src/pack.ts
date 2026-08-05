@@ -180,7 +180,7 @@ export const CARD_SET_6 = {
   equipment: EQUIP_POOL.map((c) => c.id),
   bbb: BBB_POOL.map((c) => c.id),
   networking: NWK_POOL.map((c) => c.id),
-  genesisCrew: ['crew-moe', 'crew-pete', 'crew-edie', 'crew-sal', 'crew-faye', 'crew-russ'],
+  genesisCrew: [], // I-152: no seeded crew — hires come from the tradesperson pool
 } as const;
 
 export const botyGenesis6: Genesis = (packRef, seats, seed) => {
@@ -204,11 +204,10 @@ export const botyGenesis6: Genesis = (packRef, seats, seed) => {
       // the partition) and leaves the draw — one-of-every-card holds.
       [...BOTY_PACK.seats, ...DRAFT_SHOPS].map((s) => [s.id, { draw: genesisDrawFor(String(seed), s.id), discard: [...GENESIS_IN_PLAY], reserve: [] }]),
     ),
-    crew: [
-      ...(g['crew'] as unknown[]),
-      { id: 'crew-sal', outfit: 'sal' },
-      { id: 'crew-faye', outfit: 'faye' },
-      { id: 'crew-russ', outfit: 'russ' },
-    ],
+    // I-152 (owner-ruled 2026-08-05): 'the first tradesperson is a free draw' — the
+    // bench genesis seeds NO crew; every tradesperson arrives through the hire door
+    // (the FIRST hire per seat costs nothing — outfit.ts). The 3-seat slice above is
+    // untouched: a rigged test FIXTURE (hand-scripted decks), not the product genesis.
+    crew: [],
   } as JsonObject;
 };

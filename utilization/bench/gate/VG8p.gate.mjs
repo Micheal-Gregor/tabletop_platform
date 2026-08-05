@@ -33,10 +33,20 @@ export async function run(h) {
   check('VG8p/assets-count-true', !!ac && ac.want === 0 && ac.got === 0,
     `genesis zero PINNED: rendered ${ac?.got} ≡ projection ${ac?.want} ≡ 0 · DEFERRED-until-nonzero (I-93 trigger)`);
 
-  // seatplay-grab-reset: a REAL ~100-px drag on moe's crew card moves it off its anchor;
-  // release → the reset glide returns it (Δ<5), rowHash/moveCount INVARIANT (pure theater).
+  // I-152: genesis seeds NO crew — hire the free first tradesperson so a crew card
+  // exists to drill (the same real pile-click door VG8s certifies).
+  const pcH = await G(() => window.__GAME3D__.poolCounts());
+  const hxy = await G(() => window.__GAME3D__.regionScreenXY('tradespeople-pile'));
+  if (hxy) {
+    await page.mouse.click(hxy.x, hxy.y);
+    await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pcH.tradespeople - 1, { timeout: 8000 }).catch(() => {});
+  }
+  const HIRED = await G(() => { const m = window.__GAME3D__.viewCrew().find((c) => c.outfit === 'moe'); return m ? m.id : null; });
+
+  // seatplay-grab-reset: a REAL ~100-px drag on the hired crew card moves it off its
+  // anchor; release → the reset glide returns it (Δ<5), rowHash/moveCount INVARIANT.
   const hm0 = await hashes();
-  const xy = await G(() => window.__GAME3D__.seatPlayCardXY('crew:crew-moe'));
+  const xy = await G((id) => window.__GAME3D__.seatPlayCardXY(`crew:${id}`), HIRED);
   let resetOk = false, resetDetail = 'NO-CARD-XY';
   if (xy) {
     await page.mouse.move(xy.x, xy.y);
@@ -45,7 +55,7 @@ export async function run(h) {
     await page.mouse.up();
     await page.waitForFunction(() => { const s = window.__GAME3D__.seatPlayGrabState(); return !s.grabbing && !s.resetting; }, null, { timeout: 60000 }).catch(() => {});
     const st = await G(() => window.__GAME3D__.seatPlayGrabState());
-    const pos = await G(() => window.__GAME3D__.seatPlayCardPos('crew:crew-moe'));
+    const pos = await G((id) => window.__GAME3D__.seatPlayCardPos(`crew:${id}`), HIRED);
     const hm1 = await hashes();
     const back = pos && Math.hypot(pos.x - pos.ax, pos.y - pos.ay, pos.z - pos.az) < 5;
     const invariant = hm1.m === hm0.m && hm1.h === hm0.h;

@@ -89,12 +89,15 @@ export function hireCrew(state: State, seat: string): { next: JsonObject; cost: 
   const pools = poolsOf(state);
   const top = pools.tradespeople[0];
   if (!top) throw new VentureRefusal('pool', 'GX-30', 'the tradesperson pool is empty — no one to hire');
+  // I-152 (owner-ruled): 'the first tradesperson is a free draw' — a seat's FIRST
+  // hire levies nothing; every later hire pays the card's cost.
+  const firstHire = !crewOf(state).some((c) => (c as { outfit?: string }).outfit === seat);
   const next = {
     ...state,
     pools: { ...pools, tradespeople: pools.tradespeople.slice(1) },
     crew: [...crewOf(state), { id: top.id, outfit: seat, trade: top.trade }],
   };
-  return { next, cost: top.cost };
+  return { next, cost: firstHire ? 0 : top.cost };
 }
 
 /** GX-30: buy the TOP equipment card → a seat asset {ref, value}. */

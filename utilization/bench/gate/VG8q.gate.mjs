@@ -164,7 +164,15 @@ export async function run(h) {
   {
     await G(() => window.__GAME3D__.glideTo('overview'));
     await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
-    const cxy = await G(() => window.__GAME3D__.seatPlayCardXY('crew:crew-moe'));
+    // I-152: no genesis crew — the free first hire supplies the drill's crew card
+    const pcH = await G(() => window.__GAME3D__.poolCounts());
+    const hxy = await G(() => window.__GAME3D__.regionScreenXY('tradespeople-pile'));
+    if (hxy) {
+      await page.mouse.click(hxy.x, hxy.y);
+      await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pcH.tradespeople - 1, { timeout: 8000 }).catch(() => {});
+    }
+    const HIRED = await G(() => { const m = window.__GAME3D__.viewCrew().find((c) => c.outfit === 'moe'); return m ? m.id : null; });
+    const cxy = await G((id) => window.__GAME3D__.seatPlayCardXY(`crew:${id}`), HIRED);
     await page.mouse.move(cxy.x, cxy.y);
     await page.mouse.down();
     for (let i = 1; i <= 3; i++) await page.mouse.move(cxy.x + i * 20, cxy.y - i * 8);
