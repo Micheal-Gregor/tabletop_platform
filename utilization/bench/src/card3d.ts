@@ -8,8 +8,9 @@
  */
 import * as THREE from 'three';
 import { panelTexture } from './surfaces.js';
+import { OBJECT_SCALE } from './playarea.js'; // I-150: the scale control table
 
-export const CARD_T = 1.6; // the physical thickness (world units)
+export const CARD_T = OBJECT_SCALE.card.t; // I-150: derived from the control table
 export type DeckClass = 'event' | 'tradesperson' | 'equipment' | 'bbb' | 'networking';
 
 /** the deck-class BACK colors (data-less backs — which deck, never what card). */
@@ -22,7 +23,7 @@ export interface CardHandle {
   setFace(lines: readonly string[]): void; // re-stamp (status chips etc.) — the object persists
 }
 
-export function makeCard3D(cardId: string, cls: DeckClass, w = 44, h = 66): CardHandle {
+export function makeCard3D(cardId: string, cls: DeckClass, w = OBJECT_SCALE.card.w, h = OBJECT_SCALE.card.h): CardHandle {
   const grp = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, CARD_T), new THREE.MeshBasicMaterial({ color: 0xf7f4ec }));
   grp.add(body);

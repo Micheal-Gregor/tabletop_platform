@@ -17,6 +17,7 @@ import { planSeatRows } from '../seat-rows.js'; // L-4 (I-131): the pure row pla
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
+import { OBJECT_SCALE } from '../playarea.js'; // I-150: the scale control table
 import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
 
 let cx: PlayAreaContext | null = null;
@@ -83,7 +84,7 @@ export const seatPlay: Component = {
         // and the hand; the trades row stays nearest the board, later rows step out
         // toward the player. The station box (O-2) formalizes the packing.
         const zOff = -(46 + r * 68); // NEGATIVE toward-table = positive player side below
-        const widths = row.items.map((it) => it.w * 56);
+        const widths = row.items.map((it) => it.w * (OBJECT_SCALE.card.w + 12)); // I-150: spacing derives from the control table
         const natural = widths.reduce((a, b) => a + b, 0);
         const MAXW = 340; // O-2 (I-146): the station box's row column (right of the folder)
         const scale = row.overlap || natural > MAXW ? MAXW / natural : 1;

@@ -18,7 +18,7 @@ import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
-import { getTableMode, setTableMode } from '../playarea.js'; // I-145: the orientation mode
+import { getTableMode, setTableMode, OBJECT_SCALE } from '../playarea.js'; // I-145/I-150
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
 import { worldPoolStack } from '../stacks3d.js'; // C-1b (I-149): supply decks as instance stacks
 import { SEAT_YAWS } from '../stage.js';
@@ -85,7 +85,7 @@ export const table: Component = {
     t.add(cardStack(discR, 'discard', part.pile.length, part.pile, fidget['discard'])); // the VIEWER'S discard — redaction-honest (I-67a)
     const gpR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'global-play')!;
     part.global.slice(0, 6).forEach((id, i) => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(9, 15), new THREE.MeshBasicMaterial({ map: panelTexture([id], 9, 15) }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(OBJECT_SCALE.card.w / 9, OBJECT_SCALE.card.h / 7), new THREE.MeshBasicMaterial({ map: panelTexture([id], 9, 15) })); // I-150: the control-table card size (÷ the table scale)
       m.position.set(gpR.x + 8 + i * 11 - 50, 50 - (gpR.y + gpR.h - 9), 0.7); // left-fill along the section
       m.userData = { card: true, slotCard: id, family: 'global' };
       t.add(m);

@@ -6,6 +6,7 @@
  * the caller (buildScene) passes `fidget[rid]`.
  */
 import * as THREE from 'three';
+import { OBJECT_SCALE } from './playarea.js'; // I-150: the scale control table
 import { panelTexture } from './surfaces.js';
 import { TOWN_TABLE_V2 } from '../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child
 
@@ -54,7 +55,7 @@ export function cardStack(r: { x: number; y: number; w: number; h: number }, rid
     const face = faces ? faces[fromTop] ?? null : null;
     const topMat = new THREE.MeshBasicMaterial({ map: face ? panelTexture([face], 10, 16) : cardBack() });
     const m = new THREE.Mesh(
-      new THREE.BoxGeometry(10, 16, CARD_T),
+      new THREE.BoxGeometry(OBJECT_SCALE.card.w / 9, OBJECT_SCALE.card.h / 7, CARD_T), // I-150: WORLD size ≡ the control table (÷ the table group scale)
       [sideMat, sideMat, sideMat, sideMat, topMat, sideMat], // +z (the table's UP) wears the face
     );
     if (face) m.userData['renderedLines'] = [face]; // the asked-text stamp (I-62b)

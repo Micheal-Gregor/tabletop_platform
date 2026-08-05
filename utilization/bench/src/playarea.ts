@@ -72,3 +72,14 @@ export function propSlot(i: number, occupants: number, push: number, r: number =
   const a = seatAngle(i, occupants);
   return { x: Math.sin(a) * (r + push), z: Math.cos(a) * (r + push), yaw: a };
 }
+
+/** I-150 (owner-ruled): THE OBJECT SCALE CONTROL TABLE — the parent's single truth for
+ *  every board object's dimensions ('a control table to ensure each object has a scale
+ *  and stays true to it'). Child games may OVERRIDE per class AS DATA (the TableMode
+ *  pattern); every consumer DERIVES — no object carries a private size again. */
+export const OBJECT_SCALE = {
+  card: { w: 64, h: 96, t: 1.6 }, // near real-card proportion against the 900-wide board
+  die: 45,
+  board: { w: 260, h: 260 },
+  folder: { w: 130, h: 180 },
+} as const;
