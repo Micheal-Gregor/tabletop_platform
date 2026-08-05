@@ -168,8 +168,12 @@ export async function run(h) {
     const pcH = await G(() => window.__GAME3D__.poolCounts());
     const hxy = await G(() => window.__GAME3D__.regionScreenXY('tradespeople-pile'));
     if (hxy) {
-      await page.mouse.click(hxy.x, hxy.y);
+      await page.mouse.move(hxy.x, hxy.y);
+      await page.mouse.down();
+      for (let i = 1; i <= 4; i++) await page.mouse.move(hxy.x + i * 12, hxy.y + i * 10);
+      await page.mouse.up(); // the FLICK — C-1c (I-156): the verb's only door
       await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pcH.tradespeople - 1, { timeout: 8000 }).catch(() => {});
+      await page.waitForFunction(() => window.__GAME3D__.supplyPhase() === 'idle', null, { timeout: 60000 }).catch(() => {}); // the anchor-change completes
     }
     const HIRED = await G(() => { const m = window.__GAME3D__.viewCrew().find((c) => c.outfit === 'moe'); return m ? m.id : null; });
     const cxy = await G((id) => window.__GAME3D__.seatPlayCardXY(`crew:${id}`), HIRED);

@@ -160,6 +160,16 @@ const EQUIP_POOL: readonly { id: string; name: string; cost: number }[] = [
   'work-van', 'scissor-lift', 'toolkit', 'welder-rig', 'scaffold', 'paint-sprayer', 'generator', 'trailer',
 ].map((n, i) => ({ id: `eq-${n}-${i + 1}`, name: n, cost: 0 }));
 /** one seeded shuffle per SHARED pool (not per seat — the piles are the table's). */
+/** C-1c (I-156): the genesis pool ORDERS — the bench aligns each supply stack's
+ *  membership with the engine's pop order, so the flicked top IS the popped card. */
+export function genesisPoolOrders(seed: string): { tradespeople: string[]; equipment: string[]; bbb: string[]; networking: string[] } {
+  return {
+    tradespeople: shuffledPool(seed, 'tradespeople', TRADES_POOL).map((c) => c.id),
+    equipment: shuffledPool(seed, 'equipment', EQUIP_POOL).map((c) => c.id),
+    bbb: shuffledPool(seed, 'bbb', BBB_POOL).map((c) => c.id),
+    networking: shuffledPool(seed, 'networking', NWK_POOL).map((c) => c.id),
+  };
+}
 function shuffledPool<T>(seed: string, key: string, list: readonly T[]): T[] {
   const a = [...list];
   let h = hashStr(`${seed}::pool::${key}`);

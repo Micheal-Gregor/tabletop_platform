@@ -37,17 +37,24 @@ export async function run(h) {
   const txy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('tradespeople-pile'));
   let hired = false;
   if (txy) {
-    await page.mouse.click(txy.x, txy.y);
+    await page.mouse.move(txy.x, txy.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 4; i++) await page.mouse.move(txy.x + i * 12, txy.y + i * 10);
+    await page.mouse.up(); // the FLICK — C-1c (I-156): the verb's only door
     try {
       await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pc0.tradespeople - 1, { timeout: 8000 });
+      await page.waitForFunction(() => window.__GAME3D__.supplyPhase() === 'idle', null, { timeout: 60000 }); // flip + anchor-change theater completes
       hired = true;
     } catch { /* named below */ }
   }
+  const mvH = await page.evaluate(() => window.__GAME3D__.supplyLastMove());
+  const anchorOk = !!mvH && mvH.rid === 'tradespeople-pile' && mvH.identityOk
+    && Math.hypot(mvH.endX - mvH.targetX, mvH.endY - mvH.targetY, mvH.endZ - mvH.targetZ) < 20;
   const crew1 = (await page.evaluate(() => window.__GAME3D__.viewCrew())).filter((m) => m.outfit === 'moe').length;
   const hm6 = await hashes();
   const cashFree = await page.evaluate(() => window.__GAME3D__.viewData().seats.find((x) => x.id === 'moe').cash);
-  check('VG8s/pile-click-hires', hired && crew0 === 0 && crew1 === 1 && cashFree === cash0 && hm6.m === hm5.m + 1 && hm6.h !== hm5.h,
-    `pool ${pc0.tradespeople}→${pc0.tradespeople - 1}:${hired} · moe's crew ${crew0}→${crew1} (want 0→1 — no genesis crew, I-152) · cash ${cash0}→${cashFree} (want UNCHANGED — the free first draw) · moves ${hm5.m}→${hm6.m}`);
+  check('VG8s/pile-click-hires', hired && anchorOk && crew0 === 0 && crew1 === 1 && cashFree === cash0 && hm6.m === hm5.m + 1 && hm6.h !== hm5.h,
+    `pool ${pc0.tradespeople}→${pc0.tradespeople - 1}:${hired} · FLICK-MOVE ${mvH ? `${mvH.id} identity:${mvH.identityOk} landed:${anchorOk}` : 'NONE'} (I-156 — the flicked object IS the hired card) · moe's crew ${crew0}→${crew1} (want 0→1 — no genesis crew, I-152) · cash ${cash0}→${cashFree} (want UNCHANGED — the free first draw) · moves ${hm5.m}→${hm6.m}`);
   const HIRED = await page.evaluate(() => { const m = window.__GAME3D__.viewCrew().find((c) => c.outfit === 'moe'); return m ? m.id : null; });
 
 
@@ -113,8 +120,12 @@ export async function run(h) {
   const exy = await page.evaluate(() => window.__GAME3D__.regionScreenXY('equipment-pile'));
   let bought = false;
   if (exy) {
-    await page.mouse.click(exy.x, exy.y);
+    await page.mouse.move(exy.x, exy.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 4; i++) await page.mouse.move(exy.x + i * 12, exy.y + i * 10);
+    await page.mouse.up(); // the FLICK — C-1c (I-156): the verb's only door
     try {
+      await page.waitForFunction(() => window.__GAME3D__.supplyPhase() === 'idle' && window.__GAME3D__.supplyLastMove()?.rid === 'equipment-pile', null, { timeout: 60000 });
       await page.waitForFunction((want) => window.__GAME3D__.assetsCount().got === want, a0.got + 1, { timeout: 8000 });
       bought = true;
     } catch { /* named below */ }

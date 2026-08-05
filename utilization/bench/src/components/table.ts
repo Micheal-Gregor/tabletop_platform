@@ -16,8 +16,9 @@ import { stackNudging, tickStackNudge, nudgeStack } from '../stacks.js'; // card
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
+import * as supply from '../supply-draw.js'; // C-1c (I-156): the flick-move door on the supply piles
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
-import { CARD_FAMILY, genesisDrawFor } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92) · I-154: the viewer's remaining order
+import { CARD_FAMILY, genesisDrawFor, genesisPoolOrders } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92) · I-154/I-156: remaining orders
 const SESSION_SEED = 'maple-hollow'; // the bench session (game3d's host seed — single-source debt on I-154)
 import { getTableMode, setTableMode, OBJECT_SCALE } from '../playarea.js'; // I-145/I-150
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
@@ -46,7 +47,7 @@ function partition(ownDiscard: readonly string[]): { global: string[]; session: 
   return { global, session, pile };
 }
 let tableRoot: THREE.Group | null = null; // G-1 (I-101): the live table group — the RENDERED-rects oracle walks THIS, never the def
-let pendingPools: { rid: string; cls: string; count: number; excl: Set<string> }[] = []; // C-1b (I-149)
+let pendingPools: { rid: string; cls: string; count: number; excl: Set<string>; order?: readonly string[] }[] = []; // C-1b/C-1c (I-149/I-156)
 let pendingEvents: { rid: string; prefix: string; count: number; faces: readonly string[] | null; order: readonly string[] | null }[] = []; // C-1b2 (I-154)
 let poolGroups: THREE.Group[] = []; // I-153: last build's world-space pool stacks — purged each build (stale first-match ghosts poison focusObject)
 
@@ -62,6 +63,7 @@ export const table: Component = {
     cx = ctx;
     dplay.resetDiscardPlay(); // a rebuild drops any live discard gesture/tween (K7-P D2)
     draw.resetDraw(ctx); // S-1 (I-103): a rebuild drops a live flip/reading/routing theater — never two cards (M4)
+    supply.resetSupply(ctx); // C-1c (I-156): same law for the supply theater
     const v = ctx.projection();
     const active = v.seats[v.turn.seatIdx]!.id;
     const ranked = [...v.seats].sort((a, b) => b.cash - a.cash);
@@ -110,11 +112,14 @@ export const table: Component = {
     // instances never enter the scaled table group) built after t's pose is final.
     // Membership = the class minus what is visible elsewhere; the remainder of the
     // count PARKS (redaction by absence; permanence holds — parked ≠ destroyed).
+    // C-1c (I-156): each pool stack carries the engine's REMAINING order (genesis order
+    // minus what was popped from the top) — the flicked top IS the next popped card.
+    const po = genesisPoolOrders(SESSION_SEED);
     pendingPools = [
-      { rid: 'tradespeople-pile', cls: 'tradesperson', count: v.pools.tradespeople, excl: new Set(v.crew.map((m) => m.id)) },
-      { rid: 'equipment-pile', cls: 'equipment', count: v.pools.equipment, excl: new Set(v.seats.flatMap((s2) => s2.assets.map((a) => a.ref))) },
-      { rid: 'bbb-pile', cls: 'bbb', count: v.pools.bbb, excl: new Set(v.ownDiscard) },
-      { rid: 'networking-pile', cls: 'networking', count: v.pools.networking, excl: new Set(v.ownDiscard) },
+      { rid: 'tradespeople-pile', cls: 'tradesperson', count: v.pools.tradespeople, excl: new Set(v.crew.map((m) => m.id)), order: po.tradespeople.slice(po.tradespeople.length - v.pools.tradespeople) },
+      { rid: 'equipment-pile', cls: 'equipment', count: v.pools.equipment, excl: new Set(v.seats.flatMap((s2) => s2.assets.map((a) => a.ref))), order: po.equipment.slice(po.equipment.length - v.pools.equipment) },
+      { rid: 'bbb-pile', cls: 'bbb', count: v.pools.bbb, excl: new Set(v.ownDiscard), order: po.bbb.slice(po.bbb.length - v.pools.bbb) },
+      { rid: 'networking-pile', cls: 'networking', count: v.pools.networking, excl: new Set(v.ownDiscard), order: po.networking.slice(po.networking.length - v.pools.networking) },
     ];
     // O-5 (I-146): THICKNESS — the table is a SLAB on the counter stratum (the A2b
     // thin-box lesson at scale): a 16-unit body under the face, diffuse, NO region tag
@@ -140,7 +145,7 @@ export const table: Component = {
     for (const old of poolGroups) old.parent?.remove(old); // I-153: purge before rebuild
     poolGroups = [];
     for (const pp of pendingPools) {
-      const g2 = worldPoolStack(t, pp.rid, pp.cls, pp.count, pp.excl); // I-153: THIS build's table, not the scene's previous one
+      const g2 = worldPoolStack(t, pp.rid, pp.cls, pp.count, pp.excl, pp.order ?? null); // I-153/I-156: THIS build's table; identity-true order
       if (g2) { cx!.register(g2); poolGroups.push(g2); }
     }
     pendingPools = [];
@@ -180,20 +185,24 @@ export const table: Component = {
       if (m && grp) return dplay.discardGrabStart(ctx, m, grp, hit.event);
       return false;
     }
+    if (supply.grabStart(ctx, hit)) return true; // C-1c (I-156): the supply flick door
     return draw.grabStart(ctx, hit);
   },
   onGrabMove(ctx, ev: PointerEvent) {
     if (dplay.discardGrabbing() === 'held') { dplay.discardGrabMove(ctx, ev); return; }
+    if (supply.supplyPhase() === 'grabbing') { supply.grabMove(ctx, ev); return; }
     draw.grabMove(ctx, ev);
   },
   onGrabEnd(ctx, ev: PointerEvent) {
     if (dplay.discardGrabbing() === 'held') return dplay.discardGrabEnd(ctx, ev);
+    if (supply.supplyPhase() === 'grabbing') return supply.grabEnd(ctx, ev);
     return draw.grabEnd(ctx, ev);
   },
   // CONTRACT v3 (S-1, I-103): abort both grab surfaces — a held discard card glides home,
   // a grabbed deck card settles back face down. Graceful for cancel AND rebuild.
   onGrabAbort(_ctx) {
     dplay.discardGrabCancel();
+    supply.abortGrab(); // C-1c: a live supply grab settles back face down
     draw.abortGrab();
   },
 
@@ -239,7 +248,7 @@ export const table: Component = {
   },
 
   // Q-2b/Q-6: the draw step (table-draw) + the live discard (tween/hold/return); delegate.
-  tick(ctx) { draw.tickDraw(ctx); dplay.tickDiscardPlay(ctx); tickStackNudge(); }, // + R-1a2: the stack-proof nudge
+  tick(ctx) { draw.tickDraw(ctx); supply.tickSupply(ctx); dplay.tickDiscardPlay(ctx); tickStackNudge(); }, // + R-1a2: the stack-proof nudge · C-1c: the supply theater
 
   gate() {
     const ctx = cx!;
@@ -298,6 +307,12 @@ export const table: Component = {
       drawFlipDir: draw.drawFlipDir, // I-113: the flick's direction (+1 cw · −1 ccw)
       drawFaceUp: draw.drawFaceUp, // I-115/M3: the traveler's face-up truth (≈+1 face-up)
       regionScreenXY: (rid: string) => oracles.regionScreenXYOf(cx!, rid),
+      /** C-1c (I-156) supply flick-move oracles: phase · gesture verdict · the last
+       *  anchor-change record (id + identity law + end≈target) · the grab identity. */
+      supplyPhase: supply.supplyPhase,
+      supplyGesture: supply.supplyGesture,
+      supplyLastMove: supply.supplyLastMove,
+      supplyGrabUuid: supply.supplyGrabUuid,
     };
   },
 };

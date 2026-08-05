@@ -75,11 +75,16 @@ function stackGroup(rid: string, f: Frame): THREE.Group {
 /** a SUPPLY deck (C-1b): the class's instances minus those visible elsewhere, face down. */
 export function worldPoolStack(
   t: THREE.Object3D, rid: string, cls: string, count: number, excluded: ReadonlySet<string>,
+  order: readonly string[] | null = null,
 ): THREE.Group | null {
   const f = regionFrame(t, rid);
   if (!f) return null;
   const grp = stackGroup(rid, f);
-  const members = instancesOfClass(cls).filter((id) => !excluded.has(id)).slice(0, Math.max(0, count));
+  // C-1c (I-156): with the pool's remaining ORDER (order[0] = next popped) the stack is
+  // identity-true bottom→top; without it, membership-by-class (the C-1b fallback).
+  const members = order
+    ? order.slice(0, Math.max(0, count)).slice().reverse()
+    : instancesOfClass(cls).filter((id) => !excluded.has(id)).slice(0, Math.max(0, count));
   const poses = stackPoses(rid, members.length, 0, f);
   members.forEach((id, k) => {
     const h = cardInstance(id);
