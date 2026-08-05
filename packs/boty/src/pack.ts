@@ -110,7 +110,11 @@ const hashStr = (s: string): number => {
  *  table ('labour unionizes') + one LOCAL per player ('buy insurance'). They start in
  *  each seat's DISCARD (the partition presents them in-play) and are EXCLUDED from the
  *  draw so one-of-every-card holds. */
-export const GENESIS_IN_PLAY: readonly string[] = ['svc-insurance', 'gbl-union'];
+/** I-151 (owner-ruled 2026-08-05): 'remove all genesis seeding' — the O-4 demo pair is
+ *  RETIRED; every in-play card now arrives through a real gesture. The seam stays (a
+ *  child game MAY seed as data); BOTY seeds nothing. The starting CREW is untouched —
+ *  that is game setup ('each player does start with a tradesperson'), not a sample. */
+export const GENESIS_IN_PLAY: readonly string[] = [];
 /** the seat's GENESIS draw — the shuffled order minus the in-play pair. ONE source:
  *  the genesis AND every gate pin derive from THIS (the vector discipline). */
 export function genesisDrawFor(seed: string, seat: string): string[] {

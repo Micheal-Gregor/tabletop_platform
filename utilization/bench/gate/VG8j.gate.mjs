@@ -265,7 +265,7 @@ export async function run(h) {
       }));
       const pv = await page.evaluate(() => window.__GAME3D__.partitionView());
       const famOk = fam.g === 'global' && fam.s === 'session' && fam.d === 'discard' && fam.levy === 'global';
-      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 3 && pv.global.length === 1 && pv.session.length === 1 && pv.pile[0] === DRAW[0]; // O-4 (I-138): genesis holds gbl-union (global) + svc-insurance (session) IN PLAY; the first draw joins the pile
+      const sumOk = !!pv && pv.global.length + pv.session.length + pv.pile.length === pv.total && pv.total === 1 && pv.global.length === 0 && pv.session.length === 0 && pv.pile[0] === DRAW[0]; // I-151: genesis seeds NOTHING (O-4's demo pair retired, owner-ruled); only the first draw is in play — it joins the pile
       // G-1 (I-101, closing K7-Q M1): the derived sum is true by construction — the LAW
       // needs the RENDER side. Exactly-once, per family: live meshes ≡ the derived view
       // (a deleted render block or a double-render fails BY NAME at the exercised states).
