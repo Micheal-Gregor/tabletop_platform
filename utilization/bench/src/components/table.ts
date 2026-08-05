@@ -18,6 +18,8 @@ import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
+import { getTableMode, setTableMode } from '../playarea.js'; // I-145: the orientation mode
+import { SEAT_YAWS } from '../stage.js';
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
@@ -102,7 +104,13 @@ export const table: Component = {
     // O-3 (I-139): BBB + networking are REAL card decks — count-true from the pools.
     t.add(cardStack(bbR, 'bbb-pile', v.pools.bbb, null, 0));
     t.add(cardStack(nwR, 'networking-pile', v.pools.networking, null, 0));
+    // I-145: the ORIENTATION MODE (a template option) — 'rotate-to-active' premultiplies
+    // the world-yaw so the board's bottom edge faces the active player (the I-133
+    // quaternion lesson: flat FIRST, then yawed); 'fixed' (BOTY's config) stays still.
     t.rotation.x = -Math.PI / 2;
+    if (getTableMode() === 'rotate-to-active') {
+      t.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), SEAT_YAWS[v.turn.seatIdx] ?? 0));
+    }
     t.scale.set(9, 7, 1);
     t.userData['focus'] = 'table';
     tableRoot = t; // G-1 (I-101): the oracle's walk root
@@ -167,8 +175,8 @@ export const table: Component = {
       // Q-2b (I-91): a plain CLICK no longer draws — the flick gesture is the draw. The
       // grab protocol consumed any viewer-turn tap as the nudge; reaching here on the
       // viewer's turn means an edge case (e.g. read-mode entry) — hint, don't act.
-      if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('grab the top card and FLICK to flip it'); }
-      else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
+      if (v.seats[v.turn.seatIdx]!.id === ctx.viewSeat) { ctx.status('the EVENT DECK — grab the top card and FLICK to flip it'); }
+      else { fidget['deck'] = ((fidget['deck'] ?? 0) + 1) % 3; ctx.rebuild(); ctx.status(`event deck fidget → ${['neat', 'loose pile', 're-scatter'][fidget['deck']]}`); }
     } else if (region === 'bbb-pile' || region === 'networking-pile') {
       // O-3 (I-139): YOUR turn → draw from the pool through the doors — the card joins
       // your LOCAL row ('BBB card drawn, buy insurance, put in local card area');
@@ -262,6 +270,9 @@ export const table: Component = {
       discardSlideTrace: dplay.discardSlideTrace, // R-1b (I-122): the toss-physics oracle {steps, dist}
       orphanGrabMeshes: () => ({ phase: draw.drawPhaseState(), count: oracles.orphanGrabMeshCount(cx!) }),
       deckNudging: stackNudging, // R-1a2 (I-110): the tap-nudge state (the gate waits on it)
+      tableMode: getTableMode, // I-145: the orientation mode (template data)
+      setTableMode: (m: 'fixed' | 'rotate-to-active') => { setTableMode(m); cx!.rebuild(); }, // the drill door
+      tableYawDeg: () => { const t2 = cx!.theater.focusObject('table'); if (!t2) return null; const q = t2.getWorldQuaternion(new THREE.Quaternion()); const up = new THREE.Vector3(0, 0, -1).applyQuaternion(q); return (Math.atan2(up.x, up.z) * 180) / Math.PI; }, // the board's 'up-edge' heading
       // S-1b (I-104): these five were DROPPED by the S-1 extraction surgery — the full
       // battery caught it at VG8j:81 (`onionState is not a function`). Restored verbatim.
       /** Q-2c (I-92) partition oracles: the family DATA + the derived view's sums. */

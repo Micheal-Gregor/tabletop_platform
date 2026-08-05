@@ -49,3 +49,12 @@ export function stationLook(i: number, seatCount: number, r: number = ringRadius
   const a = seatAngle(i, seatCount);
   return { x: Math.sin(a) * r * 0.62, z: Math.cos(a) * r * 0.62 };
 }
+
+/** I-145 (owner-ruled): the TABLE ORIENTATION MODE — a TEMPLATE option. 'fixed' keeps
+ *  the board still (BOTY's configured choice — the camera does the traveling);
+ *  'rotate-to-active' spins the board so its bottom edge faces the active player.
+ *  Mode is DATA; the table component consumes it at every rebuild. */
+export type TableMode = 'fixed' | 'rotate-to-active';
+let tableMode: TableMode = 'fixed'; // BOTY's configuration (I-145)
+export const getTableMode = (): TableMode => tableMode;
+export const setTableMode = (m: TableMode): void => { tableMode = m; }; // the drill door (theater-only config)
