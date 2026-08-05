@@ -16,7 +16,7 @@
 /** the station's chord claim: the wider of the board (260) and the row plan (380),
  *  plus the presentation buffer — "tight, consistent, professional". */
 export const STATION_CHORD = 480;
-export const TABLE_CLEAR = 130; // the table's breathing room before the first station
+export const TABLE_CLEAR = 60; // F-6 (I-148, owner: 'brought in a little') — was 130
 
 /** the table's half-diagonal (world): the current 900×700 board. Self-resizes when
  *  the table object changes — pass the live value where known. */
@@ -64,3 +64,11 @@ export const setTableMode = (m: TableMode): void => { tableMode = m; }; // the d
  *  from the board line. Contents PACK into it (folder column left · rows right · hand
  *  below the folder); the gate asserts containment on the viewer's station. */
 export const STATION_BOX = { halfW: 240, depth: 300 } as const;
+
+/** F-5 (I-148): a WIDE prop occupant ('the box is a little trickier being a wide cube')
+ *  sits at its slot's DIRECTION but pushed OUT by its own footprint claim, so it never
+ *  intrudes into a neighbouring station. The template learns occupant size. */
+export function propSlot(i: number, occupants: number, push: number, r: number = ringRadius(occupants)): { x: number; z: number; yaw: number } {
+  const a = seatAngle(i, occupants);
+  return { x: Math.sin(a) * (r + push), z: Math.cos(a) * (r + push), yaw: a };
+}

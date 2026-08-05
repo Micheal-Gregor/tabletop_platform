@@ -109,7 +109,7 @@ export const table: Component = {
     // thin-box lesson at scale): a 16-unit body under the face, diffuse, NO region tag
     // (the count law holds by construction; every consumer reads live bboxes).
     const slab = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 16), new THREE.MeshBasicMaterial({ color: 0xdfe5df }));
-    slab.position.z = -8.2;
+    slab.position.z = -8.2; // under the face IN LOCAL z — the whole group is RAISED below (F-3)
     slab.userData['slab'] = true;
     t.add(slab);
     // I-145: the ORIENTATION MODE (a template option) — 'rotate-to-active' premultiplies
@@ -120,6 +120,7 @@ export const table: Component = {
       t.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), SEAT_YAWS[v.turn.seatIdx] ?? 0));
     }
     t.scale.set(9, 7, 1);
+    t.position.y = 16.4; // F-3 (I-148): the table SITS ON the counter — slab bottom at y≈0, felt on top ('y+a above the surface, not cut in two')
     t.userData['focus'] = 'table';
     tableRoot = t; // G-1 (I-101): the oracle's walk root
     return t;

@@ -76,7 +76,7 @@ function fitAlong(box: THREE.Box3, look: THREE.Vector3, n: THREE.Vector3, upv: T
     const on = o.dot(n); // depth toward the camera
     d = Math.max(d, on + Math.abs(o.dot(right)) / th, on + Math.abs(o.dot(upCam)) / tv);
   }
-  return d * 1.06;
+  return d * 1.02; // F-7 (I-148): boards read closer ('too far back') — the corner-true floor + 2%
 }
 
 /** Focus resolution (I-66e): a focus names a GROUP ('table', 'seat-i') or a TABLE
@@ -98,14 +98,21 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   if (!obj) throw new Error(`read refused: unknown focus "${focus}" (have: ${Object.keys(focusGroups).join(', ')} + table:<region>)`);
   const box = new THREE.Box3().setFromObject(obj);
   const c = box.getCenter(new THREE.Vector3());
+  // F-7 (I-148, the owner's framing ruling): OBJECT-SIZE-AWARE reads — a SMALL object
+  // (die, cards, region anchors; max dimension < 200) reads PULLED BACK at 1.7× fit
+  // ('too close for the dice, the cards'); the fit floor (no crop) is never violated —
+  // 1.7× keeps the object ≈ 60% of frame (the framed wall ≥ 0.5 holds).
+  const sz = box.getSize(new THREE.Vector3());
+  const small = Math.max(sz.x, sz.y, sz.z) < 200;
+  const factor = small ? 1.7 : 1.0;
   if (focus === 'table' || focus.startsWith('table:')) {
     const n = new THREE.Vector3(0, 1, 0);
     const up = new THREE.Vector3(0, 0, -1);
-    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up))), look: c, up };
+    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * factor)), look: c, up };
   }
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion((obj as THREE.Group).quaternion).normalize(); // the board's outward normal (90° to its face)
   const up = new THREE.Vector3(0, 1, 0);
-  return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up))), look: c, up };
+  return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * factor)), look: c, up };
 }
 
 /** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */

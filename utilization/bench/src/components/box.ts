@@ -12,7 +12,7 @@
  */
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
-import { stationPos } from '../playarea.js'; // PA-2 (I-142)
+import { propSlot } from '../playarea.js'; // PA-2/F-5 (I-142/I-148): footprint-aware
 import { RING_N, SEATS } from '../stage.js';
 const SEATS_N = SEATS.length; // the box's slot index (the first prop slot)
 import { buildBox } from '../box.js';
@@ -51,7 +51,7 @@ export const box: Component = {
     // PA-2 (I-142, owner-ruled — superseding the beside-the-table placement): the box
     // is a RING OCCUPANT — slot 6 (past seat-5), tangent like a board, yawed to its
     // angle. The template's radius already clears the table; no gap constant survives.
-    const slot = stationPos(SEATS_N, RING_N);
+    const slot = propSlot(SEATS_N, RING_N, 320); // F-5 (I-148): pushed out by its footprint — clear of seat-0's station
     b.position.set(slot.x, 0, slot.z);
     b.rotation.y = slot.yaw;
     return b;

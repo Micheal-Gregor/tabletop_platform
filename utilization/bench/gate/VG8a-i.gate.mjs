@@ -272,8 +272,8 @@ export async function run(h) {
     // above (VG8a re-derives from the changed defs on both sides). KILL: unregister the
     // medal component → medalInfo null → fails by name.
     const med = await page.evaluate(() => window.__GAME3D__.medalInfo());
-    check('VG8h2/medal-in-region', !!med && med.parts >= 10 && med.onTable && med.inRegion,
-      med ? `parts:${med.parts} (want ≥10 — disc+ribbon form) · on-table:${med.onTable} · in-region:${med.inRegion} — the BOTY medal holds the freed corner (I-130)` : 'NULL — no medal in the scene');
+    check('VG8h2/medal-in-region', !!med && med.parts >= 2 && med.onTable && med.inRegion, // F-4 (I-148): the cylinder form — rim + face
+      med ? `parts:${med.parts} (want ≥2 — the skinnable cylinder, I-148) · on-table:${med.onTable} · in-region:${med.inRegion} — the BOTY medal holds the freed corner (I-130)` : 'NULL — no medal in the scene');
 
     // far board read: face-on along the FAR normal (0, sin.25, −cos.25) + full pose law
     await page.evaluate(() => window.__GAME3D__.toggleRead('seat-4'));
