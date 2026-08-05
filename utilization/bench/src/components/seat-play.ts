@@ -29,6 +29,8 @@ export const seatPlayCards = () => cards; // the oracle module's read (O-2 size 
 let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster } | null = null;
 let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } | null = null;
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
+let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
+export const seatPlayLastReturn = () => lastReturn;
 
 /** L-5b (I-132): THE SEAT FRAME — 'the rows for the cards … needs to be parallel to the
  *  board seat'. Everything at a seat lays out in the BOARD'S OWN frame: `n` = the
@@ -175,6 +177,43 @@ export const seatPlay: Component = {
         card.mesh.position.copy(card.anchor); // the un-moved click leaves no offset behind
         loop.crewClick(ctx, crewId, card.mesh, member.assignedTo !== undefined);
         return true;
+      }
+    }
+    // I-157 (the I-149 grammar): dropping the VIEWER'S OWN tradesperson/equipment card
+    // ON its supply pile is the BOTTOM-RETURN — the real verb through the doors; the
+    // rebuild seats the same instance at the pile's bottom. Anywhere else: the glide.
+    const key = grab.card.key;
+    const pileFor = key.startsWith('crew:') ? 'tradespeople-pile' : key.startsWith('equipment:') ? 'equipment-pile' : null;
+    if (pileFor) {
+      const pile = ctx.theater.focusObject(`table:${pileFor}`);
+      if (pile) {
+        const pb = new THREE.Box3().setFromObject(pile).expandByScalar(14);
+        const cp = grab.card.mesh.position;
+        if (cp.x >= pb.min.x && cp.x <= pb.max.x && cp.z >= pb.min.z && cp.z <= pb.max.z) {
+          const vNow = ctx.projection();
+          const myTurn = vNow.seats[vNow.turn.seatIdx]!.id === ctx.viewSeat;
+          const id = key.startsWith('crew:') ? key.slice(5) : key.slice(10).split(':')[0]!;
+          const own = key.startsWith('crew:')
+            ? vNow.crew.some((m) => m.id === id && m.outfit === ctx.viewSeat)
+            : vNow.seats.find((s2) => s2.id === ctx.viewSeat)!.assets.some((a) => a.ref === id);
+          if (myTurn && own) {
+            const verb = key.startsWith('crew:') ? 'release-crew' : 'sell-equipment';
+            const args = key.startsWith('crew:') ? { crew: id } : { ref: id };
+            const cardRef = grab.card;
+            grab = null;
+            if (ctx.submit(verb, args)) {
+              lastReturn = { id, pile: pileFor };
+              ctx.rebuild(); // truth: the SAME instance re-claimed at the pile's BOTTOM
+              ctx.status(`${id} returns to the bottom of the deck (the only move out — I-149)`);
+              return true;
+            }
+            // refused (e.g. assigned crew) → the glide home says so
+            resetting = { card: cardRef, from: cardRef.mesh.position.clone(), t: 0 };
+            lastReset = { moved, returned: false, frames: 0 };
+            ctx.status('refused — a working card stays anchored to its venture');
+            return true;
+          }
+        }
       }
     }
     resetting = { card: grab.card, from: grab.card.mesh.position.clone(), t: 0 };

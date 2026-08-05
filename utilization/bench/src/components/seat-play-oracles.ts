@@ -8,11 +8,12 @@ import type { PlayAreaContext } from '../component.js';
 import { planSeatRows } from '../seat-rows.js';
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
-import { seatPlayCards, seatFrame } from './seat-play.js';
+import { seatPlayCards, seatFrame, seatPlayLastReturn } from './seat-play.js';
 
 export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, unknown> {
   const cardsRef = seatPlayCards;
   return {
+    seatReturn: seatPlayLastReturn, // I-157: the last bottom-return {id, pile}
       /** count-true crew rows: per seat — want (projection) vs got (meshes) + in-front. */
       crewRows: () => {
         const v = getCtx().projection();

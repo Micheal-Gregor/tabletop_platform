@@ -16,7 +16,7 @@ import type { SlotDecl } from '../rules/contributions.js';
 import { post, transfer, ledgerLoaded } from './ledger.js';
 import { spawnVenture, routeVenture, lapseExpired, debtsOf, setDebts } from './ventures.js';
 import type { VentureSpec } from './ventures.js';
-import { assignCrew, workCrew, hireCrew, buyEquipment, drawFromPool } from './outfit.js';
+import { assignCrew, workCrew, hireCrew, buyEquipment, drawFromPool, releaseCrew, sellEquipment } from './outfit.js';
 import { attachTimedFx } from './timedfx.js';
 import type { TimedFx } from './timedfx.js';
 import { tickTimedEffects } from './timedfx.js';
@@ -190,6 +190,18 @@ export function wireLibrary(core: EngineCore, registry: RuleRegistry): void {
       const { next, cost } = hireCrew(state, intent.seat);
       return cost > 0 ? EffectEngine.apply(next as never, { fx: 'levy', scope: intent.seat, amount: cost }, { windowDepth: 0 }) : next;
     }
+  );
+
+  core.registerIntent(
+    'crew:release',
+    { args: (_s, i) => (typeof i.args['crew'] === 'string' ? true : 'crew required'), rules: [onTurn] },
+    (state, intent) => releaseCrew(state, intent.seat, String(intent.args['crew'])) as never, // I-157: to the pool BOTTOM; no levy (economics deferred)
+  );
+
+  core.registerIntent(
+    'outfit:sell',
+    { args: (_s, i) => (typeof i.args['ref'] === 'string' ? true : 'ref required'), rules: [onTurn] },
+    (state, intent) => sellEquipment(state, intent.seat, String(intent.args['ref'])) as never, // I-157: to the pool BOTTOM
   );
 
   core.registerIntent(

@@ -41,6 +41,29 @@ describe('A16: the pools (I-137)', () => {
     expect(cash()).toBe(c0 - nextCost); // the second pays (kill the firstHire branch → the first levies → the pin above fails)
   });
 
+  it('the bottom-return (I-157, the I-149 grammar): released crew goes to the pool BOTTOM; assigned crew refuses', () => {
+    const { pv, sub, st } = host();
+    sub('hire', 'moe');
+    const hired = pv().crew.find((m) => m.outfit === 'moe')!.id;
+    sub('release-crew', 'moe', { crew: hired });
+    const pool = (st()['pools'] as { tradespeople: readonly { id: string }[] }).tradespeople;
+    expect(pool[pool.length - 1]!.id).toBe(hired); // the BOTTOM — the only move out
+    expect(pv().crew.filter((m) => m.outfit === 'moe').length).toBe(0);
+    expect(pv().pools.tradespeople).toBe(8); // conservation: the pool is whole again
+    expect(() => sub('release-crew', 'moe', { crew: 'nobody' })).toThrow(/GX-31/);
+  });
+
+  it('equipment sells to the equipment deck BOTTOM (I-157)', () => {
+    const { pv, sub, st } = host();
+    sub('buy-equipment', 'moe');
+    const ref = pv().seats.find((s) => s.id === 'moe')!.assets[0]!.ref;
+    sub('sell-equipment', 'moe', { ref });
+    const pool = (st()['pools'] as { equipment: readonly { id: string }[] }).equipment;
+    expect(pool[pool.length - 1]!.id).toBe(ref);
+    expect(pv().seats.find((s) => s.id === 'moe')!.assets.length).toBe(0);
+    expect(pv().pools.equipment).toBe(8);
+  });
+
   it('hire pops the top: crew +1 (with a trade), pool −1', () => {
     const { pv, sub } = host();
     const before = pv();

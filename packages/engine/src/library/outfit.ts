@@ -95,9 +95,40 @@ export function hireCrew(state: State, seat: string): { next: JsonObject; cost: 
   const next = {
     ...state,
     pools: { ...pools, tradespeople: pools.tradespeople.slice(1) },
-    crew: [...crewOf(state), { id: top.id, outfit: seat, trade: top.trade }],
+    crew: [...crewOf(state), { id: top.id, outfit: seat, trade: top.trade, cost: top.cost }], // I-157: the cost RIDES so a bottom-return can rebuild the pool card
   };
   return { next, cost: firstHire ? 0 : top.cost };
+}
+
+/** I-157 (the I-149 location grammar): a tradesperson's ONLY move out of the local
+ *  area is to the BOTTOM of the tradesperson deck. Assigned crew refuses — a working
+ *  card is anchored to its venture (refusal-not-repair). */
+export function releaseCrew(state: State, seat: string, crewId: string): JsonObject {
+  const member = crewOf(state).find((c) => c.id === crewId) as (JsonObject & { outfit?: string; trade?: string; cost?: number; assignedTo?: unknown }) | undefined;
+  if (!member || member['outfit'] !== seat) throw new VentureRefusal('pool', 'GX-31', `no such crew member of yours: ${crewId}`);
+  if (member['assignedTo'] !== undefined) throw new VentureRefusal('pool', 'GX-31', `${crewId} is working a venture — release refused`);
+  const pools = poolsOf(state);
+  return {
+    ...state,
+    crew: crewOf(state).filter((c) => c.id !== crewId),
+    pools: { ...pools, tradespeople: [...pools.tradespeople, { id: crewId, trade: String(member['trade'] ?? ''), cost: Number(member['cost'] ?? 0) }] }, // the BOTTOM
+  };
+}
+
+/** I-157: equipment's return — the seat asset back to the equipment deck's BOTTOM. */
+export function sellEquipment(state: State, seat: string, ref: string): JsonObject {
+  const seats = state['seats'] as readonly (JsonObject & { id?: string })[];
+  const mine = seats.find((s2) => s2['id'] === seat);
+  const assets = ((mine?.['assets'] as readonly (JsonObject & { ref?: string; value?: number })[]) ?? []);
+  const idx = assets.findIndex((a) => a['ref'] === ref);
+  if (idx < 0) throw new VentureRefusal('pool', 'GX-31', `no such equipment of yours: ${ref}`);
+  const gone = assets[idx]!;
+  const pools = poolsOf(state);
+  return {
+    ...state,
+    seats: seats.map((s2) => (s2['id'] === seat ? { ...s2, assets: assets.filter((_, i) => i !== idx) } : s2)),
+    pools: { ...pools, equipment: [...pools.equipment, { id: ref, name: ref, cost: Number(gone['value'] ?? 0) }] }, // the BOTTOM
+  };
 }
 
 /** GX-30: buy the TOP equipment card → a seat asset {ref, value}. */
