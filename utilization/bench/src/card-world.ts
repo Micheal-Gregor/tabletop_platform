@@ -38,6 +38,11 @@ export function parkCard(id: string): void {
   if (h) h.group.parent?.remove(h.group);
 }
 
+/** all instance ids of a deck class (sorted — deterministic membership). */
+export function instancesOfClass(cls: string): string[] {
+  return [...instances.entries()].filter(([, h]) => h.group.userData['deckClass'] === cls).map(([id]) => id).sort();
+}
+
 export const cardWorldInfo = () => ({
   instances: instances.size,
   createdAtGenesis,

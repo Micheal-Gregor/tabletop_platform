@@ -87,6 +87,11 @@ export function focusObject(focus: string): THREE.Object3D | null {
     const rid = focus.slice('table:'.length);
     let hit: THREE.Object3D | null = null;
     focusGroups['table']?.traverse((o: THREE.Object3D) => { if (o.userData?.['region'] === rid) hit = o; });
+    if (hit) return hit;
+    // C-1b (I-149): under the permanence world a region's OBJECT may stand in world
+    // space (instance stacks are world-sized, never children of the scaled table) —
+    // the anchor law generalizes: search the scene for the region tag.
+    camera.parent?.traverse((o: THREE.Object3D) => { if (!hit && o.userData?.['region'] === rid) hit = o; });
     return hit;
   }
   return null;

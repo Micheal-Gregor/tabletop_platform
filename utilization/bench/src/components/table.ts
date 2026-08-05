@@ -20,6 +20,7 @@ import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate ora
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
 import { getTableMode, setTableMode } from '../playarea.js'; // I-145: the orientation mode
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
+import { worldPoolStack } from '../stacks3d.js'; // C-1b (I-149): supply decks as instance stacks
 import { SEAT_YAWS } from '../stage.js';
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
@@ -44,6 +45,7 @@ function partition(ownDiscard: readonly string[]): { global: string[]; session: 
   return { global, session, pile };
 }
 let tableRoot: THREE.Group | null = null; // G-1 (I-101): the live table group — the RENDERED-rects oracle walks THIS, never the def
+let pendingPools: { rid: string; cls: string; count: number; excl: Set<string> }[] = []; // C-1b (I-149)
 
 // ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
 // size-gate extraction). This adapter delegates: grab/flick/flip/onion/route. ──
@@ -94,17 +96,17 @@ export const table: Component = {
     // with them, so renderedPartition keeps counting wherever they stand.
     // A16 (I-137): the tradesperson + equipment piles are REAL — counts BIND to the
     // projection's pools (hire/buy pop them; count-true is the law, I-82f discharged).
-    const tpR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'tradespeople-pile')!;
-    const eqR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'equipment-pile')!;
-    t.add(cardStack(tpR, 'tradespeople-pile', v.pools.tradespeople, null, 0));
-    t.add(cardStack(eqR, 'equipment-pile', v.pools.equipment, null, 0));
-    // I-130: the TWO NEW staged decks (BBB · Networking) — row C, same staging law as
-    // A16 (counts bind to state when their engine decks land; presentation stages).
-    const bbR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'bbb-pile')!;
-    const nwR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'networking-pile')!;
-    // O-3 (I-139): BBB + networking are REAL card decks — count-true from the pools.
-    t.add(cardStack(bbR, 'bbb-pile', v.pools.bbb, null, 0));
-    t.add(cardStack(nwR, 'networking-pile', v.pools.networking, null, 0));
+    // C-1b (I-149): the four SUPPLY DECKS are literal stacks of their Card3D instances
+    // ('made each deck an actual deck of cards') — world-space piles (world-sized
+    // instances never enter the scaled table group) built after t's pose is final.
+    // Membership = the class minus what is visible elsewhere; the remainder of the
+    // count PARKS (redaction by absence; permanence holds — parked ≠ destroyed).
+    pendingPools = [
+      { rid: 'tradespeople-pile', cls: 'tradesperson', count: v.pools.tradespeople, excl: new Set(v.crew.map((m) => m.id)) },
+      { rid: 'equipment-pile', cls: 'equipment', count: v.pools.equipment, excl: new Set(v.seats.flatMap((s2) => s2.assets.map((a) => a.ref))) },
+      { rid: 'bbb-pile', cls: 'bbb', count: v.pools.bbb, excl: new Set(v.ownDiscard) },
+      { rid: 'networking-pile', cls: 'networking', count: v.pools.networking, excl: new Set(v.ownDiscard) },
+    ];
     // O-5 (I-146): THICKNESS — the table is a SLAB on the counter stratum (the A2b
     // thin-box lesson at scale): a 16-unit body under the face, diffuse, NO region tag
     // (the count law holds by construction; every consumer reads live bboxes).
@@ -123,6 +125,14 @@ export const table: Component = {
     t.position.y = 16.4; // F-3 (I-148): the table SITS ON the counter — slab bottom at y≈0, felt on top ('y+a above the surface, not cut in two')
     t.userData['focus'] = 'table';
     tableRoot = t; // G-1 (I-101): the oracle's walk root
+    // the pool stacks need t's WORLD pose — set it now (position/rotation are final),
+    // then build them as SCENE-level groups (world-sized instances; count law carried).
+    t.updateMatrixWorld(true);
+    for (const pp of pendingPools) {
+      const g2 = worldPoolStack(cx!, pp.rid, pp.cls, pp.count, pp.excl);
+      if (g2) cx!.register(g2);
+    }
+    pendingPools = [];
     return t;
   },
 
