@@ -75,9 +75,11 @@ export const seatPlay: Component = {
       );
       const total = rows.length;
       rows.forEach((row, r) => {
-        // the FRONT TOP row (trades) sits nearest the table; later rows step back
-        // toward the board — the owner's top-to-bottom order (I-130).
-        const zOff = 46 + (total - 1 - r) * 68;
+        // I-144 (the owner's clarification — superseding the I-131 table-side rows):
+        // LOCAL cards IN PLAY sit BEHIND the board (the PLAYER side) with the folder
+        // and the hand; the trades row stays nearest the board, later rows step out
+        // toward the player. The station box (O-2) formalizes the packing.
+        const zOff = -(46 + r * 68); // NEGATIVE toward-table = positive player side below
         const widths = row.items.map((it) => it.w * 56);
         const natural = widths.reduce((a, b) => a + b, 0);
         const MAXW = 380; // the row's space — beyond it, respace to OVERLAP (I-130)
@@ -97,7 +99,7 @@ export const seatPlay: Component = {
           );
           // L-5b (I-132): the SEAT FRAME LAW — position in the board's frame (lateral +
           // toward-table steps), orientation yawed WITH the board (corner rows run at 45°).
-          const pos = sf.c.clone().addScaledVector(sf.lat, latOff).addScaledVector(sf.n, -zOff);
+          const pos = sf.c.clone().addScaledVector(sf.lat, latOff + 70).addScaledVector(sf.n, -zOff); // +70 lat: clear of the folder's left-end claim (I-144; the box packs it at O-2)
           if (isLocal || it.kind === 'equipment') {
             mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
               .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2))); // flat, footprint parallel
@@ -228,9 +230,9 @@ export const seatPlay: Component = {
           const got = cards.filter((c) => c.key.startsWith('crew:') && c.mesh.userData['focus'] === `seat-${i}`).length;
           const sf = seatFrame(ctx, i);
           const row = cards.find((c) => c.key.startsWith('crew:') && c.mesh.userData['focus'] === `seat-${i}`);
-          // L-5b (I-132): in-front is FRAME-relative — the row sits on the TABLE side of
-          // the board (its offset along the board normal is negative).
-          const inFront = !!(row && sf) && row.mesh.position.clone().sub(sf.c).dot(sf.n) < 0;
+          // I-144 (supersedes the L-5b table-side law): the rows live BEHIND the board
+          // (the PLAYER side) — the offset along the board normal is POSITIVE.
+          const inFront = !!(row && sf) && row.mesh.position.clone().sub(sf.c).dot(sf.n) > 0;
           return { seat: s.id, want, got, inFront };
         });
       },
