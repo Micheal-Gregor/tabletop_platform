@@ -14,6 +14,12 @@ import { fortuneFaceTexture } from './surfaces.js';
 import { nudgeStack } from './stacks.js';
 import * as onion from './onion.js';
 import { routeDestFor, findCardMesh, stackTop } from './draw-route.js'; // R-1a6 (I-115): the owed extraction
+import { cardInstance } from './card-world.js'; // C-1b2 (I-154): the permanence world's reveal
+
+// C-1b2 (I-154): a Card3D instance lies FACE DOWN at rotation.x = +π/2 (its face plane
+// is local +z); the legacy box lay face-down at −π/2 (its face was the −z slot). One
+// helper owns the sign so every pose reads the object it actually holds.
+const flatBase = (m: THREE.Object3D): number => (m.userData?.['card3d'] ? Math.PI / 2 : -Math.PI / 2);
 
 export type DrawPhase = 'idle' | 'grabbing' | 'flipping' | 'reading' | 'routing' | 'settling';
 let phase: DrawPhase = 'idle';
@@ -89,7 +95,7 @@ export function grabMove(ctx: PlayAreaContext, ev: PointerEvent): void {
     fz = theater.bound ? Math.max(theater.bound.minZ, Math.min(theater.bound.maxZ, p.z)) : p.z;
   }
   theater.mesh.position.set(fx, theater.from.y + 6 + Math.abs(theater.angle) * 22, fz);
-  theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
+  theater.mesh.rotation.set(flatBase(theater.mesh), 0, 0); // C-1b2: face stays DOWN for either object
   theater.mesh.rotateY(theater.angle);
 }
 
@@ -202,24 +208,38 @@ export function tickDraw(ctx: PlayAreaContext): void {
     const pT = theater.t;
     const ease = pT * pT * (3 - 2 * pT);
     theater.mesh.position.set(theater.from.x, theater.from.y + Math.sin(pT * Math.PI) * theater.flipLift + 6, theater.from.z);
-    theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
-    theater.mesh.rotateY(theater.flipDir * Math.PI * ease); // R-1a5: the flick's direction
+    if (theater.mesh.userData['card3d']) {
+      // C-1b2 (I-154): an INSTANCE flips over its long edge — a continuous X rotation
+      // from face-down (+π/2) through π lands EXACTLY at face-up (−π/2 mod 2π), both
+      // directions, mirror-free (the real face plane, never a slot trick).
+      theater.mesh.rotation.set(Math.PI / 2 + theater.flipDir * Math.PI * ease, 0, 0);
+    } else {
+      theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
+      theater.mesh.rotateY(theater.flipDir * Math.PI * ease); // R-1a5: the flick's direction
+    }
     if (pT >= 0.5 && !theater.flipped) {
       theater.flipped = true; // the midpoint face-swap — always post-release + post-submit
       const displayed = forceMismatch ? 'WRONG-CARD' : theater.seeded;
-      // I-112: the box's UNDERSIDE slot (−z, index 5) receives the face — after the π flip
-      // it ends UP-FACING and the original back faces down. Never the shared side material.
-      const face = new THREE.MeshBasicMaterial({ map: fortuneFaceTexture(displayed) });
-      const mats = theater.mesh.material as THREE.Material[];
-      mats[5] = face;
-      theater.swappedFace = face;
+      if (theater.mesh.userData['card3d']) {
+        // C-1b2 (I-154): the instance's own face is re-stamped — and because the deck
+        // carries the remaining ORDER, this instance IS the drawn card (identity law).
+        cardInstance(String(theater.mesh.userData['cardId'] ?? ''))?.setFace([displayed]);
+      } else {
+        // I-112: the box's UNDERSIDE slot (−z, index 5) receives the face — after the π flip
+        // it ends UP-FACING and the original back faces down. Never the shared side material.
+        const face = new THREE.MeshBasicMaterial({ map: fortuneFaceTexture(displayed) });
+        const mats = theater.mesh.material as THREE.Material[];
+        mats[5] = face;
+        theater.swappedFace = face;
+      }
     }
     if (pT >= 1) {
       theater.mesh.position.copy(theater.from);
       // I-113 (fixing the I-112 latent end-pose bug): the end pose is the FLIPPED, face-up
-      // rotation — the underside slot (the fortune face) stays UP through reading + routing.
-      theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
-      theater.mesh.rotateY(theater.flipDir * Math.PI);
+      // rotation — held through reading + routing. C-1b2: an instance ends at −π/2 (its
+      // real face up, upright); the box keeps its slot-flip end pose.
+      if (theater.mesh.userData['card3d']) theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
+      else { theater.mesh.rotation.set(-Math.PI / 2, 0, 0); theater.mesh.rotateY(theater.flipDir * Math.PI); }
       const displayed = forceMismatch ? 'WRONG-CARD' : theater.seeded;
       const verdict = completeFlourish(theater.inst!, displayed); // HK-11 — truth wins (R-20)
       theater.inst = null;
@@ -239,7 +259,7 @@ export function tickDraw(ctx: PlayAreaContext): void {
       sf.x + (theater.from.x - sf.x) * theater.t,
       theater.from.y + back * (6 + Math.abs(theater.angle) * 22),
       sf.z + (theater.from.z - sf.z) * theater.t);
-    theater.mesh.rotation.set(-Math.PI / 2, 0, 0);
+    theater.mesh.rotation.set(flatBase(theater.mesh), 0, 0); // C-1b2: settle face-down for either object
     theater.mesh.rotateY(theater.angle * back + Math.sin(theater.t * Math.PI * 3) * 0.05 * back); // the nudge wiggle (signed lean unwinds)
     if (theater.t >= 1) finishTheater(ctx, true); // the SAME card, back on the pile — nothing happened (I-112)
     return;
@@ -271,7 +291,9 @@ export const drawGrabUuid = (): string | null => (theater ? theater.mesh.uuid : 
 export const drawFlipDir = (): number | null => (theater && (phase === 'flipping' || phase === 'reading' || phase === 'routing') ? theater.flipDir : null); // I-113
 /** I-115 (K7-R M3): the traveler's FACE-UP truth — the local −z (the fortune face,
  *  slot 5) through the live quaternion; ≈+1 face-up, ≈−1 the I-112 back-showing bug. */
-export const drawFaceUp = (): number | null => (theater ? new THREE.Vector3(0, 0, -1).applyQuaternion(theater.mesh.quaternion).y : null);
+export const drawFaceUp = (): number | null => (theater
+  ? new THREE.Vector3(0, 0, theater.mesh.userData['card3d'] ? 1 : -1).applyQuaternion(theater.mesh.quaternion).y // C-1b2: the instance's face is +z; the box's was the −z slot
+  : null);
 export function drawTheaterInfo(ctx: PlayAreaContext) {
   if (!theater) return null;
   const dp = stackTop(ctx, 'deck').pos;

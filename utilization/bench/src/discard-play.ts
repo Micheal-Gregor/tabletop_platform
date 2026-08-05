@@ -224,6 +224,31 @@ export function startFidgetTween(ctx: PlayAreaContext, oldGroup: THREE.Group, ne
   return true;
 }
 
+/** C-1b2 (I-154): the fidget tween for an INSTANCE stack — a parallel next-group would
+ *  STEAL the very instances it means to mirror, so the next state's poses arrive as
+ *  pure TARGETS and the live cards tween in place. Same acceptance law, same traces,
+ *  same oracles; the completion has no group swap (old ≡ next guards it). */
+export function startFidgetPoseTween(ctx: PlayAreaContext, group: THREE.Group, targets: readonly { x: number; y: number; z: number; rz: number }[]): boolean {
+  if (tween || held || pool.length) return false; // never move under out-of-pile cards (I-95)
+  ctx.scene.updateMatrixWorld(true);
+  const cards: THREE.Object3D[] = [];
+  group.traverse((o) => { if (o.userData?.['card']) cards.push(o); });
+  cards.sort((x, y) => (x.userData['idx'] as number) - (y.userData['idx'] as number));
+  const pairs = cards.map((m, i) => {
+    const tg = targets[i];
+    return {
+      mesh: m,
+      from: m.position.clone(),
+      to: tg ? new THREE.Vector3(tg.x, tg.y, tg.z) : m.position.clone(),
+      fromR: m.rotation.z,
+      toR: tg ? tg.rz : m.rotation.z,
+    };
+  });
+  tween = { pairs, next: group, old: group, t: 0 };
+  tweenTrace = { frames: 0, maxMove: 0 };
+  return true;
+}
+
 /** per-frame: the fidget tween · every pooled card's hold/return (I-95: independent). */
 export function tickDiscardPlay(_ctx: PlayAreaContext): void {
   if (tween) {
@@ -237,8 +262,8 @@ export function tickDiscardPlay(_ctx: PlayAreaContext): void {
       stepMove = Math.max(stepMove, p.mesh.position.distanceTo(before));
     }
     if (tweenTrace && stepMove > 1e-6) { tweenTrace.frames++; tweenTrace.maxMove = Math.max(tweenTrace.maxMove, stepMove); }
-    if (tween.t >= 1) { // swap at IDENTICAL poses — invisible
-      tween.old.parent?.remove(tween.old);
+    if (tween.t >= 1) { // swap at IDENTICAL poses — invisible (pose-tween: no swap, old ≡ next)
+      if (tween.old !== tween.next) tween.old.parent?.remove(tween.old);
       tween.next.visible = true;
       tween = null;
     }

@@ -12,15 +12,16 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { layoutFace, panelTexture } from '../surfaces.js';
-import { cardStack, stackNudging, tickStackNudge, nudgeStack } from '../stacks.js';
+import { stackNudging, tickStackNudge, nudgeStack } from '../stacks.js'; // cardStack retired at C-1b2 (I-154) — every pile is instances
 import * as onion from '../onion.js';
 import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw cluster (size-gate extraction)
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
-import { CARD_FAMILY } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92)
+import { CARD_FAMILY, genesisDrawFor } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92) · I-154: the viewer's remaining order
+const SESSION_SEED = 'maple-hollow'; // the bench session (game3d's host seed — single-source debt on I-154)
 import { getTableMode, setTableMode, OBJECT_SCALE } from '../playarea.js'; // I-145/I-150
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
-import { worldPoolStack } from '../stacks3d.js'; // C-1b (I-149): supply decks as instance stacks
+import { worldPoolStack, worldEventStack, eventStackTargets } from '../stacks3d.js'; // C-1b/C-1b2 (I-149/I-154): every pile as instance stacks
 import { SEAT_YAWS } from '../stage.js';
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
@@ -46,6 +47,7 @@ function partition(ownDiscard: readonly string[]): { global: string[]; session: 
 }
 let tableRoot: THREE.Group | null = null; // G-1 (I-101): the live table group — the RENDERED-rects oracle walks THIS, never the def
 let pendingPools: { rid: string; cls: string; count: number; excl: Set<string> }[] = []; // C-1b (I-149)
+let pendingEvents: { rid: string; prefix: string; count: number; faces: readonly string[] | null; order: readonly string[] | null }[] = []; // C-1b2 (I-154)
 let poolGroups: THREE.Group[] = []; // I-153: last build's world-space pool stacks — purged each build (stale first-match ghosts poison focusObject)
 
 // ── DRAW THEATER — Q-2b (I-91): the FLICK-TO-FLIP cluster lives in table-draw.ts (the
@@ -77,13 +79,19 @@ export const table: Component = {
       'global-play': ['GLOBAL CARDS IN PLAY'], // Q-2c: the slots fill left-to-right below the label
       medal: ['BOTY — Business of the Year'], // I-130: the medal exhibit's footprint label
     }, ['deck', 'discard', 'tradespeople-pile', 'equipment-pile', 'bbb-pile', 'networking-pile']);
-    const deckR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'deck')!;
-    const discR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
-    t.add(cardStack(deckR, 'deck', v.decks[active]?.drawCount ?? 0, null, fidget['deck']));
-    // Q-2c (I-92): the pile renders the PARTITION's pile slice; globals + session cards
-    // render IN PLAY (left-filled, discard order). pile + global + session ≡ ownDiscard.
+    // C-1b2 (I-154): the EVENT DECK + DISCARD are instance stacks too — queued like the
+    // pools, built world-space after the table's pose is final. The viewer's own deck
+    // carries the REMAINING ORDER (genesis order minus drawn) so the top instance IS
+    // the next card — the flick flips the very object that was drawn (permanence).
     const part = partition(v.ownDiscard);
-    t.add(cardStack(discR, 'discard', part.pile.length, part.pile, fidget['discard'])); // the VIEWER'S discard — redaction-honest (I-67a)
+    const drawCount = v.decks[active]?.drawCount ?? 0;
+    const deckOrder = active === ctx.viewSeat
+      ? genesisDrawFor(SESSION_SEED, active).filter((id) => !v.ownDiscard.includes(id))
+      : null;
+    pendingEvents = [
+      { rid: 'deck', prefix: `${active}::`, count: drawCount, faces: null, order: deckOrder },
+      { rid: 'discard', prefix: `${ctx.viewSeat}::`, count: part.pile.length, faces: part.pile, order: null },
+    ];
     const gpR = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'global-play')!;
     part.global.slice(0, 6).forEach((id, i) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(OBJECT_SCALE.card.w / 9, OBJECT_SCALE.card.h / 7), new THREE.MeshBasicMaterial({ map: panelTexture([id], 9, 15) })); // I-150: the control-table card size (÷ the table scale)
@@ -136,6 +144,11 @@ export const table: Component = {
       if (g2) { cx!.register(g2); poolGroups.push(g2); }
     }
     pendingPools = [];
+    for (const pe of pendingEvents) {
+      const g3 = worldEventStack(t, pe.rid, pe.prefix, pe.count, pe.faces, pe.order, fidget[pe.rid] ?? 0); // C-1b2 (I-154)
+      if (g3) { cx!.register(g3); poolGroups.push(g3); }
+    }
+    pendingEvents = [];
     return t;
   },
 
@@ -205,17 +218,16 @@ export const table: Component = {
       // Q-6 (I-94): the 3-step fidget, ANIMATED — the cards TWEEN to the next state's
       // poses (no rebuild snap; the "cheap image thing" closed).
       const grp = ctx.theater.focusObject('table:discard');
-      if (grp && grp.parent) {
+      const tbl = ctx.theater.focusObject('table');
+      if (grp && grp.parent && tbl) {
         // S-1 (I-103, closing K7-Q M5): the counter commits ONLY when the tween is
-        // ACCEPTED — a refused click (cards out, tween live) advances nothing and says
-        // so, so the pile can never SNAP to an unanimated state on the next rebuild.
+        // ACCEPTED. C-1b2 (I-154): with INSTANCE stacks there is no parallel next-group
+        // (it would steal the very cards) — the next state's POSES are computed pure and
+        // the live cards tween to them (the same trace, the same swap-free honesty).
         const cand = ((fidget['discard'] ?? 0) + 1) % 3;
-        const v2 = ctx.projection();
-        const part2 = partition(v2.ownDiscard);
-        const discR2 = TOWN_TABLE_V2.regions.find((rg) => rg.id === 'discard')!;
-        const next = cardStack(discR2, 'discard', part2.pile.length, part2.pile, cand);
-        grp.parent.add(next);
-        if (dplay.startFidgetTween(ctx, grp as THREE.Group, next)) {
+        const part2 = partition(ctx.projection().ownDiscard);
+        const targets = eventStackTargets(tbl, 'discard', part2.pile.length, cand);
+        if (targets && dplay.startFidgetPoseTween(ctx, grp as THREE.Group, targets)) {
           fidget['discard'] = cand;
           ctx.status(`discard fidget → ${['neat', 'peek', 'spread five'][cand]} (the cards move)`);
         } else {
@@ -238,7 +250,7 @@ export const table: Component = {
       // the first fully-read battery (I-100→G-1) surfaced it. Def-driven, like the rest.
       expectedFromDefs: () => TOWN_TABLE_V2.regions.length + BOTY_PACK6.seats.length * SHOP_BOARD.regions.length + 2 * BOOKS_PANEL.regions.length,
       // the render-walking oracles live in table-oracles.ts (S-1's size-gate extraction)
-      tableRegionRects: () => oracles.renderedRegionRects(tableRoot),
+      tableRegionRects: () => oracles.renderedRegionRects(tableRoot, cx!.scene), // I-154: world stacks included (render-true inversion)
       renderedPartition: () => oracles.renderedPartitionCounts(cx!),
       regionCount: () => { let n = 0; ctx.scene.traverse((o: THREE.Object3D) => { if (o.userData?.['region']) n++; }); return n; },
       stamped: (regionId: string) => {

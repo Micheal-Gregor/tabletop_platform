@@ -1,42 +1,125 @@
 /**
- * STACKS-3D (C-1b, I-149) — a supply deck as a LITERAL STACK of its Card3D instances
- * ('made each deck an actual deck of cards'): the class's instances, minus those
- * visible elsewhere, face DOWN in a world-space pile at the region's live rect. The
- * stack group carries the region tag (the count law + anchors + oracles + tap-nudge
- * generalize through focusObject's scene fallback). Instances whose location is
- * another player's hidden area are PARKED — unrendered, never destroyed (redaction by
- * absence; presence arrives with transport/F7).
+ * STACKS-3D (C-1b/C-1b2, I-149/I-154) — every table pile as a LITERAL STACK of Card3D
+ * instances ('made each deck an actual deck of cards'): world-space groups at the
+ * region's live rect, one persistent instance per card, posed — never recreated. The
+ * stack group carries the region tag + a footprint GHOST (clickable at zero cards);
+ * the count law, anchors, oracles and tap-nudge generalize through focusObject's scene
+ * fallback. Instances whose location isn't rendered are PARKED — unrendered, never
+ * destroyed (redaction by absence). Poses are EULER (x-flat, z-scatter) so the fidget
+ * tween's rotation.z convention (Q-6) carries over unchanged.
  */
 import * as THREE from 'three';
 import { cardInstance, instancesOfClass } from './card-world.js';
 import { CARD_T } from './card3d.js';
+import { lcg } from './stacks.js';
 import { TOWN_TABLE_V2 } from '../../../packs/boty/src/index.js';
 
-export function worldPoolStack(
-  t: THREE.Object3D, rid: string, cls: string, count: number, excluded: ReadonlySet<string>,
-): THREE.Group | null {
-  // I-153 (owner-caught: 'the 4 new decks aren't visible until I draw'): the table is
-  // passed IN — the old focusObject('table') lookup found only the PREVIOUS build's
-  // table, so the GENESIS build (no predecessor) silently skipped every pool. The
-  // caller hands the just-built group; with no parent yet its world pose ≡ its final
-  // scene-root pose, so the rects are right on build ONE.
-  const r = TOWN_TABLE_V2.regions.find((rg) => rg.id === rid);
-  if (!r || !t) return null;
+interface Frame { r: { x: number; y: number; w: number; h: number }; cxw: number; czw: number; topY: number; sx: number; sz: number }
+
+/** the region's live WORLD frame, measured off the given table group (I-153: the
+ *  just-built table is passed in — never a previous build's scene lookup). */
+function regionFrame(t: THREE.Object3D, rid: string): Frame | null {
+  const rg = TOWN_TABLE_V2.regions.find((x) => x.id === rid);
+  if (!rg || !t) return null;
+  const r = { x: rg.x, y: rg.y, w: rg.w, h: rg.h };
   t.updateWorldMatrix(true, true);
   const tb = new THREE.Box3().setFromObject(t);
   const sx = (tb.max.x - tb.min.x) / 100, sz = (tb.max.z - tb.min.z) / 100;
-  const cxw = tb.min.x + (r.x + r.w / 2) * sx;
-  const czw = tb.min.z + (r.y + r.h / 2) * sz;
+  return { r, cxw: tb.min.x + (r.x + r.w / 2) * sx, czw: tb.min.z + (r.y + r.h / 2) * sz, topY: tb.max.y, sx, sz };
+}
+
+/** per-card poses — the cardStack scatter/fidget formulas (I-67a/e), world-scaled
+ *  (def-local ×9 in x, ×7 in z — the table's scale). idx 0 = bottom. */
+export function stackPoses(rid: string, count: number, state: number, f: Frame): { x: number; y: number; z: number; rz: number }[] {
+  const rnd = lcg(1069 * (state + 1) + (rid === 'deck' ? 7 : 131));
+  const out: { x: number; y: number; z: number; rz: number }[] = [];
+  for (let i = 0; i < count; i++) {
+    const fromTop = count - 1 - i;
+    let amp = 0.18, rot = 0.02, dx = 0;
+    if (fromTop < 5 && state > 0) {
+      if (rid === 'deck') { amp = state === 1 ? 2.2 : 3.4; rot = state === 1 ? 0.14 : 0.22; }
+      else { dx = (state === 1 ? 2.6 : 5.2) * (fromTop + 1); amp = 0.4; rot = state === 1 ? 0.06 : 0.1; }
+    }
+    out.push({
+      x: f.cxw + (dx + (rnd() - 0.5) * 2 * amp) * 9,
+      z: f.czw + (rnd() - 0.5) * 2 * amp * 7,
+      y: f.topY + 0.5 + CARD_T / 2 + i * (CARD_T + 0.08),
+      rz: (rnd() - 0.5) * 2 * rot,
+    });
+  }
+  return out;
+}
+
+/** the fidget tween's targets for a live world stack (Q-6 via C-1b2): pure poses. */
+export function eventStackTargets(t: THREE.Object3D, rid: string, count: number, state: number): { x: number; y: number; z: number; rz: number }[] | null {
+  const f = regionFrame(t, rid);
+  return f ? stackPoses(rid, count, state, f) : null;
+}
+
+function stackGroup(rid: string, f: Frame): THREE.Group {
   const grp = new THREE.Group();
-  grp.userData = { region: rid, role: rid, def: TOWN_TABLE_V2.id }; // the count-law object
+  grp.userData = { region: rid, role: rid, def: TOWN_TABLE_V2.id, worldStack: true }; // the count-law object
+  // the footprint GHOST: keeps the region clickable/boxed even at zero cards (I-67a's
+  // ghost, carried to world space) — and the arrangement oracle's render-true rect.
+  const ghost = new THREE.Mesh(
+    new THREE.PlaneGeometry(f.r.w * f.sx, f.r.h * f.sz),
+    new THREE.MeshBasicMaterial({ color: 0xdfe7df, transparent: true, opacity: 0.4, side: THREE.DoubleSide }),
+  );
+  ghost.rotation.x = -Math.PI / 2;
+  ghost.position.set(f.cxw, f.topY + 0.25, f.czw);
+  ghost.userData = { ghost: true };
+  grp.add(ghost);
+  return grp;
+}
+
+/** a SUPPLY deck (C-1b): the class's instances minus those visible elsewhere, face down. */
+export function worldPoolStack(
+  t: THREE.Object3D, rid: string, cls: string, count: number, excluded: ReadonlySet<string>,
+): THREE.Group | null {
+  const f = regionFrame(t, rid);
+  if (!f) return null;
+  const grp = stackGroup(rid, f);
   const members = instancesOfClass(cls).filter((id) => !excluded.has(id)).slice(0, Math.max(0, count));
+  const poses = stackPoses(rid, members.length, 0, f);
   members.forEach((id, k) => {
     const h = cardInstance(id);
     if (!h) return;
-    // flat, FACE DOWN (the back up — which deck, never what card), stacked by thickness
-    h.group.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
-    h.group.position.set(cxw, tb.max.y + CARD_T / 2 + k * CARD_T, czw);
+    const p = poses[k]!;
+    h.group.rotation.set(Math.PI / 2, 0, p.rz); // flat, FACE DOWN — which deck, never what card
+    h.group.position.set(p.x, p.y, p.z);
     h.group.userData = { ...h.group.userData, card: true, idx: k };
+    grp.add(h.group);
+  });
+  return grp;
+}
+
+/** C-1b2 (I-154): the EVENT DECK / DISCARD as instance stacks.
+ *  - `faces` (discard): exact pile ids, faces[0] = top — FACE UP, stamped.
+ *  - `order` (the viewer's own deck): the remaining draw order, order[0] = next —
+ *    FACE DOWN, but the top instance IS the next card (identity holds through the
+ *    flick-to-flip: the object that turns over is the card that was drawn).
+ *  - neither (another seat's deck): membership by class prefix, identity unrevealed
+ *    (backs only — redaction honest; only the viewer can draw). */
+export function worldEventStack(
+  t: THREE.Object3D, rid: string, prefix: string, count: number,
+  faces: readonly string[] | null, order: readonly string[] | null, state: number,
+): THREE.Group | null {
+  const f = regionFrame(t, rid);
+  if (!f) return null;
+  const grp = stackGroup(rid, f);
+  let ids: string[]; // bottom → top
+  if (faces) ids = [...faces].reverse().map((id) => `${prefix}${id}`);
+  else if (order) ids = order.slice(0, count).reverse().map((id) => `${prefix}${id}`);
+  else ids = instancesOfClass('event').filter((id) => id.startsWith(prefix)).slice(0, Math.max(0, count));
+  const poses = stackPoses(rid, ids.length, state, f);
+  ids.forEach((id, k) => {
+    const h = cardInstance(id);
+    if (!h) return;
+    const p = poses[k]!;
+    h.group.rotation.set(faces ? -Math.PI / 2 : Math.PI / 2, 0, p.rz); // discard face UP · deck face DOWN
+    h.group.position.set(p.x, p.y, p.z);
+    h.group.userData = { ...h.group.userData, card: true, idx: k };
+    if (faces) h.setFace([id.slice(prefix.length)]); // the pile reads true (renderedLines ≡ the card)
     grp.add(h.group);
   });
   return grp;

@@ -12,9 +12,26 @@ import type { PlayAreaContext } from '../component.js';
  *  the RENDER — it walks the live table group and inverts the placement formula (quad
  *  center + geometry → def units). The def is never consulted, so a face-revert mutant
  *  (layoutFace(TOWN_TABLE,…)) reports v1's numbers and FAILS. */
-export function renderedRegionRects(tableRoot: THREE.Group | null): { id: string; x: number; y: number; w: number; h: number }[] | null {
+export function renderedRegionRects(tableRoot: THREE.Group | null, scene?: THREE.Scene): { id: string; x: number; y: number; w: number; h: number }[] | null {
   if (!tableRoot) return null;
   const out: { id: string; x: number; y: number; w: number; h: number }[] = [];
+  // C-1b2 (I-154): WORLD-SPACE instance stacks (deck/discard/pools) stand outside the
+  // table group — their rects are read off each stack's GHOST footprint and inverted
+  // through the live table bbox back to def units (render-true; a moved region moves
+  // its ghost and fails the pin by name). Assumes the fixed table mode (I-145 default).
+  if (scene) {
+    tableRoot.updateWorldMatrix(true, true);
+    const tb = new THREE.Box3().setFromObject(tableRoot);
+    const sx = (tb.max.x - tb.min.x) / 100, sz = (tb.max.z - tb.min.z) / 100;
+    scene.traverse((o: THREE.Object3D) => {
+      const rid = o.userData?.['worldStack'] ? (o.userData['region'] as string) : null;
+      if (!rid) return;
+      const ghost = (o as THREE.Group).children.find((c) => c.userData?.['ghost']);
+      if (!ghost) return;
+      const gb = new THREE.Box3().setFromObject(ghost);
+      out.push({ id: rid, x: (gb.min.x - tb.min.x) / sx, y: (gb.min.z - tb.min.z) / sz, w: (gb.max.x - gb.min.x) / sx, h: (gb.max.z - gb.min.z) / sz });
+    });
+  }
   for (const ch of tableRoot.children) {
     const rid = ch.userData?.['region'] as string | undefined;
     if (!rid) continue;
