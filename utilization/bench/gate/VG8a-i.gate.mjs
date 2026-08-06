@@ -268,6 +268,22 @@ export async function run(h) {
       rowsInfo.map((r, i) => `${i}:${r ? (r.match ? `ok(${r.got.crew}c/${r.got.equipment}e/${r.got.local}l)` : 'MISMATCH') : 'NULL'}`).join(' · ')
       + ` · hand:${hand ? `${hand.count}/${hand.want} below-books:${hand.belowBooks}` : 'NULL'} (I-131)`);
 
+    // F-8 (I-167, the owner's I-149 note: seat-0's read 'should be in same position as
+    // seats 1-5'): READ EQUALITY — every seat's read-fit distance within 2% of the mean
+    // and every framed bbox within 2% (a fat seat-0 bbox or a camera fault NAMES itself).
+    {
+      const eq = await page.evaluate(() => window.__GAME3D__.seatReadEquality());
+      let eqOk = Array.isArray(eq) && eq.length === 6;
+      let eqDetail = 'NO-DATA';
+      if (eqOk) {
+        const md = eq.reduce((a, x) => a + x.dist, 0) / eq.length;
+        const mb = eq.reduce((a, x) => a + x.maxDim, 0) / eq.length;
+        eqOk = eq.every((x) => Math.abs(x.dist - md) / md < 0.02 && Math.abs(x.maxDim - mb) / mb < 0.02);
+        eqDetail = eq.map((x) => `${x.i}:d${x.dist.toFixed(0)}/b${x.maxDim.toFixed(0)}`).join(' · ') + ` (want all within 2% of d${md.toFixed(0)}/b${mb.toFixed(0)})`;
+      }
+      check('VG8g7/seat-read-equality', eqOk, eqDetail);
+    }
+
     // O-2 (I-146) · station-box-contained: every viewer-station mesh inside the box
     // rect (frame-relative). KILL: move any packing offset out → named card listed.
     const sb = await page.evaluate(() => window.__GAME3D__.stationBoxInfo());

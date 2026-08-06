@@ -165,6 +165,19 @@ export function panBy(dx: number, dy: number): void {
 // zoom-in is DISABLED (I-66c: read = fit pose + pan only) and zoom-out steps to the
 // anchor's scene. The anchor survives every ladder move; only clicks re-anchor.
 const readFitDist = (focus: string): number => { const m = mapRead(focus); return m.pos.distanceTo(m.look); };
+/** F-8 (I-167, the owner: 'camera for seat zero … should be in same position as seats
+ *  1-5'): the READ-EQUALITY oracle — every seat's read distance and framed bbox, so
+ *  inequality NAMES its seat and its cause (a fat bbox vs a camera fault). */
+export function seatReadEquality(n: number): { i: number; dist: number; maxDim: number }[] {
+  const out: { i: number; dist: number; maxDim: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    const o = focusObject(`seat-${i}`);
+    if (!o) continue;
+    const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
+    out.push({ i, dist: readFitDist(`seat-${i}`), maxDim: Math.max(sz.x, sz.y, sz.z) });
+  }
+  return out;
+}
 const ovPose = mapPreset('overview');
 const OVERVIEW_DIST = ovPose.pos.distanceTo(ovPose.look);
 function dollyTo(dist: number): void {
