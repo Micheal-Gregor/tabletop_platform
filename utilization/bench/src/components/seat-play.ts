@@ -173,19 +173,36 @@ export const seatPlay: Component = {
       // (row 4, cols 1–2); the flip-all pickup turns them ALL face up (theater state,
       // survives rebuilds); face-up cards drag-and-drop into play (the play verb).
       if (mine && v.ownHand.length) {
-        const a1 = cellLocal(4, 1), a2 = cellLocal(4, 2);
+        // I-203 (the photo spec): THE BASE-HELD FAN — every card pivots about the
+        // hand's BASE; the splay per card is the spread state's. FACE DOWN the fan
+        // lies flat, tips spreading; UPRIGHT it stands lifted at 45° like held cards.
+        const a1 = cellLocal(4, 1);
+        const base = sf.c.clone().addScaledVector(sf.lat, a1.lat).addScaledVector(sf.n, BASE + a1.out);
+        const nH = v.ownHand.length;
+        const step = (SPREAD_DEG[handSpread]! * Math.PI) / 180;
         v.ownHand.forEach((hid, hIdx) => {
           const hi = cardInstance(hid);
           if (!hi) return;
           hi.setFace([hid, 'networking']);
-          const t2 = v.ownHand.length > 1 ? hIdx / (v.ownHand.length - 1) : 0.5;
-          const lat2 = (handOffset?.lat ?? 0) + a1.lat + (a2.lat - a1.lat) * t2; // PB-3: the claim shifts the whole fan
-          const hp = sf.c.clone().addScaledVector(sf.lat, lat2).addScaledVector(sf.n, (handOffset?.out ?? (BASE + a1.out)));
-          const hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-            .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), handUp ? -Math.PI / 2 : Math.PI / 2));
-          poseOrArrive(hi.group, new THREE.Vector3(hp.x, handUp ? 6 : 2.2, hp.z), hq, hi.group.parent !== null); // PB-9b: drawn networking travels to the fan
+          const splay = (hIdx - (nH - 1) / 2) * step;
+          let hq: THREE.Quaternion;
+          let hp: THREE.Vector3;
+          if (handUp) {
+            hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 4))
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -splay));
+            hp = base.clone().addScaledVector(sf.lat, Math.sin(splay) * 44);
+            hp.y = 30 + Math.cos(splay) * 14; // lifted — the 45° held fan
+          } else {
+            const reach = 40;
+            hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw + splay)
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2));
+            hp = base.clone().addScaledVector(sf.lat, Math.sin(splay) * reach).addScaledVector(sf.n, Math.cos(splay) * reach - reach);
+            hp.y = 2.2 + hIdx * 0.25; // pinned at the base, a true stack order
+          }
+          poseOrArrive(hi.group, hp, hq, hi.group.parent !== null); // PB-9b: arrivals serve the fan
           hi.group.userData = { ...hi.group.userData, seatPlayCard: `hand:${hid}`, focus: `seat-${i}` };
-          cards.push({ key: `hand:${hid}`, mesh: hi.group, anchor: hi.group.position.clone() });
+          cards.push({ key: `hand:${hid}`, mesh: hi.group, anchor: hp.clone() });
           g.add(hi.group);
         });
       }
