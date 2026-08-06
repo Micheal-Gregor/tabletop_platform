@@ -95,19 +95,31 @@ export async function run(h) {
         // PB-6 (I-182, RE-PINNED): the dice square is RETIRED (the die lives on the
         // ring, D-1a) — rowA is deck+discard alone, and the SUPPLY read box must exist
         // over the exchange rows (a resurrection of 'dice' fails by name).
+        // I-184 (the owner's ALIGNMENT ruling, superseding the row pins): tight margins,
+        // consistent edges — global/exchange/medal share the RIGHT EDGE (his exact
+        // complaint became the law); the EVENT exchange (deck+discard) owns the box
+        // between global and medal; the four supply decks share the middle 2×2 box.
+        const rightEdge = (q) => q.x + q.w;
+        const ex = r['exchange'], sup = r['supply'], med = r['medal'], glob2 = r['global-play'];
+        const edgeLaw = ex && med && glob2
+          && Math.abs(rightEdge(glob2) - rightEdge(med)) < 1 && Math.abs(rightEdge(ex) - rightEdge(med)) < 1
+          && Math.abs(ex.x - med.x) < 1; // left edges agree too
+        const inBox = (q, b) => q && b && q.x >= b.x - 1 && q.y >= b.y - 1 && rightEdge(q) <= rightEdge(b) + 1 && q.y + q.h <= b.y + b.h + 1;
         const rowA = r['deck'] && r['discard'] && !r['dice']
           && r['discard'].x > r['deck'].x && r['discard'].y === r['deck'].y
-          && r['supply'] && r['supply'].w > 40 && r['supply'].h > 40;
+          && inBox(r['deck'], ex) && inBox(r['discard'], ex) // the exchange OWNS them
+          && ex.y >= (glob2.y + glob2.h) && (med.y >= ex.y + ex.h); // between global and medal
         const rowB = r['tradespeople-pile'] && r['equipment-pile']
-          && r['tradespeople-pile'].y > r['deck'].y + r['deck'].h
-          && r['equipment-pile'].y === r['tradespeople-pile'].y && r['equipment-pile'].x > r['tradespeople-pile'].x;
+          && r['equipment-pile'].y === r['tradespeople-pile'].y && r['equipment-pile'].x > r['tradespeople-pile'].x
+          && inBox(r['tradespeople-pile'], sup) && inBox(r['equipment-pile'], sup);
         const rowC = r['bbb-pile'] && r['networking-pile']
           && r['bbb-pile'].y > r['tradespeople-pile'].y + r['tradespeople-pile'].h
-          && r['networking-pile'].y === r['bbb-pile'].y && r['networking-pile'].x > r['bbb-pile'].x;
-        const medalBR = r['medal'] && r['medal'].x >= 60 && r['medal'].y >= 50;
+          && r['networking-pile'].y === r['bbb-pile'].y && r['networking-pile'].x > r['bbb-pile'].x
+          && inBox(r['bbb-pile'], sup) && inBox(r['networking-pile'], sup);
+        const medalBR = med && med.x >= 60 && med.y >= 50 && edgeLaw;
         const windowsGone = !r['windows'];
         arrOk = !!(seasonTL && globRight && standUnder && rowA && rowB && rowC && medalBR && windowsGone);
-        arrDetail = `season-top-left:${!!seasonTL} · global-right:${!!globRight} · standings-under:${!!standUnder} · rowA(deck+discard, dice-GONE, supply-box):${!!rowA} · rowB(trades+equip):${!!rowB} · rowC(bbb+networking):${!!rowC} · medal-bottom-right:${!!medalBR} · windows-GONE:${windowsGone}`;
+        arrDetail = `season-top-left:${!!seasonTL} · global-right:${!!globRight} · standings-under:${!!standUnder} · rowA(exchange-owns-deck+discard, dice-GONE):${!!rowA} · rowB(trades+equip):${!!rowB} · rowC(bbb+networking):${!!rowC} · medal-bottom-right+EDGE-LAW:${!!medalBR} · windows-GONE:${windowsGone}`;
       }
       // A16 (I-137): tp/eq are REAL pools — their wants DERIVE from the projection's
       // counts (count-true); bbb/networking stay 6-card staged exhibits.

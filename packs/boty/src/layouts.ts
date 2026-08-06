@@ -125,21 +125,22 @@ export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
 export const TOWN_V2_OVERLAY: LayoutOverlay = {
   id: 'boty:town-table-v2',
   override: [
-    { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 60, h: 22 }, // GLOBAL CARDS IN PLAY — PB-7 (I-183): width reduced (the owner's one sanctioned focus-box cut)
-    { id: 'deck', role: 'deck', x: 30, y: 28, w: 12, h: 24 },
-    { id: 'discard', role: 'discard', x: 46, y: 28, w: 12, h: 24 },
+    { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 68, h: 22 }, // I-184: right edge 98 — ALIGNED with the exchange + medal (the owner's edge law supersedes the I-183 width cut, on the record)
+    { id: 'deck', role: 'deck', x: 69, y: 30, w: 13, h: 20 }, // I-184: the EVENT EXCHANGE column — deck + discard in their own box between global and medal
+    { id: 'discard', role: 'discard', x: 84, y: 30, w: 13, h: 20 },
     // PB-6 (I-182): the dice region RETIRED — the die lives on the ring (D-1a/I-174); the square was dead weight ('deprecated and should be removed').
   ],
   add: [
-    { id: 'supply', role: 'art', x: 29, y: 27, w: 30, h: 71 }, // PB-6 (I-182): the SUPPLY AREA's read anchor — one declared box over the deck/discard/pile rows so read mode frames the whole exchange ('art' = the medal's inert-anchor precedent)
+    { id: 'supply', role: 'art', x: 30, y: 26, w: 34, h: 72 }, // PB-6/I-184: the FOUR SUPPLY DECKS' shared box (middle column, bottom 98)
+    { id: 'exchange', role: 'art', x: 68, y: 26, w: 30, h: 28 }, // I-184: the EVENT deck + discard's OWN box — fills the space between global and medal, edges aligned
     { id: 'art-banner', role: 'art', x: 2, y: 2, w: 26, h: 22 }, // the SEASON image block, top-left
     { id: 'standings', role: 'standings', x: 2, y: 28, w: 26, h: 32 }, // player summary, under the season
-    { id: 'log', role: 'table-log', x: 2, y: 64, w: 26, h: 32 },
-    { id: 'tradespeople-pile', role: 'deck', x: 30, y: 56, w: 12, h: 20 }, // row B (I-130) — staged exhibit until the engine deck lands
-    { id: 'equipment-pile', role: 'deck', x: 46, y: 56, w: 12, h: 20 }, // row B (I-130) — staged exhibit until the engine deck lands
-    { id: 'bbb-pile', role: 'deck', x: 30, y: 79, w: 12, h: 18 }, // row C (I-130) — NEW staged deck
-    { id: 'networking-pile', role: 'deck', x: 46, y: 79, w: 12, h: 18 }, // row C (I-130) — NEW staged deck
-    { id: 'medal', role: 'art', x: 64, y: 56, w: 30, h: 40 }, // the BOTY MEDAL exhibit (I-130) — the freed bottom-right
+    { id: 'log', role: 'table-log', x: 2, y: 64, w: 26, h: 34 }, // I-184: bottom 98 — the left column closes flush
+    { id: 'tradespeople-pile', role: 'deck', x: 33, y: 30, w: 12, h: 20 }, // I-184: the supply box's 2×2 — top row
+    { id: 'equipment-pile', role: 'deck', x: 49, y: 30, w: 12, h: 20 },
+    { id: 'bbb-pile', role: 'deck', x: 33, y: 60, w: 12, h: 20 }, // I-184: the supply box's 2×2 — bottom row
+    { id: 'networking-pile', role: 'deck', x: 49, y: 60, w: 12, h: 20 },
+    { id: 'medal', role: 'art', x: 68, y: 58, w: 30, h: 40 }, // I-184: left/right edges ≡ the exchange's (68..98), bottom 98
   ],
   suppress: ['windows', 'dice'], // PB-6 (I-182): the dice square retired — the die lives on the ring (D-1a) // I-130: removed altogether — prompts are onion-layer citizens now
 };
