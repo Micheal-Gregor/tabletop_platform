@@ -23,7 +23,12 @@ export const cellD = (): number => OBJECT_SCALE.card.h + GUTTER; // deep (toward
 export interface Span { readonly r0: number; readonly c0: number; readonly r1: number; readonly c1: number }
 export const LEDGER_SPAN: Span = { r0: 1, c0: 1, r1: 3, c1: 2 };
 export const HAND_SPAN: Span = { r0: 4, c0: 1, r1: 4, c1: 2 };
-export const POSTING_SPAN: Span = { r0: 1, c0: 3, r1: 4, c1: 7 };
+// I-178 (owner-ruled, superseding the I-163 partition ON THE RECORD): the folder and
+// hand FLOAT above the surface (PB-3's welcome accident — 'a very real-life issue,
+// keep that!'), so their spans no longer reserve cells: the POSTING field is the FULL
+// 7×4 grid, from (1,1) all the way across — 28 anchors. LEDGER_SPAN/HAND_SPAN remain
+// as the fixtures' DEFAULT positions only.
+export const POSTING_SPAN: Span = { r0: 1, c0: 1, r1: 4, c1: 7 };
 
 /** a cell's LOCAL offset on the surface — lat: across (centered), out: deeper rows
  *  step TOWARD the player (the I-144 law). Row/col are 1-based (the owner's reading). */
