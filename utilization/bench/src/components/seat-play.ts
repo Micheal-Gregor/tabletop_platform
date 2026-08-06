@@ -18,6 +18,7 @@ import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
 import { uiObject } from '../ui-object.js'; // G-C (I-169): the base-case library — the card's sockets
+import { poseOrArrive } from '../arrivals.js'; // PB-9b (I-201): claims travel, never teleport
 import { OBJECT_SCALE, STATION_BOX } from '../playarea.js'; // I-150/I-177: the scale control table + the reposition clamp
 import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
 
@@ -137,9 +138,12 @@ export const seatPlay: Component = {
         }
         // the owner's law: 'the ledger and cards all lay FLAT in the seat play space' —
         // every posted card lies flat, face up, yawed with the board (the seat frame law).
-        mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-          .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
-        mesh.position.set(pos.x, 2.5, pos.z);
+        // PB-9b (I-201): the claim TRAVELS — a card that stood elsewhere (the flicked
+        // draw, the detached gear, the returned pile card) arrives along a path.
+        const hadParent = inst ? inst.group.parent !== null : false;
+        const targetQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+          .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
+        poseOrArrive(mesh, new THREE.Vector3(pos.x, 2.5, pos.z), targetQ, hadParent);
         const key = `${c.kind === 'trades' ? 'crew' : c.kind === 'equipment' ? 'asset' : 'local'}:${c.id}`;
         mesh.userData = { ...mesh.userData, seatPlayCard: key, focus: `seat-${i}` }; // MERGED — the card3d identity persists (I-149)
         if (c.kind === 'bbb') mesh.userData = { ...mesh.userData, card: true, slotCard: c.id, family: 'session' }; // the partition oracle's walk
@@ -155,8 +159,7 @@ export const seatPlay: Component = {
             gi.setFace([gearRef, `⚙ on ${c.id}`]);
             const sock = uiObject('card')!.childGrid!.sockets.find((sk) => sk.id === 'equipment-under')!;
             const gp2 = pos.clone().addScaledVector(sf.n, -sock.at.y).addScaledVector(sf.lat, 14); // beneath + to the side
-            gi.group.quaternion.copy(mesh.quaternion);
-            gi.group.position.set(gp2.x, 1.4, gp2.z); // UNDER the card's 2.5 — the beneath law
+            poseOrArrive(gi.group, new THREE.Vector3(gp2.x, 1.4, gp2.z), mesh.quaternion.clone(), gi.group.parent !== null); // PB-9b: the gear travels to its socket
             gi.group.userData = { ...gi.group.userData, seatPlayCard: `gear:${c.id}`, attachedGear: c.id, focus: `seat-${i}` };
             cards.push({ key: `gear:${c.id}`, mesh: gi.group, anchor: gi.group.position.clone() });
             g.add(gi.group);
@@ -176,9 +179,9 @@ export const seatPlay: Component = {
           const t2 = v.ownHand.length > 1 ? hIdx / (v.ownHand.length - 1) : 0.5;
           const lat2 = (handOffset?.lat ?? 0) + a1.lat + (a2.lat - a1.lat) * t2; // PB-3: the claim shifts the whole fan
           const hp = sf.c.clone().addScaledVector(sf.lat, lat2).addScaledVector(sf.n, (handOffset?.out ?? (BASE + a1.out)));
-          hi.group.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-            .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), handUp ? -Math.PI / 2 : Math.PI / 2)));
-          hi.group.position.set(hp.x, handUp ? 6 : 2.2, hp.z); // picked-up hands lift a touch
+          const hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+            .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), handUp ? -Math.PI / 2 : Math.PI / 2));
+          poseOrArrive(hi.group, new THREE.Vector3(hp.x, handUp ? 6 : 2.2, hp.z), hq, hi.group.parent !== null); // PB-9b: drawn networking travels to the fan
           hi.group.userData = { ...hi.group.userData, seatPlayCard: `hand:${hid}`, focus: `seat-${i}` };
           cards.push({ key: `hand:${hid}`, mesh: hi.group, anchor: hi.group.position.clone() });
           g.add(hi.group);

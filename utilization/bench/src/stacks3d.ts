@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { cardInstance, instancesOfClass } from './card-world.js';
 import { CARD_T } from './card3d.js';
 import { lcg } from './stacks.js';
+import { poseOrArrive } from './arrivals.js'; // PB-9b (I-201): a card claimed into a pile TRAVELS there
 import { TOWN_TABLE_V2 } from '../../../packs/boty/src/index.js';
 
 interface Frame { r: { x: number; y: number; w: number; h: number }; cxw: number; czw: number; topY: number; sx: number; sz: number }
@@ -90,10 +91,11 @@ export function worldPoolStack(
     const h = cardInstance(id);
     if (!h) return;
     const p = poses[k]!;
-    h.group.rotation.set(Math.PI / 2, 0, p.rz); // flat, FACE DOWN — which deck, never what card
-    h.group.position.set(p.x, p.y, p.z);
-    h.group.userData = { ...h.group.userData, card: true, idx: k };
+    const hadParent = h.group.parent !== null;
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, p.rz));
     grp.add(h.group);
+    poseOrArrive(h.group, new THREE.Vector3(p.x, p.y, p.z), q, hadParent); // PB-9b
+    h.group.userData = { ...h.group.userData, card: true, idx: k };
   });
   return grp;
 }
@@ -121,11 +123,12 @@ export function worldEventStack(
     const h = cardInstance(id);
     if (!h) return;
     const p = poses[k]!;
-    h.group.rotation.set(faces ? -Math.PI / 2 : Math.PI / 2, 0, p.rz); // discard face UP · deck face DOWN
-    h.group.position.set(p.x, p.y, p.z);
+    const hadParent = h.group.parent !== null;
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(faces ? -Math.PI / 2 : Math.PI / 2, 0, p.rz));
+    grp.add(h.group);
+    poseOrArrive(h.group, new THREE.Vector3(p.x, p.y, p.z), q, hadParent); // PB-9b: the routed/returned card journeys to its slot
     h.group.userData = { ...h.group.userData, card: true, idx: k };
     if (faces) h.setFace([id.slice(prefix.length)]); // the pile reads true (renderedLines ≡ the card)
-    grp.add(h.group);
   });
   return grp;
 }

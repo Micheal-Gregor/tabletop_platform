@@ -23,6 +23,7 @@ const SESSION_SEED = 'maple-hollow'; // the bench session (game3d's host seed �
 import { getTableMode, setTableMode, OBJECT_SCALE, TABLE_SCALE } from '../playarea.js'; // I-145/I-150/I-183
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
 import { worldPoolStack, worldEventStack, eventStackTargets } from '../stacks3d.js'; // C-1b/C-1b2 (I-149/I-154): every pile as instance stacks
+import { tickArrivals, arrivalsInfo } from '../arrivals.js'; // PB-9b (I-201)
 import { SEAT_YAWS } from '../stage.js';
 import { TOWN_TABLE_V2, SHOP_BOARD, BOTY_PACK6, BOOKS_PANEL } from '../../../../packs/boty/src/index.js'; // T-1 (I-89): the v2 table child · BOOKS_PANEL: G-1b (I-102) count law
 
@@ -250,7 +251,7 @@ export const table: Component = {
   },
 
   // Q-2b/Q-6: the draw step (table-draw) + the live discard (tween/hold/return); delegate.
-  tick(ctx) { draw.tickDraw(ctx); supply.tickSupply(ctx); dplay.tickDiscardPlay(ctx); tickStackNudge(); }, // + R-1a2: the stack-proof nudge · C-1c: the supply theater
+  tick(ctx) { draw.tickDraw(ctx); supply.tickSupply(ctx); dplay.tickDiscardPlay(ctx); tickStackNudge(); tickArrivals(); }, // + R-1a2 nudge · C-1c supply · PB-9b arrivals (ONE host — the table always builds)
 
   gate() {
     const ctx = cx!;
@@ -315,6 +316,7 @@ export const table: Component = {
       supplyGesture: supply.supplyGesture,
       supplyLastMove: supply.supplyLastMove,
       supplyGrabUuid: supply.supplyGrabUuid,
+      arrivals: arrivalsInfo, // PB-9b (I-201): {active, last:{dist, frames}} — a snap-claim mutant records frames ≤ 1
     };
   },
 };
