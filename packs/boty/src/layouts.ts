@@ -129,9 +129,9 @@ export const TOWN_V2_OVERLAY: LayoutOverlay = {
     { id: 'deck', role: 'deck', x: 30, y: 28, w: 12, h: 24 },
     { id: 'discard', role: 'discard', x: 46, y: 28, w: 12, h: 24 },
     // PB-6 (I-182): the dice region RETIRED — the die lives on the ring (D-1a/I-174); the square was dead weight ('deprecated and should be removed').
-    { id: 'supply', role: 'anchor', x: 30, y: 30, w: 46, h: 52, z: 0 }, // PB-6 (I-182): the SUPPLY AREA's read anchor — one box over the deck/discard/pile rows, so read mode can frame the whole exchange
   ],
   add: [
+    { id: 'supply', role: 'art', x: 29, y: 27, w: 30, h: 71 }, // PB-6 (I-182): the SUPPLY AREA's read anchor — one declared box over the deck/discard/pile rows so read mode frames the whole exchange ('art' = the medal's inert-anchor precedent)
     { id: 'art-banner', role: 'art', x: 2, y: 2, w: 26, h: 22 }, // the SEASON image block, top-left
     { id: 'standings', role: 'standings', x: 2, y: 28, w: 26, h: 32 }, // player summary, under the season
     { id: 'log', role: 'table-log', x: 2, y: 64, w: 26, h: 32 },
@@ -141,7 +141,7 @@ export const TOWN_V2_OVERLAY: LayoutOverlay = {
     { id: 'networking-pile', role: 'deck', x: 46, y: 79, w: 12, h: 18 }, // row C (I-130) — NEW staged deck
     { id: 'medal', role: 'art', x: 64, y: 56, w: 30, h: 40 }, // the BOTY MEDAL exhibit (I-130) — the freed bottom-right
   ],
-  suppress: ['windows'], // I-130: removed altogether — prompts are onion-layer citizens now
+  suppress: ['windows', 'dice'], // PB-6 (I-182): the dice square retired — the die lives on the ring (D-1a) // I-130: removed altogether — prompts are onion-layer citizens now
 };
 export const TOWN_TABLE_V2: LayoutDef = extendLayout(TABLE_PARENT, TOWN_V2_OVERLAY);
 
