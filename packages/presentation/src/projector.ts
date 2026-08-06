@@ -50,7 +50,7 @@ export interface SeatView {
   // A5 (I-128): `assignedTo` is a TRUTH-DECLARATION — the projector already passes the
   // raw crew array through whole, so the field flowed undeclared; assignments are public
   // in the certified SVG bench (I-59b), so declaring it is redaction-consistent.
-  readonly crew: readonly { readonly id: string; readonly outfit: string; readonly assignedTo?: { readonly venture: string } }[];
+  readonly crew: readonly { readonly id: string; readonly outfit: string; readonly assignedTo?: { readonly venture: string }; readonly gear?: string }[]; // G-C2 (I-170): the attached equipment rides the row, declared
 }
 
 /** HK-10 — before render read: the object MUST be a branded projection. */

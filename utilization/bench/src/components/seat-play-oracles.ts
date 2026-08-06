@@ -17,6 +17,14 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
   return {
     seatReturn: seatPlayLastReturn, // I-157: the last bottom-return {id, pile}
     seatStick: seatPlayLastStick, // G-B2 (I-164): the last stuck anchor {id, row, col}
+    pairsInfo: () => {
+      // G-C2 (I-170): the pair law — every geared crew member (projection truth) has
+      // exactly one rendered gear mesh riding its socket; want ≡ got, by name.
+      const v = getCtx().projection();
+      const want = v.crew.filter((m) => m.gear !== undefined).map((m) => ({ crew: m.id, gear: m.gear }));
+      const got = cardsRef().filter((c) => c.key.startsWith('gear:')).map((c) => c.key.slice(5));
+      return { want, got, match: want.length === got.length && want.every((w) => got.includes(w.crew)) };
+    },
       /** count-true crew rows: per seat — want (projection) vs got (meshes) + in-front. */
       crewRows: () => {
         const v = getCtx().projection();

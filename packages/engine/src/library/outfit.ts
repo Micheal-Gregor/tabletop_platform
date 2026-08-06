@@ -131,6 +131,42 @@ export function sellEquipment(state: State, seat: string, ref: string): JsonObje
   };
 }
 
+/** G-C2 (I-170, the I-149 grammar's attach: 'equipment … can be moved to be attached
+ *  beneath a tradesperson card, and from there back to the equipment local area'):
+ *  the asset LEAVES the rack and rides the crew row as `gear` — one socket, one piece
+ *  (a geared tradesperson refuses a second; refusal-not-repair). */
+export function attachGear(state: State, seat: string, crewId: string, ref: string): JsonObject {
+  const member = crewOf(state).find((c) => c.id === crewId) as (JsonObject & { outfit?: string; gear?: string }) | undefined;
+  if (!member || member['outfit'] !== seat) throw new VentureRefusal('pool', 'GX-32', `no such crew member of yours: ${crewId}`);
+  if (member['gear'] !== undefined) throw new VentureRefusal('pool', 'GX-32', `${crewId} already carries ${String(member['gear'])} — one socket`);
+  const seats = state['seats'] as readonly (JsonObject & { id?: string })[];
+  const mine = seats.find((s2) => s2['id'] === seat);
+  const assets = ((mine?.['assets'] as readonly (JsonObject & { ref?: string; value?: number })[]) ?? []);
+  const idx = assets.findIndex((a) => a['ref'] === ref);
+  if (idx < 0) throw new VentureRefusal('pool', 'GX-32', `no such equipment of yours: ${ref}`);
+  const gone = assets[idx]!;
+  return {
+    ...state,
+    seats: seats.map((s2) => (s2['id'] === seat ? { ...s2, assets: assets.filter((_, i) => i !== idx) } : s2)),
+    crew: crewOf(state).map((c) => (c.id === crewId ? { ...c, gear: ref, gearValue: Number(gone['value'] ?? 0) } : c)),
+  };
+}
+
+/** G-C2 (I-170): the detach — the gear returns to the seat's rack, value intact. */
+export function detachGear(state: State, seat: string, crewId: string): JsonObject {
+  const member = crewOf(state).find((c) => c.id === crewId) as (JsonObject & { outfit?: string; gear?: string; gearValue?: number }) | undefined;
+  if (!member || member['outfit'] !== seat) throw new VentureRefusal('pool', 'GX-32', `no such crew member of yours: ${crewId}`);
+  if (member['gear'] === undefined) throw new VentureRefusal('pool', 'GX-32', `${crewId} carries nothing to detach`);
+  const seats = state['seats'] as readonly (JsonObject & { id?: string })[];
+  return {
+    ...state,
+    seats: seats.map((s2) => (s2['id'] === seat
+      ? { ...s2, assets: [...((s2['assets'] as readonly JsonObject[]) ?? []), { ref: String(member['gear']), value: Number(member['gearValue'] ?? 0) } as JsonObject] }
+      : s2)) as unknown as JsonObject[],
+    crew: crewOf(state).map((c) => { if (c.id !== crewId) return c; const { gear: _g, gearValue: _v, ...rest } = c as JsonObject & { gear?: unknown; gearValue?: unknown }; return rest as typeof c; }),
+  };
+}
+
 /** GX-30: buy the TOP equipment card → a seat asset {ref, value}. */
 export function buyEquipment(state: State, seat: string): { next: JsonObject; cost: number } {
   const pools = poolsOf(state);

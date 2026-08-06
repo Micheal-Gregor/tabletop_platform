@@ -17,6 +17,7 @@ import { planPostings, cellLocal, cellW, cellD, cellAt, surfaceSize, POSTING_SPA
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
+import { uiObject } from '../ui-object.js'; // G-C (I-169): the base-case library — the card's sockets
 import { OBJECT_SCALE } from '../playarea.js'; // I-150: the scale control table
 import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
 
@@ -81,7 +82,8 @@ export const seatPlay: Component = {
         ...(mine ? session.map((id) => ({ id, kind: 'bbb' as const, label: id })) : []),
         ...crew.map((m) => ({ id: m.id, kind: 'trades' as const, label: m.id })),
         ...(mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}`, kind: 'equipment' as const, label: a.ref })) : []),
-      ];
+      ]; // G-C2 (I-170): a GEARED crew member is ONE grouped object — its equipment left
+      // the rack in STATE (crew:attach moved it), so the pair claims one anchor for free.
       const plan = planPostings(seatCards, mine ? sticky : new Map());
       // the transparent SURFACE — the child grid made lightly visible (I-162: readability
       // is the polish; no lighting theater). Its extent IS the law's (surfaceSize).
@@ -138,6 +140,23 @@ export const seatPlay: Component = {
         if (c.kind === 'bbb') mesh.userData = { ...mesh.userData, card: true, slotCard: c.id, family: 'session' }; // the partition oracle's walk
         cards.push({ key, mesh, anchor: mesh.position.clone() });
         g.add(mesh);
+        // G-C2 (I-170): the PAIR — the attached gear's instance snaps to the card's
+        // equipment-under SOCKET (ui-object.ts: 'under and to the side'), beneath and
+        // offset, flat, ONE grouped object on ONE anchor (I-159's law made real).
+        const gearRef = c.kind === 'trades' ? crew.find((m) => m.id === c.id)?.gear : undefined;
+        if (gearRef) {
+          const gi = cardInstance(gearRef);
+          if (gi) {
+            gi.setFace([gearRef, `⚙ on ${c.id}`]);
+            const sock = uiObject('card')!.childGrid!.sockets.find((sk) => sk.id === 'equipment-under')!;
+            const gp2 = pos.clone().addScaledVector(sf.n, -sock.at.y).addScaledVector(sf.lat, 14); // beneath + to the side
+            gi.group.quaternion.copy(mesh.quaternion);
+            gi.group.position.set(gp2.x, 1.4, gp2.z); // UNDER the card's 2.5 — the beneath law
+            gi.group.userData = { ...gi.group.userData, seatPlayCard: `gear:${c.id}`, attachedGear: c.id, focus: `seat-${i}` };
+            cards.push({ key: `gear:${c.id}`, mesh: gi.group, anchor: gi.group.position.clone() });
+            g.add(gi.group);
+          }
+        }
       }
       // C-1a (I-149): the OLD hand staging RETIRED; the REAL hand's zone is the grid's
       // HAND span (row 4, cols 1–2) — C-1d lands there. The ledger span awaits the
@@ -173,6 +192,19 @@ export const seatPlay: Component = {
     // to the v4 loop (assigned → work; else toggle select). The VG8p reset drive moves
     // >40u, so the grab/reset law is untouched by predicate; equipment/local/hand keep
     // the nudge-settle.
+    // G-C2 (I-170): a CLICK on attached gear detaches it — back to the rack (the
+    // grammar's return path); the engine refuses if it isn't yours or isn't your turn.
+    if (moved < 8 && grab.card.key.startsWith('gear:')) {
+      const crewId = grab.card.key.slice(5);
+      const card = grab.card;
+      grab = null;
+      card.mesh.position.copy(card.anchor);
+      if (ctx.submit('detach-gear', { crew: crewId })) {
+        ctx.rebuild();
+        ctx.status(`detached — the equipment returns to your rack`);
+      } else ctx.status('refused — not yours to detach (or not your turn)');
+      return true;
+    }
     if (moved < 8 && grab.card.key.startsWith('crew:')) {
       const crewId = grab.card.key.slice(5);
       const v = ctx.projection();
@@ -217,6 +249,34 @@ export const seatPlay: Component = {
             resetting = { card: cardRef, from: cardRef.mesh.position.clone(), t: 0 };
             lastReset = { moved, returned: false, frames: 0 };
             ctx.status('refused — a working card stays anchored to its venture');
+            return true;
+          }
+        }
+      }
+    }
+    // G-C2 (I-170): dropping YOUR equipment ON one of YOUR tradesperson cards ATTACHES
+    // it (the equipment-under socket; crew:attach through the doors). Checked BEFORE
+    // the stick — a card is a more specific target than a cell.
+    if (key.startsWith('asset:')) {
+      const vA = ctx.projection();
+      const myTurnA = vA.seats[vA.turn.seatIdx]!.id === ctx.viewSeat;
+      if (myTurnA) {
+        const cp = grab.card.mesh.position;
+        const target = cards.find((c2) => c2.key.startsWith('crew:')
+          && c2.mesh.userData['focus'] === grab!.card.mesh.userData['focus']
+          && Math.hypot(c2.mesh.position.x - cp.x, c2.mesh.position.z - cp.z) < 45);
+        if (target) {
+          const crewId = target.key.slice(5);
+          const ref = key.slice(6).split(':')[0]!;
+          const own = vA.crew.some((m) => m.id === crewId && m.outfit === ctx.viewSeat);
+          if (own) {
+            grab = null;
+            if (ctx.submit('attach-gear', { crew: crewId, ref })) {
+              ctx.rebuild(); // the pair renders — one grouped object on one anchor
+              ctx.status(`${ref} attaches beneath ${crewId} — a grouped object now`);
+              return true;
+            }
+            ctx.status('refused — the socket is taken or the piece is not yours');
             return true;
           }
         }

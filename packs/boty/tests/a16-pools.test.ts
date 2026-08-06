@@ -64,6 +64,26 @@ describe('A16: the pools (I-137)', () => {
     expect(pv().pools.equipment).toBe(8);
   });
 
+  it('attach-beneath (G-C2/I-170): the gear leaves the rack and rides the crew row; one socket; detach restores', () => {
+    const { pv, sub } = host();
+    sub('hire', 'moe');
+    sub('buy-equipment', 'moe');
+    const crewId = pv().crew.find((m) => m.outfit === 'moe')!.id;
+    const ref = pv().seats.find((s) => s.id === 'moe')!.assets[0]!.ref;
+    sub('attach-gear', 'moe', { crew: crewId, ref });
+    let v = pv();
+    expect(v.crew.find((m) => m.id === crewId)!.gear).toBe(ref); // the pair, in the projection
+    expect(v.seats.find((s) => s.id === 'moe')!.assets.length).toBe(0); // the rack is empty — ONE object, one place
+    sub('buy-equipment', 'moe');
+    const ref2 = pv().seats.find((s) => s.id === 'moe')!.assets[0]!.ref;
+    expect(() => sub('attach-gear', 'moe', { crew: crewId, ref: ref2 })).toThrow(/GX-32|socket/); // one socket
+    sub('detach-gear', 'moe', { crew: crewId });
+    v = pv();
+    expect(v.crew.find((m) => m.id === crewId)!.gear).toBeUndefined();
+    expect(v.seats.find((s) => s.id === 'moe')!.assets.map((a) => a.ref)).toContain(ref); // back on the rack, value intact
+    expect(() => sub('detach-gear', 'moe', { crew: crewId })).toThrow(/GX-32|nothing/);
+  });
+
   it('hire pops the top: crew +1 (with a trade), pool −1', () => {
     const { pv, sub } = host();
     const before = pv();
