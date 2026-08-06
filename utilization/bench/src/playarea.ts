@@ -40,6 +40,16 @@ export const TABLE_CLEAR = 60; // F-6 (I-148, owner: 'brought in a little') — 
 // dice circle, and the seat ring in TOGETHER (the radial template self-resizes).
 export const TABLE_SCALE = { x: 8.4, y: 6.6 } as const; // was 9×7 (900×700 → 840×660)
 export const TABLE_HALF_DIAG = Math.hypot(50 * TABLE_SCALE.x, 50 * TABLE_SCALE.y);
+// D-1b (I-188, the I-175(1) ruling): THE DICE THROW AREA is its OWN reusable object,
+// independent of the tabletop — for THIS game its radius matches the table's corner
+// circle AS CONFIG (a child game may set any radius); the HOME sits ~10° PAST the
+// active seat's center so the seat board never blocks it; the TOSS rails cover 3/4 of
+// the table's area (the centered similar-rect, scale = √0.75).
+export const DICE_RING = {
+  radius: (): number => TABLE_HALF_DIAG, // config — equals the corner circle for BOTY
+  homeOffsetDeg: 10, // past the seat center (the intersection relationship, I-175)
+  tossAreaFraction: 0.75, // of the table's area — the rails derive as √fraction
+} as const;
 
 export function ringRadius(seatCount: number, tableHalfDiag: number = TABLE_HALF_DIAG): number {
   const rSeats = STATION_CHORD / (2 * Math.sin(Math.PI / Math.max(2, seatCount)));

@@ -5,6 +5,19 @@ import { cellLocal, cellAt, postingCells, planPostings, firstOpenCell, LEDGER_SP
 import { OBJECT_SCALE } from '../src/playarea.js';
 
 describe('G-B: the seat play surface grid (I-158/I-159)', () => {
+  it('PB-8 (I-188): DETACHED equipment drops to the first available anchor its group allows — the flow absorbs it, sticky claims undisturbed', () => {
+    // before detach: a pair (one trades card) + a bbb; after: the equipment appears
+    const before = planPostings([{ id: 'b1', kind: 'bbb' }, { id: 't1', kind: 'trades' }]);
+    const after = planPostings([{ id: 'b1', kind: 'bbb' }, { id: 't1', kind: 'trades' }, { id: 'e1:0', kind: 'equipment' }]);
+    expect(after.get('b1')).toEqual(before.get('b1')); // nothing already placed moves
+    expect(after.get('t1')).toEqual(before.get('t1'));
+    expect(after.get('e1:0')).toEqual({ row: 1, col: 3 }); // the first anchor the grouped flow allows
+    // with a sticky card sitting on that cell, the detach flows PAST it
+    const sticky = new Map([['t1', { row: 1, col: 3 }]]);
+    const around = planPostings([{ id: 'b1', kind: 'bbb' }, { id: 't1', kind: 'trades' }, { id: 'e1:0', kind: 'equipment' }], sticky);
+    expect(around.get('e1:0')).toEqual({ row: 1, col: 2 }); // flows around the claim
+  });
+
   it('I-178 (supersedes the I-163 partition): the POSTING field is the FULL 7×4 — 28 anchors; the fixture spans are defaults, not reservations', () => {
     expect(postingCells().length).toBe(28);
     expect(POSTING_SPAN).toEqual({ r0: 1, c0: 1, r1: 4, c1: 7 });

@@ -11,7 +11,7 @@
  * stays harness-level per the plan; the round sequence is this component's feature).
  */
 import * as THREE from 'three';
-import { seatAngle, TABLE_HALF_DIAG } from '../playarea.js'; // D-1 (I-174): the dice ring
+import { seatAngle, DICE_RING } from '../playarea.js'; // D-1/D-1b (I-174/I-188): the dice ring — its own object
 import { RING_N } from '../stage.js';
 let homeDisc: THREE.Mesh | null = null;
 export const diceHomeDisc = () => homeDisc;
@@ -48,7 +48,13 @@ function tableRect(ctx: PlayAreaContext): TableRect | null {
   if (!t) return null;
   t.updateWorldMatrix(true, true);
   const b = new THREE.Box3().setFromObject(t);
-  return { minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z, topY: b.max.y };
+  // D-1b (I-188): the TOSS RAILS cover 3/4 of the table's AREA — the centered
+  // similar-rect at √fraction ('the circumference of the smaller circle to 3/4 of the
+  // table board area'). The die tumbles inside; the home waits outside on the ring.
+  const k = Math.sqrt(DICE_RING.tossAreaFraction);
+  const cx2 = (b.min.x + b.max.x) / 2, cz2 = (b.min.z + b.max.z) / 2;
+  const hw = ((b.max.x - b.min.x) / 2) * k, hd = ((b.max.z - b.min.z) / 2) * k;
+  return { minX: cx2 - hw, maxX: cx2 + hw, minZ: cz2 - hd, maxZ: cz2 + hd, topY: b.max.y };
 }
 
 export const die: Component = {
@@ -74,8 +80,8 @@ export const die: Component = {
     // layout label only). A HOME DISC marks the spot (grid-ring anchored — G-A's law).
     if (homeDisc) { homeDisc.parent?.remove(homeDisc); homeDisc = null; }
     const vD = ctx.projection();
-    const phi = seatAngle(vD.turn.seatIdx, RING_N);
-    const home = { x: TABLE_HALF_DIAG * Math.sin(phi), z: TABLE_HALF_DIAG * Math.cos(phi) };
+    const phi = seatAngle(vD.turn.seatIdx, RING_N) + (DICE_RING.homeOffsetDeg * Math.PI) / 180; // I-188: ~10° PAST the seat center — never blocked by the board
+    const home = { x: DICE_RING.radius() * Math.sin(phi), z: DICE_RING.radius() * Math.cos(phi) };
     const disc = new THREE.Mesh(
       new THREE.RingGeometry(34, 40, 40),
       new THREE.MeshBasicMaterial({ color: 0x9a8a6a, transparent: true, opacity: 0.5, side: THREE.DoubleSide }),
@@ -163,9 +169,9 @@ export const die: Component = {
         return {
           x: d.position.x, z: d.position.z,
           r: Math.hypot(d.position.x, d.position.z),
-          wantR: TABLE_HALF_DIAG,
+          wantR: DICE_RING.radius(),
           angleDeg: (Math.atan2(d.position.x, d.position.z) * 180) / Math.PI,
-          wantAngleDeg: (seatAngle(v.turn.seatIdx, RING_N) * 180) / Math.PI,
+          wantAngleDeg: (seatAngle(v.turn.seatIdx, RING_N) * 180) / Math.PI + DICE_RING.homeOffsetDeg, // I-188: the offset is part of the law
           activeSeat: v.seats[v.turn.seatIdx]!.id,
         };
       },
@@ -205,8 +211,8 @@ export const die: Component = {
         // RETIRED — the home's independent want is now THE RING POINT (D-1a/I-174),
         // re-derived here from playarea math so dieHome ≡ this stays a two-source law.
         const v = cx!.projection();
-        const phi = seatAngle(v.turn.seatIdx, RING_N);
-        return { x: TABLE_HALF_DIAG * Math.sin(phi), z: TABLE_HALF_DIAG * Math.cos(phi) };
+        const phi = seatAngle(v.turn.seatIdx, RING_N) + (DICE_RING.homeOffsetDeg * Math.PI) / 180; // I-188
+        return { x: DICE_RING.radius() * Math.sin(phi), z: DICE_RING.radius() * Math.cos(phi) };
       },
     };
   },
