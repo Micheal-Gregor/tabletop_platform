@@ -113,7 +113,8 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
       const bs = before.seats.find((s) => s.id === ctx.viewSeat)!.assets.map((x) => x.ref);
       const as = after.seats.find((s) => s.id === ctx.viewSeat)!.assets.map((x) => x.ref);
       newId = as.find((ref, i) => bs[i] !== ref) ?? as[as.length - 1] ?? null;
-    } else newId = after.ownDiscard[0] ?? null;
+    } else if (spec.args['pool'] === 'networking') newId = after.ownHand.find((id) => !before.ownHand.includes(id)) ?? null; // C-1d (I-171): networking lands in the HAND
+    else newId = after.ownDiscard[0] ?? null;
     theater.newId = newId;
     // the IDENTITY LAW: the pool carries its remaining order, so the grabbed top must
     // BE the popped card — a false stack surfaces here, never silently (HK-11's spirit).

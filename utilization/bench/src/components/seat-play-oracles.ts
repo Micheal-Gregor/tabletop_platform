@@ -8,7 +8,7 @@ import type { PlayAreaContext } from '../component.js';
 import { planPostings, cellLocal } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
-import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick } from './seat-play.js';
+import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, seatPlayLastHandPlay } from './seat-play.js';
 
 const seatStickId = (): string | null => { const st = seatPlayLastStick(); return st ? st.id : null; };
 
@@ -17,6 +17,7 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
   return {
     seatReturn: seatPlayLastReturn, // I-157: the last bottom-return {id, pile}
     seatStick: seatPlayLastStick, // G-B2 (I-164): the last stuck anchor {id, row, col}
+    handPlay: seatPlayLastHandPlay, // C-1d (I-171): the last played networking card
     pairsInfo: () => {
       // G-C2 (I-170): the pair law — every geared crew member (projection truth) has
       // exactly one rendered gear mesh riding its socket; want ≡ got, by name.
@@ -97,12 +98,18 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
         }
         return { checked: mine.length, outside: out, contained: out.length === 0, box: STATION_BOX };
       },
-      handInfo: () => ({
-        // C-1a (I-149): the staged hand RETIRED (it duplicated in-play instances);
-        // want ≡ got ≡ 0 until the REAL networking hand lands at C-1d.
-        count: cardsRef().filter((c) => (c.mesh.userData as Record<string, unknown>)['hand']).length,
-        belowBooks: true,
-        want: 0,
-      }),
+      handInfo: () => {
+        // C-1d (I-171): the REAL hand — rendered ≡ ownHand, ON the strip (row 4 sits
+        // DEEPER than the ledger block: out > the ledger rows' reach), face state told.
+        const v = getCtx().projection();
+        const handCards = cardsRef().filter((c) => c.key.startsWith('hand:'));
+        const sf = seatFrame(getCtx(), v.seats.findIndex((s) => s.id === getCtx().viewSeat));
+        let onStrip = true;
+        if (sf) for (const c of handCards) {
+          const out = c.mesh.position.clone().sub(sf.c).dot(sf.n);
+          if (out < 60 + 2 * 108 - 5) onStrip = false; // deeper than rows 1–3's zone
+        }
+        return { count: handCards.length, want: v.ownHand.length, belowBooks: onStrip, up: handUpState() };
+      },
   };
 }

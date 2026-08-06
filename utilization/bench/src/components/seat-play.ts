@@ -32,6 +32,10 @@ let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } 
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
 const sticky = new Map<string, { row: number; col: number }>(); // G-B2: the viewer's STUCK anchors (presentation state, survives rebuilds)
+let handUp = false; // C-1d (I-171): the flip-all pickup — face-down grouped ↔ all face up (theater state)
+let lastHandPlay: { id: string } | null = null;
+export const handUpState = () => handUp;
+export const seatPlayLastHandPlay = () => lastHandPlay;
 let lastStick: { id: string; row: number; col: number } | null = null;
 export const seatPlayLastStick = () => lastStick;
 export const seatPlayLastReturn = () => lastReturn;
@@ -158,9 +162,27 @@ export const seatPlay: Component = {
           }
         }
       }
-      // C-1a (I-149): the OLD hand staging RETIRED; the REAL hand's zone is the grid's
-      // HAND span (row 4, cols 1–2) — C-1d lands there. The ledger span awaits the
-      // folder's migration (G-B3).
+      // C-1d (I-171, the I-149 grammar): THE HAND — the viewer's networking cards,
+      // 'grouped in the hand face down on the board', fanned across the HAND strip
+      // (row 4, cols 1–2); the flip-all pickup turns them ALL face up (theater state,
+      // survives rebuilds); face-up cards drag-and-drop into play (the play verb).
+      if (mine && v.ownHand.length) {
+        const a1 = cellLocal(4, 1), a2 = cellLocal(4, 2);
+        v.ownHand.forEach((hid, hIdx) => {
+          const hi = cardInstance(hid);
+          if (!hi) return;
+          hi.setFace([hid, 'networking']);
+          const t2 = v.ownHand.length > 1 ? hIdx / (v.ownHand.length - 1) : 0.5;
+          const lat2 = a1.lat + (a2.lat - a1.lat) * t2;
+          const hp = sf.c.clone().addScaledVector(sf.lat, lat2).addScaledVector(sf.n, BASE + a1.out);
+          hi.group.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+            .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), handUp ? -Math.PI / 2 : Math.PI / 2)));
+          hi.group.position.set(hp.x, handUp ? 6 : 2.2, hp.z); // picked-up hands lift a touch
+          hi.group.userData = { ...hi.group.userData, seatPlayCard: `hand:${hid}`, focus: `seat-${i}` };
+          cards.push({ key: `hand:${hid}`, mesh: hi.group, anchor: hi.group.position.clone() });
+          g.add(hi.group);
+        });
+      }
     }
     root = g;
     ctx.scene.add(g);
@@ -192,6 +214,39 @@ export const seatPlay: Component = {
     // to the v4 loop (assigned → work; else toggle select). The VG8p reset drive moves
     // >40u, so the grab/reset law is untouched by predicate; equipment/local/hand keep
     // the nudge-settle.
+    // C-1d (I-171): the HAND — a click FLIPS ALL ('picked up by the player flipping
+    // all cards in a hand'); a face-up card dragged into play and RELEASED plays it:
+    // dropped, revealed (status), then to the networking deck's BOTTOM (the engine).
+    if (grab.card.key.startsWith('hand:')) {
+      const hid = grab.card.key.slice(5);
+      const card = grab.card;
+      if (moved < 8) {
+        grab = null;
+        card.mesh.position.copy(card.anchor);
+        handUp = !handUp;
+        ctx.rebuild();
+        ctx.status(handUp ? 'hand picked up — all cards face up; drag one into play' : 'hand set down — face down, grouped');
+        return true;
+      }
+      const vH = ctx.projection();
+      const myTurnH = vH.seats[vH.turn.seatIdx]!.id === ctx.viewSeat;
+      if (handUp && myTurnH && moved > 30) {
+        grab = null;
+        if (ctx.submit('play-networking', { card: hid })) {
+          lastHandPlay = { id: hid };
+          ctx.rebuild(); // the card leaves the hand for the pool's BOTTOM — the same instance
+          ctx.status(`${hid} played — revealed, then to the bottom of the NETWORKING deck`);
+          return true;
+        }
+        ctx.status('refused — not your turn or not in your hand');
+        return true;
+      }
+      resetting = { card, from: card.mesh.position.clone(), t: 0 };
+      lastReset = { moved, returned: false, frames: 0 };
+      grab = null;
+      ctx.status(handUp ? 'a short toss — it returns to the hand' : 'the hand is face down — click to pick it up');
+      return true;
+    }
     // G-C2 (I-170): a CLICK on attached gear detaches it — back to the rack (the
     // grammar's return path); the engine refuses if it isn't yours or isn't your turn.
     if (moved < 8 && grab.card.key.startsWith('gear:')) {

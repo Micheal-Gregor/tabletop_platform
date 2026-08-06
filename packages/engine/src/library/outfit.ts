@@ -189,11 +189,42 @@ export function drawFromPool(state: State, seat: string, pool: 'bbb' | 'networki
   const list = (pools[pool] ?? []) as readonly PoolCard[];
   const top = list[0];
   if (!top) throw new VentureRefusal('pool', 'GX-30', `the ${pool} deck is empty — nothing to draw`);
+  // C-1d (I-171, the I-149 grammar): NETWORKING draws to the PLAYER HAND — the whole
+  // card object rides (id + cost), so its bottom-return needs no catalog. BBB keeps
+  // the local-row path (its bottom-return awaits the same data-rides pattern).
+  if (pool === 'networking') {
+    const seats = state['seats'] as readonly (JsonObject & { id?: string })[];
+    return {
+      ...state,
+      pools: { ...pools, networking: list.slice(1) },
+      seats: seats.map((s2) => (s2['id'] === seat
+        ? { ...s2, hand: [...((s2['hand'] as readonly JsonObject[]) ?? []), top as JsonObject] }
+        : s2)) as unknown as JsonObject[],
+    };
+  }
   const decks = state['decks'] as Record<string, { draw: readonly string[]; discard: readonly string[]; reserve: readonly string[] }>;
   const mine = decks[seat] ?? { draw: [], discard: [], reserve: [] };
   return {
     ...state,
     pools: { ...pools, [pool]: list.slice(1) },
     decks: { ...decks, [seat]: { ...mine, discard: [top.id, ...mine.discard] } }, // newest first (the deck.ts convention)
+  };
+}
+
+/** C-1d (I-171): play a networking card from the hand — 'dropped, revealed, and then
+ *  to the BOTTOM of the networking deck' (its effect is a later mechanic; the cycle is
+ *  the law now). The card object returns whole — data rode with it. */
+export function playHandCard(state: State, seat: string, cardId: string): JsonObject {
+  const seats = state['seats'] as readonly (JsonObject & { id?: string })[];
+  const mine = seats.find((s2) => s2['id'] === seat);
+  const hand = ((mine?.['hand'] as readonly (JsonObject & { id?: string })[]) ?? []);
+  const idx = hand.findIndex((c) => c['id'] === cardId);
+  if (idx < 0) throw new VentureRefusal('pool', 'GX-33', `${cardId} is not in your hand`);
+  const card = hand[idx]!;
+  const pools = poolsOf(state) as Pools & { readonly networking?: readonly PoolCard[] };
+  return {
+    ...state,
+    seats: seats.map((s2) => (s2['id'] === seat ? { ...s2, hand: hand.filter((_, i) => i !== idx) } : s2)) as unknown as JsonObject[],
+    pools: { ...pools, networking: [...(pools.networking ?? []), card as PoolCard] }, // the BOTTOM
   };
 }

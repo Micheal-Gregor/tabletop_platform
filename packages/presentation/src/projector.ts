@@ -31,6 +31,7 @@ export interface SeatView {
     readonly assets: readonly { readonly ref: string; readonly value: number }[];
     readonly sueRights: readonly unknown[];
     readonly eliminated: boolean;
+    readonly handCount: number; // C-1d (I-171): hidden hands COUNT publicly
   }[];
   /** Redaction law (I-47): contents for the OWN deck's discard only; counts for all. */
   readonly decks: Readonly<Record<string, { readonly drawCount: number; readonly discardTop: string | null }>>;
@@ -44,6 +45,7 @@ export interface SeatView {
   readonly receivables: readonly { readonly holder: string; readonly amount: number; readonly source: string }[];
   readonly results: unknown;
   readonly ownDiscard: readonly string[];
+  readonly ownHand: readonly string[]; // C-1d (I-171): the VIEWER'S hand — ids only; other hands project as COUNTS (redaction)
   /** Q-3 (I-93): the CREW — public state (every player sees every shop's staff, the v1
    *  board's own truth); the 3D bench's tradespeople rows render from THIS field only
    *  (R-19: no render read outside the projector). Additive. */
@@ -80,7 +82,7 @@ export function project(state: State, seat: string): SeatView {
     __seatView: true,
     seat,
     turn: { round: turn.round, seatIdx: turn.seatIdx, phase: turn.phase, status: turn.status },
-    seats: seats.map((s) => ({ id: s.id, cash: s.cash, favor: s.favor, assets: s.assets, sueRights: s.sueRights, eliminated: s.eliminated })),
+    seats: seats.map((s) => ({ id: s.id, cash: s.cash, favor: s.favor, assets: s.assets, sueRights: s.sueRights, eliminated: s.eliminated, handCount: ((s as unknown as { hand?: readonly unknown[] }).hand ?? []).length })),
     decks,
     windows,
     ventures: ((state['ventures'] as readonly { id: string; status: string; portions: readonly unknown[] }[]) ?? []).map((v) => ({ id: v.id, status: v.status, portions: v.portions.length })),
@@ -88,6 +90,7 @@ export function project(state: State, seat: string): SeatView {
     receivables: (state['receivables'] as SeatView['receivables']) ?? [],
     results: state['results'] ?? null,
     ownDiscard: decksRaw[seat]?.discard ?? [],
+    ownHand: (((seats.find((s) => s.id === seat) as unknown as { hand?: readonly { id: string }[] })?.hand) ?? []).map((c) => c.id), // C-1d (I-171)
     crew: (state['crew'] as SeatView['crew']) ?? [], // Q-3 (I-93): public crew, additive
     pools: (() => { // A16 (I-137): counts only — face-down piles
       const p = state['pools'] as { tradespeople?: readonly unknown[]; equipment?: readonly unknown[]; bbb?: readonly unknown[]; networking?: readonly unknown[] } | undefined;

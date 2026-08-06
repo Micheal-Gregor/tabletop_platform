@@ -34,6 +34,7 @@ const VERBS: Readonly<Record<string, VerbFactory>> = Object.freeze({
   'release-crew': (seat, a) => ({ type: 'crew:release', seat, args: { crew: a['crew'] } }), // I-157: the bottom-return
   'sell-equipment': (seat, a) => ({ type: 'outfit:sell', seat, args: { ref: a['ref'] } }), // I-157
   'attach-gear': (seat, a) => ({ type: 'crew:attach', seat, args: { crew: a['crew'], ref: a['ref'] } }), // G-C2 (I-170)
+  'play-networking': (seat, a) => ({ type: 'hand:play', seat, args: { card: a['card'] } }), // C-1d (I-171)
   'detach-gear': (seat, a) => ({ type: 'crew:detach', seat, args: { crew: a['crew'] } }), // G-C2 (I-170)
   'decide': (seat, a) => ({ type: 'window:resolve', seat, args: { window: a['window'], option: a['option'] } }),
   'end-turn': (seat) => ({ type: 'turn:end', seat, args: {} }),

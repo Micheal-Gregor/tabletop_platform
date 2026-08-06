@@ -133,6 +133,25 @@ describe('O-3: the card pools (I-139)', () => {
     expect(v.ownDiscard[0]!.startsWith('bbb-')).toBe(true); // newest first — the drawn card tops
   });
 
+  it('the HAND cycle (C-1d/I-171): networking draws to the hand (hidden — counts public), plays to the pool BOTTOM', () => {
+    const { pv, sub, st } = host();
+    const d0 = pv().ownDiscard.length;
+    sub('pool-draw', 'moe', { pool: 'networking' });
+    let v = pv();
+    expect(v.ownHand.length).toBe(1); // to the HAND, not the local row
+    expect(v.ownDiscard.length).toBe(d0);
+    expect(v.pools.networking).toBe(4);
+    expect(v.seats.find((s) => s.id === 'moe')!.handCount).toBe(1); // the public count (redaction-honest)
+    const hid = v.ownHand[0]!;
+    sub('play-networking', 'moe', { card: hid });
+    v = pv();
+    expect(v.ownHand.length).toBe(0);
+    expect(v.pools.networking).toBe(5); // conservation — the deck is whole
+    const pool = (st()['pools'] as { networking: readonly { id: string }[] }).networking;
+    expect(pool[pool.length - 1]!.id).toBe(hid); // the BOTTOM — data rode the card home
+    expect(() => sub('play-networking', 'moe', { card: hid })).toThrow(/GX-33|hand/);
+  });
+
   it('an EMPTY card pool refuses BY NAME (GX-30)', () => {
     const { sub } = host();
     for (let i = 0; i < 5; i++) sub('pool-draw', 'moe', { pool: 'networking' });
