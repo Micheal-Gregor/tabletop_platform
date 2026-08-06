@@ -63,7 +63,7 @@ export const UI_OBJECTS: readonly UIObjectDef[] = [
     ] } },
   { id: 'die', kind: 'piece', placement: { kind: 'free' }, boundGp: gp(OBJECT_SCALE.die / 2), physics: 'dynamic', affordances: { grab: true, flick: true, read: true } },
   { id: 'folder', kind: 'piece', placement: { kind: 'span', parent: 'seat-surface', span: 'ledger' }, boundGp: gp(Math.hypot(OBJECT_SCALE.folder.w, OBJECT_SCALE.folder.h) / 2),
-    physics: 'kinematic', affordances: { click: 'open-ledger', read: true } } // I-206: + each RISEN REPORT reads INDIVIDUALLY (ledger-pnl/ledger-balance anchors — drilled at VG8n),
+    physics: 'kinematic', affordances: { click: 'open-ledger', read: true } }, // I-206: + each RISEN REPORT reads INDIVIDUALLY (ledger-pnl/ledger-balance anchors — drilled at VG8n),
   { id: 'medal', kind: 'piece', placement: { kind: 'span', parent: 'table', span: 'medal' }, boundGp: gp(60), physics: 'kinematic', affordances: { read: true } },
 ] as const;
 
