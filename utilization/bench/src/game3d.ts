@@ -247,9 +247,10 @@ function computePick(hit: THREE.Intersection, ev: PointerEvent): PickInfo {
 // ── bar wiring (harness-level): presets + read-toggle + end-turn + the round sequence ──
 document.getElementById('bar')!.innerHTML =
   Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
-  // I-215: 'my area' + the second table button DELETED (owner-ordered); the board and
-  // box scenics stay; every seat button below routes to ITS play area by the one law.
-  `<button data-scenic="seat-0" title="your seat board, by the scenic law">🪧 board</button>` +
+  // I-217 (owner-ordered, explicit): SIX dedicated PLAY-AREA buttons — one per seat,
+  // each its own chrome ('buttons for each PLAY AREA for each seat'); the seat-N
+  // buttons return to the boards; the 'board' button removed as ordered.
+  [0, 1, 2, 3, 4, 5].map((i) => `<button data-scenic="seat-area-${i}" title="seat ${i}'s play area — maximized, 35° to center">area ${i}</button>`).join('') +
   `<button data-scenic="box" title="the game box, by the scenic law">📦 box</button>` +
   `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
   `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>` +
@@ -259,14 +260,6 @@ document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
   if (t.dataset['scenic']) { cam.scenicView(t.dataset['scenic']); return; } // I-214/I-215
-  if (t.dataset['cam'] && t.dataset['cam'].startsWith('seat-')) {
-    // I-215 (owner-ruled: 'EACH SEAT HAS A PLAY AREA… pull the camera back to maximize
-    // my view of the play area with distant focus on 0,0,0 for seats 0–5'): the seat
-    // buttons show the SEAT'S AREA by the scenic law; the old board presets remain
-    // API-reachable for the gates (glideTo unchanged).
-    cam.scenicView(`seat-area-${t.dataset['cam'].slice(5)}`);
-    return;
-  }
   if (t.dataset['cam'] === 'table') { cam.scenicView('table'); return; } // I-215: the fixed center by the same law
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
