@@ -206,6 +206,31 @@ const anchorPreset = (f: string): string => {
 };
 
 let areaEntryT = 0; // I-213: the area read's entry moment — the dive waits a beat
+/** I-214 (the owner's scenic rebuild, step 1): THE SCENIC VIEW — the object maximized
+ *  ACROSS the screen at an angle. One law for every scenic anchor: approach along the
+ *  object's outward direction (radial from 0,0,0; the viewer's yaw for the centered
+ *  table), swung ~22° for the diagonal, elevated ~35°, distance = the angled fit with
+ *  a whisper of air. Buttons and gestures both land here — no per-object camera code. */
+export function scenicView(focus: string): void {
+  const obj = focusObject(focus) ?? focusGroups[focus] ?? null;
+  if (!obj) { status(`scenic refused: unknown focus "${focus}"`); return; }
+  const box = new THREE.Box3().setFromObject(obj);
+  const c = box.getCenter(new THREE.Vector3());
+  const radial = Math.hypot(c.x, c.z) > 40
+    ? new THREE.Vector3(c.x, 0, c.z).normalize()
+    : new THREE.Vector3(Math.sin(SEAT_YAWS[0] ?? 0), 0, Math.cos(SEAT_YAWS[0] ?? 0)); // the centered table: over the viewer's shoulder
+  const swung = radial.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.38); // ~22° — the across-the-screen diagonal
+  const dir = swung.multiplyScalar(Math.cos(0.61)).add(new THREE.Vector3(0, Math.sin(0.61), 0)).normalize(); // ~35° elevation
+  const up = new THREE.Vector3(0, 1, 0);
+  const dist = fitAlong(box, c, dir, up) * 1.06;
+  camera.up.copy(up);
+  target = { pos: c.clone().add(dir.multiplyScalar(dist)), look: c };
+  mode = 'scene';
+  currentName = `${focus}:scenic`;
+  lastFocus = focus;
+  status(`scenic: ${focus} — the object fills the frame at an angle; wheel in to read`);
+}
+
 export function readView(focus?: string, reanchor = true): void {
   readFocus = focus ?? lastFocus; // the ANCHOR is the default read target (I-66a; supersedes the I-63g1 camera-based default)
   if (readFocus.startsWith('seat-area-')) areaEntryT = performance.now(); // I-213

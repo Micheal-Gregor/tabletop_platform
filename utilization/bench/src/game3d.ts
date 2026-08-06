@@ -247,6 +247,12 @@ function computePick(hit: THREE.Intersection, ev: PointerEvent): PickInfo {
 // ── bar wiring (harness-level): presets + read-toggle + end-turn + the round sequence ──
 document.getElementById('bar')!.innerHTML =
   Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
+  // I-214 (the owner's camera rebuild, step 1 — SCENIC per zone-object): one scenic
+  // law, four anchors — the board, the play area, the box, the fixed center table.
+  `<button data-scenic="seat-0" title="your seat board, angled full-frame">🪧 board</button>` +
+  `<button data-scenic="seat-area-0" title="your play area, angled full-frame">🃏 my area</button>` +
+  `<button data-scenic="box" title="the game box, angled full-frame">📦 box</button>` +
+  `<button data-scenic="table" title="the table board, angled full-frame (fixed center)">🗺 table</button>` +
   `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
   `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>` +
   `<button id="round-btn" title="the round sequence — preamble → round card (I-55a)">🎲 round</button>` +
@@ -254,6 +260,7 @@ document.getElementById('bar')!.innerHTML =
 document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
+  if (t.dataset['scenic']) { cam.scenicView(t.dataset['scenic']); return; } // I-214
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
   // A6 (I-136): the SPAWN DOOR — the SVG bench's exhibit chrome (#spawn-job) in 3D; a
