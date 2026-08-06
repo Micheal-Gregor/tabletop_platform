@@ -74,7 +74,7 @@ export async function run(h) {
   // page centres stand ABOVE the folder top (the "reports rise up into their position" law).
   const pPnl = pages.find((p) => p.kind === 'pnl');
   const pBal = pages.find((p) => p.kind === 'balance');
-  const risen = pPnl && pBal && typeof folderY === 'number' && pPnl.worldY > folderY + 50 && pBal.worldY > folderY + 50;
+  const risen = typeof folderY === 'number' && pPnl && pBal && pPnl.worldY > folderY - 4 && pPnl.worldY < folderY + 30 && pBal.worldY > folderY - 4 && pBal.worldY < folderY + 30; // I-229 RE-PIN: the pages lie ATOP the folder (the risen-50 law superseded — the owner laid the books flat)
   // PORTRAIT (P-2b/I-85): report-sized sheets — each standing page's bbox is taller than wide.
   const portrait = await G(() => {
     const out = {};
@@ -86,7 +86,7 @@ export async function run(h) {
   });
   const portraitOk = portrait.pnl === true && portrait.balance === true;
   const twoPage = pages.length === 2 && pPnl && pBal && pPnl.focusable && pBal.focusable
-    && pPnl.id === 'ledger-pnl' && pBal.id === 'ledger-balance' && pPnl.worldX < pBal.worldX && risen && portraitOk;
+    && pPnl.id === 'ledger-pnl' && pBal.id === 'ledger-balance' && risen && portraitOk; // I-229: the worldX ordering retired (yaw-dependent); the FLAT-atop law below carries the geometry
   check('VG8n/ledger-two-page-risen', !!twoPage,
     `pages=${pages.length} · pnl(x=${pPnl?.worldX?.toFixed?.(0)},y=${pPnl?.worldY?.toFixed?.(0)}, focusable=${pPnl?.focusable}) < balance(x=${pBal?.worldX?.toFixed?.(0)},y=${pBal?.worldY?.toFixed?.(0)}, focusable=${pBal?.focusable}) · risen-above-folder(top ${typeof folderY === 'number' ? folderY.toFixed(0) : 'null'}+50):${!!risen} · portrait(report-sized):${JSON.stringify(portrait)}`);
 
@@ -99,7 +99,7 @@ export async function run(h) {
   // and fails; the lean pin alone could not see it); (b) the heading is checked against
   // an INDEPENDENT yaw source (seatYawData(0)), closing the spreadYaw self-reference.
   const indYaw = await page.evaluate(() => window.__GAME3D__.seatYawData()[0]);
-  const wantHead = (indYaw * 180) / Math.PI;
+  const wantHead = ((indYaw + Math.PI) * 180) / Math.PI; // I-229: a FLAT page's top edge points TOWARD the player (yaw+180) — the independent source, adjusted with the law
   const headsOk = !!upr && ['pnl', 'balance'].every((k) => {
     const d = Math.abs(((upr[k].heading - wantHead + 540) % 360) - 180);
     return d < 2;
@@ -107,7 +107,7 @@ export async function run(h) {
   const uprOk = !!upr && ['pnl', 'balance'].every((k) => upr[k] && Math.abs(upr[k].lean) < 2 && Math.abs(upr[k].headingErr) < 2
     && upr[k].posErr === 0 && upr[k].quatErr === 0) && headsOk;
   check('VG8n/ledger-upright', uprOk,
-    upr ? `pnl lean ${upr.pnl?.lean?.toFixed(2)}° head ${upr.pnl?.heading?.toFixed(1)}° pos ${upr.pnl?.posErr} quat ${upr.pnl?.quatErr} · balance lean ${upr.balance?.lean?.toFixed(2)}° pos ${upr.balance?.posErr} · independent-yaw ${wantHead.toFixed(1)}°:${headsOk} (want lean<2° · pose EXACT ≡0 · heading ≡ seat-0's own yaw — G-D/I-166 + K7-V M-1)` : 'NO-UPRIGHT-ORACLE (spread not displayed?)');
+    upr ? `pnl lean ${upr.pnl?.lean?.toFixed(2)}° head ${upr.pnl?.heading?.toFixed(1)}° pos ${upr.pnl?.posErr} quat ${upr.pnl?.quatErr} · balance lean ${upr.balance?.lean?.toFixed(2)}° pos ${upr.balance?.posErr} · independent-yaw ${wantHead.toFixed(1)}°:${headsOk} (want FLAT<2° off the felt · pose EXACT ≡0 · top-edge heading ≡ the seat frame — I-229's flat law + K7-V M-1's exact-pose tooth)` : 'NO-UPRIGHT-ORACLE (spread not displayed?)');
 
   // (renders) — CARRIED VERBATIM from K-C (I-79): both pages carry EXACTLY BOOKS_PANEL's 6
   // region ids with NON-BLANK stamped rows; Balance = identity + fidelity + footnote; P&L =

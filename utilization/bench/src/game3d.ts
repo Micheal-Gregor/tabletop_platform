@@ -229,6 +229,20 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   for (const hit of ray.intersectObjects(scene.children, true)) {
     const pick = computePick(hit, ev);
     for (const c of COMPONENTS) if (c.onPick?.(ctx, pick)) return;
+    // I-229 (the owner's selection hole, root-caused at last): CARDS AND FIXTURES had
+    // NO onPick — selection lived only in the grab paths, which never run in read
+    // mode; at the ZONE READ (the resting state) clicking a card reached this chain
+    // and died unclaimed. THE UNIVERSAL SELECT: any unclaimed hit that IS an object
+    // (a card instance, the folder, a sheet) anchors it for the wheel.
+    if (pick.tags['card3d'] || pick.tags['card'] === true || pick.tags['ledger'] === true || pick.tags['ledgerPage']) {
+      let m: THREE.Object3D | null = pick.object;
+      while (m && !(m.userData?.['card3d'] || m.userData?.['card'] === true || m.userData?.['ledger'] === true)) m = m.parent;
+      if (m) {
+        cam.setLastFocus(`obj:${m.uuid}`);
+        status(`selected — wheel in to zoom to it`);
+        return;
+      }
+    }
   }
 });
 

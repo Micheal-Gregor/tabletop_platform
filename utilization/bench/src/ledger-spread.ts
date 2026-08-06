@@ -57,16 +57,21 @@ export function spreadUpright(): Record<string, { lean: number; headingErr: numb
     const sh = sheets[k];
     if (!sh) continue;
     const q = sh.getWorldQuaternion(new THREE.Quaternion());
-    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-    const nrm = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
-    const heading = Math.atan2(nrm.x, nrm.z);
-    const dh = Math.atan2(Math.sin(heading - spreadYaw), Math.cos(heading - spreadYaw));
+    // I-229: THE FLAT LAW replaces the upright one — 'lean' is now the angle off FLAT
+    // (the sheet's normal vs world up; 0 = lying perfectly like a card), and the
+    // heading is the sheet's TOP direction (local +y) vs the seat frame's yaw.
+    const nrm0 = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+    const up = new THREE.Vector3(0, 0, 1).applyQuaternion(q); // kept name; measures flatness below
+    const topDir = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+    const heading = Math.atan2(topDir.x, topDir.z);
+    const dh = Math.atan2(Math.sin(heading - (spreadYaw + Math.PI)), Math.cos(heading - (spreadYaw + Math.PI)));
+    void nrm0;
     // K7-V M-1: THE EXACT-POSE LAW — at 'displayed' the pose must be the snap's COPY,
     // bitwise (posErr ≡ 0, quatErr ≡ 0). A deleted settle-snap leaves the ~3e-6 slerp
     // residual and fails; the 2° lean pin alone could never see it (the reviewer's math).
     const disp = displayPose(k);
     out[k] = {
-      lean: (Math.acos(Math.min(1, Math.max(-1, up.y))) * 180) / Math.PI,
+      lean: (Math.acos(Math.min(1, Math.abs(up.y))) * 180) / Math.PI, // 0 = FLAT (the normal vertical)
       headingErr: (dh * 180) / Math.PI,
       heading: (heading * 180) / Math.PI, // ABSOLUTE — the gate checks it against an INDEPENDENT yaw source (M-1's self-reference closed)
       posErr: sh.position.distanceTo(disp.pos),
@@ -163,16 +168,21 @@ export function retractSheets(): void {
   setLastFocus('table');
 }
 
-/** a sheet's DISPLAY pose target. */
+/** a sheet's DISPLAY pose target — I-229 (owner-redesigned, superseding the upright
+ *  pop-up G-D era): the reports LIE FLAT like cards atop the OPENED folder — the
+ *  cover swings LEFT and the P&L rides onto it; the Balance stays revealed on the
+ *  base. Two flat pages, side by side, each its own zoom object. */
 function displayPose(k: PageKind): Pose {
   const lat = new THREE.Vector3(Math.cos(spreadYaw), 0, -Math.sin(spreadYaw));
-  const n = new THREE.Vector3(Math.sin(spreadYaw), 0, Math.cos(spreadYaw));
+  const flat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), spreadYaw)
+    .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
   return {
-    pos: anchor.clone().addScaledVector(lat, k === 'pnl' ? -GAP : GAP).addScaledVector(n, 50),
-    quat: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), spreadYaw).multiply(UP_QUAT.clone()),
+    pos: anchor.clone().addScaledVector(lat, k === 'pnl' ? -FOLD_W : 0).add(new THREE.Vector3(0, k === 'pnl' ? 3 : 2, 0)),
+    quat: flat,
     scale: new THREE.Vector3(DISPLAY_SCALE, DISPLAY_SCALE, DISPLAY_SCALE),
   };
 }
+const FOLD_W = 140; // the opened cover's throw — the P&L's slide distance to the LEFT
 
 /** the per-frame step — the deploy/return lerp between the HOME and DISPLAY poses. */
 export function tickSpread(): void {

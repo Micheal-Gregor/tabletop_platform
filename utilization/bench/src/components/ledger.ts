@@ -20,7 +20,7 @@ let bookGrab: { plane: THREE.Plane; ray: THREE.Raycaster; start: THREE.Vector3; 
 
 // the OPEN spread stands above the closed book, front of the viewing seat's board.
 const anchorOf = (book: THREE.Object3D): THREE.Vector3 =>
-  book.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 138, 0));
+  book.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 8, 0)); // I-229: the flat era — the pages lie ATOP the folder, not 138 above it
 
 export const ledgerComponent: Component = {
   id: 'ledger',
