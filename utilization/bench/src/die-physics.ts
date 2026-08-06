@@ -15,6 +15,7 @@
  */
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { TableRect } from './die.js';
+import { DICE_RING } from './playarea.js'; // I-190: the round drag boundary
 
 export const M2W = 900; // world units per meter
 const HALF = 0.025; // the die's half-extent (45u / 900 / 2)
@@ -213,14 +214,19 @@ export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): bool
 }
 export function dragMove(worldX: number, worldZ: number): void {
   if (!live || live.flying) return;
-  const f = feltOf(live.rect);
   const s = worldToFelt(live.rect, worldX, worldZ);
-  live.body.setNextKinematicTranslation({
-    x: Math.max(-f.hx + HALF, Math.min(f.hx - HALF, s.px)), y: 0.04,
-    z: Math.max(-f.hz + HALF, Math.min(f.hz - HALF, s.pz)),
-  });
+  // I-190 (owner-ruled): the HELD die is FREE — it hovers LIFTED off the felt (the
+  // shake: y > 0 while held, the drop adds tumble on release) and its horizontal
+  // range is the ROUND play boundary (radial clamp at the OUTER dice ring), never
+  // the table's square. Released outside the toss circle, the escape law already
+  // brings it home (R-1a2) — freedom to shake, the arena still judges the throw.
+  const Rf = DICE_RING.radius() / M2W;
+  const r = Math.hypot(s.px, s.pz);
+  const k = r > Rf ? Rf / r : 1;
+  live.body.setNextKinematicTranslation({ x: s.px * k, y: DRAG_LIFT, z: s.pz * k });
   live.world.step();
 }
+const DRAG_LIFT = 40 / M2W; // the held hover — visibly OFF the ground (I-190)
 /** release → dynamic + the flick velocity (the shaker's throw energization).
  *  velWorld* arrive in WORLD UNITS PER SECOND; ÷M2W converts to m/s.
  *  R-1a2 (I-110, the owner's escape ruling): the speed is CAPPED at the tuned roll
