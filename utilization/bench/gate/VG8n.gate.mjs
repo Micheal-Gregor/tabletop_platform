@@ -90,6 +90,15 @@ export async function run(h) {
   check('VG8n/ledger-two-page-risen', !!twoPage,
     `pages=${pages.length} · pnl(x=${pPnl?.worldX?.toFixed?.(0)},y=${pPnl?.worldY?.toFixed?.(0)}, focusable=${pPnl?.focusable}) < balance(x=${pBal?.worldX?.toFixed?.(0)},y=${pBal?.worldY?.toFixed?.(0)}, focusable=${pBal?.focusable}) · risen-above-folder(top ${typeof folderY === 'number' ? folderY.toFixed(0) : 'null'}+50):${!!risen} · portrait(report-sized):${JSON.stringify(portrait)}`);
 
+  // G-D (I-166, the owner: 'actually upright instead of off at an angle'): each risen
+  // sheet stands VERTICAL (lean ≈ 0°) and faces along the seat frame's yaw (heading
+  // error ≈ 0°) — aligned to the player board, 90° about y. KILL: restore any tilt or
+  // drop the settle-snap → the numbers name it.
+  const upr = await page.evaluate(() => window.__GAME3D__.ledgerUpright());
+  const uprOk = !!upr && ['pnl', 'balance'].every((k) => upr[k] && Math.abs(upr[k].lean) < 2 && Math.abs(upr[k].headingErr) < 2);
+  check('VG8n/ledger-upright', uprOk,
+    upr ? `pnl lean ${upr.pnl?.lean?.toFixed(2)}° head ${upr.pnl?.headingErr?.toFixed(2)}° · balance lean ${upr.balance?.lean?.toFixed(2)}° head ${upr.balance?.headingErr?.toFixed(2)}° (want <2° — G-D/I-166)` : 'NO-UPRIGHT-ORACLE (spread not displayed?)');
+
   // (renders) — CARRIED VERBATIM from K-C (I-79): both pages carry EXACTLY BOOKS_PANEL's 6
   // region ids with NON-BLANK stamped rows; Balance = identity + fidelity + footnote; P&L =
   // the honest bracketed placeholder with NO invented $-figure.

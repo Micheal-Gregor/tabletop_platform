@@ -19,7 +19,8 @@
 import * as THREE from 'three';
 import type { SeatView } from '@tabletop/presentation';
 import { BOOKS_PANEL } from '../../../packs/boty/src/index.js';
-import { buildSheets, stampSheet, deploySheets, retractSheets, tickSpread, sheetsHome, sheetBBoxes, setSpreadYaw } from './ledger-spread.js';
+import { buildSheets, stampSheet, deploySheets, retractSheets, tickSpread, sheetsHome, sheetBBoxes, setSpreadYaw, spreadUpright } from './ledger-spread.js';
+export { spreadUpright }; // G-D (I-166): the upright law's oracle
 
 type Balance = {
   seat: string; cash: number; ar: number; ap: number;

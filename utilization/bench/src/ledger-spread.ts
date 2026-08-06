@@ -47,6 +47,25 @@ const UP_QUAT = new THREE.Quaternion(); // standing upright, facing +z (the disp
 let spreadYaw = 0;
 export function setSpreadYaw(y: number): void { spreadYaw = y; }
 
+/** G-D (I-166): THE UPRIGHT LAW's oracle — each displayed sheet's lean off vertical
+ *  (degrees; want ≈0) and heading error vs the seat frame's yaw (want ≈0). A tilted
+ *  or mis-yawed pop-up fails BY NAME with its numbers. */
+export function spreadUpright(): Record<string, { lean: number; headingErr: number }> | null {
+  if (phase !== 'displayed') return null;
+  const out: Record<string, { lean: number; headingErr: number }> = {};
+  for (const k of ['pnl', 'balance'] as const) {
+    const sh = sheets[k];
+    if (!sh) continue;
+    const q = sh.getWorldQuaternion(new THREE.Quaternion());
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+    const nrm = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+    const heading = Math.atan2(nrm.x, nrm.z);
+    const dh = Math.atan2(Math.sin(heading - spreadYaw), Math.cos(heading - spreadYaw));
+    out[k] = { lean: (Math.acos(Math.min(1, Math.max(-1, up.y))) * 180) / Math.PI, headingErr: (dh * 180) / Math.PI };
+  }
+  return out;
+}
+
 const focusId = (k: PageKind): string => `ledger-${k}`;
 const ease = (t: number): number => t * t * (3 - 2 * t);
 
@@ -158,7 +177,17 @@ export function tickSpread(): void {
       sh.quaternion.slerpQuaternions(home.quat, disp.quat, e);
       sh.scale.lerpVectors(home.scale, disp.scale, e);
     }
-    if (phase === 'deploying' && amt >= 0.999) { amt = 1; phase = 'displayed'; }
+    if (phase === 'deploying' && amt >= 0.999) {
+      amt = 1; phase = 'displayed';
+      // G-D (I-166, the owner's 'actually upright instead of off at an angle'): the
+      // settle SNAPS EXACT to the display pose — no residual slerp lean survives.
+      for (const k of ['pnl', 'balance'] as const) {
+        const sh = sheets[k];
+        if (!sh) continue;
+        const disp = displayPose(k);
+        sh.position.copy(disp.pos); sh.quaternion.copy(disp.quat); sh.scale.copy(disp.scale);
+      }
+    }
     if (phase === 'returning' && amt <= 0.001) {
       amt = 0;
       for (const k of ['pnl', 'balance'] as const) {

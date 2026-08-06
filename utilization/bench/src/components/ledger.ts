@@ -119,6 +119,7 @@ export const ledgerComponent: Component = {
       ledgerPageContent: ledger.pageContent,
       ledgerOpaque: ledger.spreadOpaque,
       ledgerSettled: ledger.spreadSettled,
+      ledgerUpright: ledger.spreadUpright, // G-D (I-166): lean + heading error per displayed sheet
       ledgerSelected: ledger.selectedReport,
       // enter READ of the selected page (the zoom-to-read primitive the gate drives)
       ledgerReadSelected: ledger.readSelected,
