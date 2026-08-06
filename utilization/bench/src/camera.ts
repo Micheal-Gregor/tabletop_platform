@@ -206,29 +206,33 @@ const anchorPreset = (f: string): string => {
 };
 
 let areaEntryT = 0; // I-213: the area read's entry moment — the dive waits a beat
-/** I-214 (the owner's scenic rebuild, step 1): THE SCENIC VIEW — the object maximized
- *  ACROSS the screen at an angle. One law for every scenic anchor: approach along the
- *  object's outward direction (radial from 0,0,0; the viewer's yaw for the centered
- *  table), swung ~22° for the diagonal, elevated ~35°, distance = the angled fit with
- *  a whisper of air. Buttons and gestures both land here — no per-object camera code. */
+/** I-215 (the owner's corrections, superseding the I-214 law the same day): THE
+ *  SCENIC LAW v2 — (a) the fit is the object's BOUNDING SPHERE, never the box (the
+ *  play space is a sphere; box corners gave the camera 'fake square corners' to
+ *  choke in); (b) EVERY scenic looks 35° DOWN AT 0,0,0 — the camera sits on the ray
+ *  from the center THROUGH the object, beyond it, so the object stands maximized in
+ *  the foreground and the sight line runs past it to the world's anchor. One law,
+ *  every object, both promises at once. */
 export function scenicView(focus: string): void {
   const obj = focusObject(focus) ?? focusGroups[focus] ?? null;
   if (!obj) { status(`scenic refused: unknown focus "${focus}"`); return; }
-  const box = new THREE.Box3().setFromObject(obj);
-  const c = box.getCenter(new THREE.Vector3());
-  const radial = Math.hypot(c.x, c.z) > 40
+  const sphere = new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
+  const c = sphere.center, R = Math.max(20, sphere.radius);
+  const rHoriz = Math.hypot(c.x, c.z);
+  const dirOut = rHoriz > 40
     ? new THREE.Vector3(c.x, 0, c.z).normalize()
     : new THREE.Vector3(Math.sin(SEAT_YAWS[0] ?? 0), 0, Math.cos(SEAT_YAWS[0] ?? 0)); // the centered table: over the viewer's shoulder
-  const swung = radial.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.38); // ~22° — the across-the-screen diagonal
-  const dir = swung.multiplyScalar(Math.cos(0.61)).add(new THREE.Vector3(0, Math.sin(0.61), 0)).normalize(); // ~35° elevation
-  const up = new THREE.Vector3(0, 1, 0);
-  const dist = fitAlong(box, c, dir, up) * 1.06;
-  camera.up.copy(up);
-  target = { pos: c.clone().add(dir.multiplyScalar(dist)), look: c };
+  // the sphere fill: horizontal pull-back so the object subtends ~72% of the frame
+  const fovV = (camera.fov * Math.PI) / 180;
+  const back = R / Math.sin((fovV / 2) * 0.72);
+  const horiz = rHoriz + back;
+  const h = Math.tan(0.611) * horiz; // 35° down at the CENTER — the law, exactly
+  camera.up.set(0, 1, 0);
+  target = { pos: new THREE.Vector3(dirOut.x * horiz, h, dirOut.z * horiz), look: new THREE.Vector3(0, 0, 0) };
   mode = 'scene';
   currentName = `${focus}:scenic`;
   lastFocus = focus;
-  status(`scenic: ${focus} — the object fills the frame at an angle; wheel in to read`);
+  status(`scenic: ${focus} — maximized in the foreground, the sight line runs 35° down to 0,0,0`);
 }
 
 export function readView(focus?: string, reanchor = true): void {

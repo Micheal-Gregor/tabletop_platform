@@ -1,6 +1,6 @@
 // VG8s — A6 (I-136): THE v4 WORKING LOOP IN 3D (select → assign → work), kill-first.
 // SELF-SEEDING: fresh game3d.html (moe active, NO genesis crew — I-152, no ventures), so it
-// passes in isolation. Drives the REAL doors: the spawn bar button, a CLICK on the crew
+// passes in isolation. Drives the REAL doors: the spawnJob door (I-215), a CLICK on the crew
 // card, a CLICK on the portion slot — every verb is a real move (hash+moves advance).
 export const suite = '3d';
 export const id = 'VG8s';
@@ -16,7 +16,7 @@ export async function run(h) {
   // (id/status/portions + slot quads). KILL: unregister the ventures component → match
   // false / no slot XY → fails by name.
   const hm0 = await hashes();
-  await page.click('#spawn-btn');
+  await page.evaluate(() => window.__GAME3D__.spawnJob()); // I-215: the chrome button retired — the drill drives the door directly
   let ventured = false;
   try {
     await page.waitForFunction(() => { const v = window.__GAME3D__.venturesInfo(); return v.want.length === 1 && v.match; }, null, { timeout: 8000 });

@@ -247,25 +247,32 @@ function computePick(hit: THREE.Intersection, ev: PointerEvent): PickInfo {
 // ── bar wiring (harness-level): presets + read-toggle + end-turn + the round sequence ──
 document.getElementById('bar')!.innerHTML =
   Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
-  // I-214 (the owner's camera rebuild, step 1 — SCENIC per zone-object): one scenic
-  // law, four anchors — the board, the play area, the box, the fixed center table.
-  `<button data-scenic="seat-0" title="your seat board, angled full-frame">🪧 board</button>` +
-  `<button data-scenic="seat-area-0" title="your play area, angled full-frame">🃏 my area</button>` +
-  `<button data-scenic="box" title="the game box, angled full-frame">📦 box</button>` +
-  `<button data-scenic="table" title="the table board, angled full-frame (fixed center)">🗺 table</button>` +
+  // I-215: 'my area' + the second table button DELETED (owner-ordered); the board and
+  // box scenics stay; every seat button below routes to ITS play area by the one law.
+  `<button data-scenic="seat-0" title="your seat board, by the scenic law">🪧 board</button>` +
+  `<button data-scenic="box" title="the game box, by the scenic law">📦 box</button>` +
   `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
   `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>` +
   `<button id="round-btn" title="the round sequence — preamble → round card (I-55a)">🎲 round</button>` +
-  `<button id="spawn-btn" title="post a job — the spawn-venture verb (A6/I-136; the SVG bench's own exhibit door)">🔨 spawn job</button>`;
+  ``; // I-215: the spawn button DELETED (owner: 'nonsense') — the gate drives spawnJob via __GAME3D__ (the drill door survives, the chrome does not)
 document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
-  if (t.dataset['scenic']) { cam.scenicView(t.dataset['scenic']); return; } // I-214
+  if (t.dataset['scenic']) { cam.scenicView(t.dataset['scenic']); return; } // I-214/I-215
+  if (t.dataset['cam'] && t.dataset['cam'].startsWith('seat-')) {
+    // I-215 (owner-ruled: 'EACH SEAT HAS A PLAY AREA… pull the camera back to maximize
+    // my view of the play area with distant focus on 0,0,0 for seats 0–5'): the seat
+    // buttons show the SEAT'S AREA by the scenic law; the old board presets remain
+    // API-reachable for the gates (glideTo unchanged).
+    cam.scenicView(`seat-area-${t.dataset['cam'].slice(5)}`);
+    return;
+  }
+  if (t.dataset['cam'] === 'table') { cam.scenicView('table'); return; } // I-215: the fixed center by the same law
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
   // A6 (I-136): the SPAWN DOOR — the SVG bench's exhibit chrome (#spawn-job) in 3D; a
   // REAL verb through the same doors, then the rebuild renders the venture + its slots.
-  if (t.id === 'spawn-btn') { if (submitVerb('spawn-venture', { spec: botyJob() })) { buildScene(); status('job posted — select a tradesperson, then click a portion slot'); } }
+
   // A4 (I-55a): open the round sequence; the lead-off callout DERIVES from the projected
   // active seat (the K7-v1x D2 law — theater never outruns truth).
   if (t.id === 'round-btn') { const v = projectNow(); openRoundSequence(v.turn.round, v.seats[v.turn.seatIdx]!.id, SEASONS[(v.turn.round - 1) % 4]!); status('round sequence — who goes first?'); }
@@ -299,6 +306,7 @@ const gate: Record<string, unknown> = {
   cardWorldInfo,
   gridInfo: () => ({ spacing: gridSpacing(), seatRing: ringSnap(ringRadius(RING_N)), anchorsInTableDisc: anchorsWithinRadius(570).length }), // G-A: the grid's public face
   seatReadEquality: () => seatReadEquality(6), // F-8 (I-167): dist + framed bbox per seat
+  spawnJob: () => { const ok2 = submitVerb('spawn-venture', { spec: botyJob() }); if (ok2) buildScene(); return ok2; }, // I-215: the drill door (the chrome button is gone)
   uiObjectsInfo: () => ({ count: UI_OBJECTS.length, ids: UI_OBJECTS.map((o) => o.id), chain: chainIntegrity(), kingdoms: kingdomIntegrity() }), // G-C (I-168): the ontology's public face
   // PA-1 (I-141): the ring template's surfaces — the seat-pose and glide laws derive.
   ringInfo: () => ({ r: ringRadius(RING_N), n: RING_N }),
