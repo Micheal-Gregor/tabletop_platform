@@ -8,7 +8,7 @@
  */
 export const M = 2; // the outer margin AND the gutter — one number, everywhere
 // columns: left (panels) · middle (the supply box) · right (global/exchange/medal)
-const CW = [26, 34, 30] as const;
+const CW = [26, 34, 32] as const; // I-186: the right column absorbs the slack — content closes at 98 both axes, margins symmetric (the owner's edge-thickness catch)
 // rows: the top band · the exchange band · the bottom band
 const RH = [22, 30, 40] as const;
 
@@ -39,8 +39,8 @@ export const T_ART = cell(0, 0);
 export const T_GLOBAL = cell(1, 0, 2); // spans middle+right — right edge ≡ the medal's
 export const T_SUMMARY = cell(0, 1);
 export const T_LOG = cell(0, 2);
-export const T_SUPPLY = cell(1, 1, 1, 2); // the four supply decks' shared box
-export const T_EXCHANGE = cell(2, 1); // the EVENT deck + discard's own box
+export const T_SUPPLY = cell(1, 2); // I-186: the four supply decks drop to the THIRD band (the owner's arrows), beside the medal
+export const T_EXCHANGE = cell(1, 1, 2); // I-186: the exchange spans middle+right — SAME dimensions as the global box (the owner's ruling), full second band
 export const T_MEDAL = cell(2, 2);
 // the piles: 2×2 inside the supply (bottom row aligned with the third band by
 // construction — the inner grid divides the double-row box evenly)

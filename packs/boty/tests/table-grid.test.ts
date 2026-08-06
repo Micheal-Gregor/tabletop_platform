@@ -13,8 +13,8 @@ describe('I-185: the table child grid — the snap law', () => {
     expect(rect(rg('global-play'))).toEqual(cell(1, 0, 2));
     expect(rect(rg('standings'))).toEqual(cell(0, 1));
     expect(rect(rg('log'))).toEqual(cell(0, 2));
-    expect(rect(rg('supply'))).toEqual(cell(1, 1, 1, 2));
-    expect(rect(rg('exchange'))).toEqual(cell(2, 1));
+    expect(rect(rg('supply'))).toEqual(cell(1, 2)); // I-186: the third band
+    expect(rect(rg('exchange'))).toEqual(cell(1, 1, 2)); // I-186: ≡ the global box's dimensions
     expect(rect(rg('medal'))).toEqual(cell(2, 2));
   });
   it('the piles derive from their boxes (inner sub-grids, the same margin M)', () => {
@@ -26,9 +26,10 @@ describe('I-185: the table child grid — the snap law', () => {
   it("the owner's edge law, by arithmetic: global/exchange/medal share the right edge; the supply's bottom row aligns with the third band", () => {
     expect(T_GLOBAL.x + T_GLOBAL.w).toBe(T_MEDAL.x + T_MEDAL.w);
     expect(T_EXCHANGE.x + T_EXCHANGE.w).toBe(T_MEDAL.x + T_MEDAL.w);
-    expect(T_EXCHANGE.x).toBe(T_MEDAL.x);
+    expect(T_EXCHANGE.x).toBe(T_GLOBAL.x); // I-186: the exchange mirrors the GLOBAL box
+    expect(T_EXCHANGE.w).toBe(T_GLOBAL.w); // same dimensions — the owner's ruling, literal
     expect(T_DECK.w).toBe(T_DISCARD.w); // room for BOTH — equal slots
-    expect(T_BBB.y).toBeGreaterThanOrEqual(cell(2, 2).y - T_BBB.h - 2 * M); // the bottom pile row sits at the third band
+    expect(T_SUPPLY.y).toBe(T_MEDAL.y); // I-186: the supply box and the medal share the third band
     expect(T_NWK.y).toBe(T_BBB.y);
   });
 });

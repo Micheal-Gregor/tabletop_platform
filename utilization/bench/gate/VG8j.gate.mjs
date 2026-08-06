@@ -103,12 +103,12 @@ export async function run(h) {
         const ex = r['exchange'], sup = r['supply'], med = r['medal'], glob2 = r['global-play'];
         const edgeLaw = ex && med && glob2
           && Math.abs(rightEdge(glob2) - rightEdge(med)) < 1 && Math.abs(rightEdge(ex) - rightEdge(med)) < 1
-          && Math.abs(ex.x - med.x) < 1; // left edges agree too
+          && Math.abs(ex.x - glob2.x) < 1 && Math.abs(ex.w - glob2.w) < 1; // I-186: the exchange MIRRORS the global box (dimensions ≡)
         const inBox = (q, b) => q && b && q.x >= b.x - 1 && q.y >= b.y - 1 && rightEdge(q) <= rightEdge(b) + 1 && q.y + q.h <= b.y + b.h + 1;
         const rowA = r['deck'] && r['discard'] && !r['dice']
           && r['discard'].x > r['deck'].x && r['discard'].y === r['deck'].y
           && inBox(r['deck'], ex) && inBox(r['discard'], ex) // the exchange OWNS them
-          && ex.y >= (glob2.y + glob2.h) && (med.y >= ex.y + ex.h); // between global and medal
+          && ex.y >= (glob2.y + glob2.h) && (med.y >= ex.y + ex.h) && Math.abs(sup.y - med.y) < 1; // between global and the third band; supply ≡ medal band (I-186)
         const rowB = r['tradespeople-pile'] && r['equipment-pile']
           && r['equipment-pile'].y === r['tradespeople-pile'].y && r['equipment-pile'].x > r['tradespeople-pile'].x
           && inBox(r['tradespeople-pile'], sup) && inBox(r['equipment-pile'], sup);
