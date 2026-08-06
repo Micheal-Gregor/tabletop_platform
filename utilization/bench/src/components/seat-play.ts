@@ -28,15 +28,16 @@ let cards: { key: string; mesh: THREE.Object3D; anchor: THREE.Vector3 }[] = [];
 export const seatPlayCards = () => cards; // the oracle module's read (O-2 size extraction)
 
 // ── the grab/reset state machine ──
-let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster } | null = null;
+let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster; t0: number } | null = null;
 let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } | null = null;
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
 const sticky = new Map<string, { row: number; col: number }>(); // G-B2: the viewer's STUCK anchors (presentation state, survives rebuilds)
 let handUp = false; // C-1d (I-171): face-down rest ↔ the UPRIGHT 45° held fan (I-203)
 let handSpread = 0; // I-203: the fan's spread state — 0 tight · 1 loose · 2 looser (click cycles, face down)
+let handOffset: { lat: number; out: number } | null = null; // I-204: the hand's OWN place — the owner moves it where he wants (the I-177 claim restored)
 const SPREAD_DEG = [5, 10, 16] as const; // per-card splay at each state — 'held at the base'
-let lastHandPlay: { id: string } | null = null;
+let lastHandPlay: { id: string; target?: string | null } | null = null; // I-204: the pay pairing rides the record
 export const handUpState = () => handUp;
 export const handSpreadState = () => handSpread; // I-203
 export const seatPlayLastHandPlay = () => lastHandPlay;
@@ -198,7 +199,7 @@ export const seatPlay: Component = {
             hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw + splay)
               .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2));
             hp = base.clone().addScaledVector(sf.lat, Math.sin(splay) * reach).addScaledVector(sf.n, Math.cos(splay) * reach - reach);
-            hp.y = 2.2 + hIdx * 0.25; // pinned at the base, a true stack order
+            hp.y = 9 + hIdx * 0.3; // I-204: the hand rides OVER the folder and the posted cards (owner-ruled) — never under
           }
           poseOrArrive(hi.group, hp, hq, hi.group.parent !== null); // PB-9b: arrivals serve the fan
           hi.group.userData = { ...hi.group.userData, seatPlayCard: `hand:${hid}`, focus: `seat-${i}` };
@@ -230,7 +231,7 @@ export const seatPlay: Component = {
     if (!key) return false;
     const card = cards.find((c) => c.key === key);
     if (!card) return false;
-    grab = { card, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -6), ray: new THREE.Raycaster() };
+    grab = { card, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -6), ray: new THREE.Raycaster(), t0: performance.now() };
     ctx.status(`picked up ${key} — it will reset where it belongs`);
     return true;
   },
@@ -270,25 +271,64 @@ export const seatPlay: Component = {
       const vH = ctx.projection();
       const myTurnH = vH.seats[vH.turn.seatIdx]!.id === ctx.viewSeat;
       if (handUp && myTurnH && moved > 30) {
-        grab = null;
-        if (ctx.submit('play-networking', { card: hid })) {
-          lastHandPlay = { id: hid };
-          ctx.rebuild(); // the card leaves the hand for the pool's BOTTOM — the same instance
-          ctx.status(`${hid} played — revealed, then to the bottom of the NETWORKING deck`);
+        // I-204 — THE PAY LAW: 'any anchor in the play area is legal and resolves the
+        // hand' — the release must land ON a play-area cell; an OCCUPIED anchor pairs
+        // the card with its occupant (the pairing family again), an EMPTY one resolves
+        // it plain ('the card isn't being played against anything'). Off the surface:
+        // the glide home — the hand is the card's only legal anchor (I-181).
+        const myIdxP = vH.seats.findIndex((s2) => s2.id === ctx.viewSeat);
+        const sfP = myIdxP >= 0 ? seatFrame(ctx, myIdxP) : null;
+        let cellP: { row: number; col: number } | null = null;
+        if (sfP) {
+          const rel = grab.card.mesh.position.clone().sub(sfP.c);
+          cellP = cellAt(rel.dot(sfP.lat), rel.dot(sfP.n) - 60);
+        }
+        if (cellP) {
+          const occupant = cards.find((c2) => !c2.key.startsWith('hand:') && c2.mesh.userData['focus'] === `seat-${myIdxP}`
+            && grab!.card.mesh.position.distanceTo(c2.mesh.position) < 40)?.key ?? null;
+          grab = null;
+          if (ctx.submit('play-networking', { card: hid })) {
+            lastHandPlay = { id: hid, target: occupant }; // the PAIRING recorded — fx meet it at the EFX cycle
+            ctx.rebuild();
+            ctx.status(occupant
+              ? `${hid} played AGAINST ${occupant.split(':').pop()} — paired, then to the deck's bottom`
+              : `${hid} played on the open area — resolved plain, to the deck's bottom`);
+            return true;
+          }
+          ctx.status('refused — not your turn or not in your hand');
           return true;
         }
-        ctx.status('refused — not your turn or not in your hand');
-        return true;
+        // off the play area: the hand is the only legal anchor — home it goes
       }
       if (!handUp && moved >= 8) {
-        // I-203 (superseding the I-177 hand-slide): GRAB-AND-DRAG PICKS THE HAND UP —
-        // it flips upright and lifts to the 45° held fan (the photo). The organize
-        // arrangement returns with the I-199 saved feature.
+        // I-204 (the owner reclaimed BOTH gestures): a FLICK (fast) picks the hand up
+        // to the 45° fan — the I-181 wording, literal; a SLOW drag MOVES the hand to
+        // where he wants it (the I-177 claim restored, clamped to the station).
+        const grabT0 = grab.t0;
+        const card2 = grab.card;
         grab = null;
-        card.mesh.position.copy(card.anchor);
-        handUp = true;
-        ctx.rebuild();
-        ctx.status('hand picked up — the fan stands at 45°; drag a card out to play it, click to set down');
+        const quick = performance.now() - grabT0 < 260;
+        if (quick) {
+          card2.mesh.position.copy(card2.anchor);
+          handUp = true;
+          ctx.rebuild();
+          ctx.status('hand picked up — the 45° fan; drag a card onto any play-area anchor to resolve it');
+          return true;
+        }
+        const vH2 = ctx.projection();
+        const myIdx2 = vH2.seats.findIndex((s2) => s2.id === ctx.viewSeat);
+        const sfH = myIdx2 >= 0 ? seatFrame(ctx, myIdx2) : null;
+        if (sfH) {
+          const rel = card2.mesh.position.clone().sub(sfH.c);
+          handOffset = {
+            lat: Math.max(-STATION_BOX.halfW + 80, Math.min(STATION_BOX.halfW - 80, rel.dot(sfH.lat))),
+            out: Math.max(40, Math.min(STATION_BOX.depth - 30, rel.dot(sfH.n))),
+          };
+          ctx.rebuild();
+          ctx.status('the hand settles where you put it — your claim holds');
+          return true;
+        }
+        card2.mesh.position.copy(card2.anchor);
         return true;
       }
       resetting = { card, from: card.mesh.position.clone(), t: 0 };
