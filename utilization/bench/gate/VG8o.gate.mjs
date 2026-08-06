@@ -57,8 +57,11 @@ export async function run(h) {
 
   // box-lid-shallow-bottomless-lipped: the lid is a DISTINCT object OFF the base, a four-edge
   // rim (≥4 rim walls) with NO bottom/top face (0 horizontal panels)
+  // PB-4 (I-179, RE-PINNED on the record — supersedes the I-80 lid law): the owner
+  // retired the lid ('lose the lid, it's in the way') — the base stands ALONE; a lid
+  // resurrection now FAILS here by name.
   check('VG8o/box-lid-shallow-bottomless-lipped',
-    !!(bp && bp.present && bp.hasLid && bp.distinct && bp.offBase && bp.lidRimWalls >= 4 && bp.lidHPanels === 0),
+    !!(bp && bp.present && bp.hasLid === false),
     bp && bp.present
       ? `lid distinct:${bp.distinct} off-base:${bp.offBase} · rim-walls:${bp.lidRimWalls} (≥4) · bottom/top-faces:${bp.lidHPanels} (want 0) (lid ${bp.lidCenter ? `${bp.lidCenter.x.toFixed(0)},${bp.lidCenter.z.toFixed(0)}` : '—'} vs base ${bp.baseCenter ? `${bp.baseCenter.x.toFixed(0)},${bp.baseCenter.z.toFixed(0)}` : '—'})`
       : 'no box');

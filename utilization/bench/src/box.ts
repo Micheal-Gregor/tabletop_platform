@@ -74,14 +74,9 @@ export function buildBox(dims: BoxDims): THREE.Group {
   const base = openBase(bw, bd);
   grp.add(base);
 
-  // the lid: a bottomless rim slightly larger than the base (a lid fits OVER it), set OFF
-  // the base to its right with a CLEAR gap (beyond the base half-footprint), leaning back.
-  const lw = bw + 14, ld = bd + 14;
-  const lid = openLid(lw, ld);
-  const gap = Math.max(60, bw * 0.35);
-  lid.position.set(bw / 2 + gap + lw / 2, LID_H, 0); // OFF the base — clear of its half-footprint
-  lid.rotation.z = -0.32; // the lean — leaning beside the base, as if just lifted off
-  grp.add(lid);
+  // PB-4 (I-179, owner-ruled: 'the box graphic — lose the lid, it's in the way'): the
+  // lid RETIRES — the base stands alone. openLid stays in the file (superseded, not
+  // erased; a child game may want a lidded box as data one day).
 
   grp.userData['box'] = true; // the gate's box-present surface + the raycast selection tag
   grp.userData['focus'] = 'box'; // the ladder anchor key (selectable-not-fidgetable)
