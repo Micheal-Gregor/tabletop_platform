@@ -5,7 +5,7 @@
  * 'hire-pops-the-top' count law fails.
  */
 import { describe, it, expect } from 'vitest';
-import { RuleRegistry, LockstepController, rebuild } from '@tabletop/engine';
+import { RuleRegistry, LockstepController, rebuild, hireCrew, releaseCrew } from '@tabletop/engine';
 import type { EngineCore } from '@tabletop/engine';
 import { emit, project } from '@tabletop/presentation';
 import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty } from '../src/index.js';
@@ -28,6 +28,33 @@ describe('A16: the pools (I-137)', () => {
   it('genesis pools are seeded, shuffled, and COUNTED in the projection (8 + 8)', () => {
     const { pv } = host();
     expect(pv().pools).toEqual({ tradespeople: 8, equipment: 8, bbb: 5, networking: 5 }); // O-3 (I-139): all four pools
+  });
+
+  it('K7-V B-1 CLOSURE: against a NONZERO-cost pool, the first hire costs 0 and the second costs the card (kill the firstHire branch → THIS fails)', () => {
+    // the pure function drilled directly — BOTY's v1 costs are all 0 (economics
+    // deferred, I-140), so only a nonzero fixture can falsify the free-first branch.
+    const state = {
+      seats: [{ id: 'moe', cash: 10 }],
+      crew: [],
+      pools: { tradespeople: [{ id: 'tp-a', trade: 'x', cost: 3 }, { id: 'tp-b', trade: 'y', cost: 5 }], equipment: [], bbb: [], networking: [] },
+    } as never;
+    const first = hireCrew(state, 'moe');
+    expect(first.cost).toBe(0); // FREE — the owner's ruling, now falsifiable
+    const second = hireCrew(first.next as never, 'moe');
+    expect(second.cost).toBe(5); // the second pays the card's cost
+  });
+
+  it('K7-V B-2 CLOSURE: an ASSIGNED crew member refuses release (kill outfit.ts\'s assignedTo guard → THIS fails)', () => {
+    const state = {
+      seats: [{ id: 'moe', cash: 0 }],
+      crew: [{ id: 'tp-a', outfit: 'moe', trade: 'x', cost: 0, assignedTo: { venture: 'J1' } }],
+      pools: { tradespeople: [], equipment: [], bbb: [], networking: [] },
+    } as never;
+    expect(() => releaseCrew(state, 'moe', 'tp-a')).toThrow(/GX-31|working/);
+    // and the unassigned twin RELEASES — the guard discriminates, never blankets
+    const free = { seats: [{ id: 'moe', cash: 0 }], crew: [{ id: 'tp-a', outfit: 'moe', trade: 'x', cost: 0 }], pools: { tradespeople: [], equipment: [], bbb: [], networking: [] } } as never;
+    const out = releaseCrew(free, 'moe', 'tp-a') as { pools: { tradespeople: { id: string }[] } };
+    expect(out.pools.tradespeople[0]!.id).toBe('tp-a');
   });
 
   it('the FIRST hire is a free draw; the second levies the card cost (I-152, owner-ruled)', () => {

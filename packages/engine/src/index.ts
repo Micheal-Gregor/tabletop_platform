@@ -92,3 +92,4 @@ export { wireLibrary } from './library/wire.js';
 // ── F7 Transport (public surface; S-2 seam only) ──
 export { LockstepController, TransportRefusal } from './transport/lockstep.js';
 export type { MoveListener } from './transport/lockstep.js';
+export { hireCrew, releaseCrew } from './library/outfit.js'; // K7-V B-1/B-2 closures: the pure fns drilled directly against nonzero fixtures
