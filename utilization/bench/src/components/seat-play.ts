@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { panelTexture } from '../surfaces.js';
-import { planSeatRows } from '../seat-rows.js'; // L-4 (I-131): the pure row planner
+import { planPostings, cellLocal, cellD, cellAt, surfaceSize, POSTING_SPAN } from '../seat-grid.js'; // G-B2 (I-164): the 7×4 grid IS the layout law
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
@@ -30,6 +30,9 @@ let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycast
 let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } | null = null;
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
+const sticky = new Map<string, { row: number; col: number }>(); // G-B2: the viewer's STUCK anchors (presentation state, survives rebuilds)
+let lastStick: { id: string; row: number; col: number } | null = null;
+export const seatPlayLastStick = () => lastStick;
 export const seatPlayLastReturn = () => lastReturn;
 
 /** L-5b (I-132): THE SEAT FRAME — 'the rows for the cards … needs to be parallel to the
@@ -69,73 +72,63 @@ export const seatPlay: Component = {
       const seat = v.seats[i]!;
       const sf = seatFrame(ctx, i);
       if (!sf) continue;
-      // L-4 (I-131): THE ROW PLAN — pure data in, rows out (unit-tested). Trades = the
-      // public crew (pairs STAGED at zero until the attach verbs land, I-82f); the
-      // viewer adds unattached equipment (assets) + the local bottom row.
       const crew = v.crew.filter((m) => m.outfit === seat.id);
       const mine = seat.id === ctx.viewSeat;
-      const rows = planSeatRows(
-        crew.map((m) => ({ id: m.id, paired: false })),
-        mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}` })) : [],
-        mine ? session.map((id) => ({ id })) : [],
+      // G-B2 (I-164, the I-158/I-159 grid): the seat's cards as DATA — grouped by the
+      // owner's sort (BBB → tradesperson → equipment) and PLACED by planPostings on the
+      // 7×4 child grid; sticky claims (the drag-down-and-STICK) hold their anchors.
+      const seatCards = [
+        ...(mine ? session.map((id) => ({ id, kind: 'bbb' as const, label: id })) : []),
+        ...crew.map((m) => ({ id: m.id, kind: 'trades' as const, label: m.id })),
+        ...(mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}`, kind: 'equipment' as const, label: a.ref })) : []),
+      ];
+      const plan = planPostings(seatCards, mine ? sticky : new Map());
+      // the transparent SURFACE — the child grid made lightly visible (I-162: readability
+      // is the polish; no lighting theater). Its extent IS the law's (surfaceSize).
+      const ss = surfaceSize();
+      const BASE = 60; // row 1's center, out from the board (toward the player)
+      const surf = new THREE.Mesh(
+        new THREE.PlaneGeometry(ss.w, ss.d),
+        new THREE.MeshBasicMaterial({ color: 0x8fa39a, transparent: true, opacity: 0.1, side: THREE.DoubleSide }),
       );
-      const total = rows.length;
-      rows.forEach((row, r) => {
-        // I-144 (the owner's clarification — superseding the I-131 table-side rows):
-        // LOCAL cards IN PLAY sit BEHIND the board (the PLAYER side) with the folder
-        // and the hand; the trades row stays nearest the board, later rows step out
-        // toward the player. The station box (O-2) formalizes the packing.
-        const zOff = -(46 + r * 68); // NEGATIVE toward-table = positive player side below
-        const widths = row.items.map((it) => it.w * (OBJECT_SCALE.card.w + 12)); // I-150: spacing derives from the control table
-        const natural = widths.reduce((a, b) => a + b, 0);
-        const MAXW = 340; // O-2 (I-146): the station box's row column (right of the folder)
-        const scale = row.overlap || natural > MAXW ? MAXW / natural : 1;
-        let cum = 0;
-        row.items.forEach((it) => {
-          const w = widths[row.items.indexOf(it)]! * scale;
-          const latOff = -(natural * scale) / 2 + cum + w / 2; // along the board's side axis
-          cum += w;
-          const isLocal = it.kind === 'local';
-          const label = it.kind === 'equipment' ? it.id.split(':')[0]! : it.id;
-          // A6 (I-136): an ASSIGNED tradesperson wears its status (the SVG's crew-busy)
-          const assigned = (it.kind === 'trades' || it.kind === 'pair') && crew.find((m) => m.id === it.id)?.assignedTo !== undefined;
-          // C-1a (I-149, THE PERMANENCE CONSTITUTION): the station card is a Card3D
-          // INSTANCE from the world — the SAME physical object every build, re-claimed
-          // and POSED, never recreated ('they're moved around'). The instance is looked
-          // up bare (pool/crew cards) then seat-scoped (event-set cards); a non-card
-          // asset (a capitalized ref like 'van') keeps a plain plate — it is not a card.
-          const inst = cardInstance(label) ?? cardInstance(`${ctx.viewSeat}::${label}`);
-          let mesh: THREE.Object3D;
-          if (inst) {
-            inst.setFace([label, assigned ? '⚒ working' : `${seat.id}'s ${it.kind}`]);
-            mesh = inst.group;
-          } else {
-            mesh = new THREE.Mesh(
-              new THREE.PlaneGeometry(it.kind === 'pair' ? 62 : 44, isLocal ? 60 : 66),
-              new THREE.MeshBasicMaterial({ map: panelTexture([label, `${seat.id}'s ${it.kind}`], 10, 16), side: THREE.DoubleSide }),
-            );
-          }
-          // L-5b (I-132): the SEAT FRAME LAW — position in the board's frame (lateral +
-          // toward-table steps), orientation yawed WITH the board (corner rows run at 45°).
-          const pos = sf.c.clone().addScaledVector(sf.lat, latOff + 70).addScaledVector(sf.n, -zOff); // +70 lat: clear of the folder's left-end claim (I-144; the box packs it at O-2)
-          if (isLocal || it.kind === 'equipment') {
-            mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2))); // flat, face UP, footprint parallel
-            mesh.position.set(pos.x, 2.5, pos.z);
-          } else {
-            mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)); // standing, facing the player
-            mesh.position.set(pos.x, 34, pos.z);
-          }
-          const key = `${it.kind === 'pair' ? 'crew' : it.kind === 'trades' ? 'crew' : it.kind === 'equipment' ? 'asset' : 'local'}:${it.id}`;
-          mesh.userData = { ...mesh.userData, seatPlayCard: key, focus: `seat-${i}` }; // MERGED — the card3d identity persists (I-149)
-          if (isLocal) mesh.userData = { ...mesh.userData, card: true, slotCard: it.id, family: 'session' }; // the partition oracle's walk
-          cards.push({ key, mesh, anchor: mesh.position.clone() });
-          g.add(mesh);
-        });
-      });
-      // C-1a (I-149): the OLD hand staging RETIRED — it duplicated in-play cards (the
-      // same physical card in two places), which the permanence constitution forbids.
-      // The REAL hand (networking cards, face-down, flip-all pickup) arrives at C-1d.
+      const sc = sf.c.clone().addScaledVector(sf.n, BASE + ss.d / 2 - cellD() / 2);
+      surf.position.set(sc.x, 0.8, sc.z);
+      surf.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
+      surf.userData = { seatSurface: i, focus: `seat-${i}` };
+      g.add(surf);
+      for (const c of seatCards) {
+        const cell = plan.get(c.id);
+        if (!cell) continue; // over capacity — parked (20 anchors; the overflow law is future)
+        const lc = cellLocal(cell.row, cell.col);
+        const pos = sf.c.clone().addScaledVector(sf.lat, lc.lat).addScaledVector(sf.n, BASE + lc.out);
+        const assigned = c.kind === 'trades' && crew.find((m) => m.id === c.id)?.assignedTo !== undefined;
+        // C-1a (I-149): the card is the persistent instance, re-claimed and posed.
+        const inst = cardInstance(c.label) ?? cardInstance(`${ctx.viewSeat}::${c.label}`);
+        let mesh: THREE.Object3D;
+        if (inst) {
+          inst.setFace([c.label, assigned ? '⚒ working' : `${seat.id}'s ${c.kind}`]);
+          mesh = inst.group;
+        } else {
+          mesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(44, 66),
+            new THREE.MeshBasicMaterial({ map: panelTexture([c.label, `${seat.id}'s ${c.kind}`], 10, 16), side: THREE.DoubleSide }),
+          );
+        }
+        // the owner's law: 'the ledger and cards all lay FLAT in the seat play space' —
+        // every posted card lies flat, face up, yawed with the board (the seat frame law).
+        mesh.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
+          .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
+        mesh.position.set(pos.x, 2.5, pos.z);
+        const key = `${c.kind === 'trades' ? 'crew' : c.kind === 'equipment' ? 'asset' : 'local'}:${c.id}`;
+        mesh.userData = { ...mesh.userData, seatPlayCard: key, focus: `seat-${i}` }; // MERGED — the card3d identity persists (I-149)
+        if (c.kind === 'bbb') mesh.userData = { ...mesh.userData, card: true, slotCard: c.id, family: 'session' }; // the partition oracle's walk
+        cards.push({ key, mesh, anchor: mesh.position.clone() });
+        g.add(mesh);
+      }
+      // C-1a (I-149): the OLD hand staging RETIRED; the REAL hand's zone is the grid's
+      // HAND span (row 4, cols 1–2) — C-1d lands there. The ledger span awaits the
+      // folder's migration (G-B3).
     }
     root = g;
     ctx.scene.add(g);
@@ -183,7 +176,7 @@ export const seatPlay: Component = {
     // ON its supply pile is the BOTTOM-RETURN — the real verb through the doors; the
     // rebuild seats the same instance at the pile's bottom. Anywhere else: the glide.
     const key = grab.card.key;
-    const pileFor = key.startsWith('crew:') ? 'tradespeople-pile' : key.startsWith('equipment:') ? 'equipment-pile' : null;
+    const pileFor = key.startsWith('crew:') ? 'tradespeople-pile' : key.startsWith('asset:') ? 'equipment-pile' : null; // I-164: the I-157 'equipment:' key never existed — asset: is the prefix (drill-caught)
     if (pileFor) {
       const pile = ctx.theater.focusObject(`table:${pileFor}`);
       if (pile) {
@@ -192,7 +185,7 @@ export const seatPlay: Component = {
         if (cp.x >= pb.min.x && cp.x <= pb.max.x && cp.z >= pb.min.z && cp.z <= pb.max.z) {
           const vNow = ctx.projection();
           const myTurn = vNow.seats[vNow.turn.seatIdx]!.id === ctx.viewSeat;
-          const id = key.startsWith('crew:') ? key.slice(5) : key.slice(10).split(':')[0]!;
+          const id = key.startsWith('crew:') ? key.slice(5) : key.slice(6).split(':')[0]!;
           const own = key.startsWith('crew:')
             ? vNow.crew.some((m) => m.id === id && m.outfit === ctx.viewSeat)
             : vNow.seats.find((s2) => s2.id === ctx.viewSeat)!.assets.some((a) => a.ref === id);
@@ -213,6 +206,30 @@ export const seatPlay: Component = {
             ctx.status('refused — a working card stays anchored to its venture');
             return true;
           }
+        }
+      }
+    }
+    // G-B2 (I-164, the owner's law): the active player DRAGS a card down and releases —
+    // 'it will now STICK to the new location'. A release over the VIEWER'S OWN surface
+    // on a POSTING cell claims that anchor (sticky, presentation state); the rebuild
+    // seats it there and the flow fills around it. Off the postings: the glide home.
+    {
+      const vS = ctx.projection();
+      const myIdx = vS.seats.findIndex((s2) => s2.id === ctx.viewSeat);
+      const sfS = myIdx >= 0 ? seatFrame(ctx, myIdx) : null;
+      const own = grab.card.mesh.userData['focus'] === `seat-${myIdx}`;
+      const myTurn = vS.seats[vS.turn.seatIdx]!.id === ctx.viewSeat;
+      if (sfS && own && myTurn) {
+        const rel = grab.card.mesh.position.clone().sub(sfS.c);
+        const cell = cellAt(rel.dot(sfS.lat), rel.dot(sfS.n) - 60);
+        if (cell && cell.col >= POSTING_SPAN.c0) {
+          const id = key.startsWith('crew:') ? key.slice(5) : key.startsWith('asset:') ? key.slice(6) : key.slice(6);
+          sticky.set(id, cell);
+          lastStick = { id, row: cell.row, col: cell.col };
+          grab = null;
+          ctx.rebuild(); // the plan seats it at the stuck anchor — the render obeys
+          ctx.status(`stuck at row ${cell.row}, col ${cell.col} — the flow fills around it`);
+          return true;
         }
       }
     }

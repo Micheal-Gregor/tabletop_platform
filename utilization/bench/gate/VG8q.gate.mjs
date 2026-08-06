@@ -179,7 +179,11 @@ export async function run(h) {
     const cxy = await G((id) => window.__GAME3D__.seatPlayCardXY(`crew:${id}`), HIRED);
     await page.mouse.move(cxy.x, cxy.y);
     await page.mouse.down();
-    for (let i = 1; i <= 3; i++) await page.mouse.move(cxy.x + i * 20, cxy.y - i * 8);
+    // G-B2 (I-164): aim the crew drag AT THE DECK — a surface release would stick+rebuild
+    // mid-two-pointer and drop the discard gesture underneath the drill.
+    const dkq = await G(() => window.__GAME3D__.regionScreenXY('deck'));
+    const qvx = (dkq.x - cxy.x), qvy = (dkq.y - cxy.y), qn = Math.hypot(qvx, qvy) || 1;
+    for (let i = 1; i <= 3; i++) await page.mouse.move(cxy.x + (qvx / qn) * i * 20, cxy.y + (qvy / qn) * i * 20);
     const dxy = await G(() => window.__GAME3D__.regionScreenXY('discard'));
     const both = await G(async ({ x, y }) => {
       const el = document.querySelector('#stage canvas');

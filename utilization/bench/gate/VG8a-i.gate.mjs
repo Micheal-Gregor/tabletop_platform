@@ -241,11 +241,25 @@ export async function run(h) {
     check('VG8g3/ring-stations', ringOk && ring.r > 400,
       poses.map((p, i) => `${i}:${p ? `${p.yawDeg.toFixed(0)}°@r${Math.hypot(p.x, p.z).toFixed(0)}` : 'NULL'}`).join(' · ') + ` (want equidistant at r=${ring.r.toFixed(0)} — the PA-1 template, I-141)`);
 
-    // L-4 (I-131) · seat-rows-law: every seat's RENDERED rows ≡ the pure planner's plan
-    // (the planner's own laws live in vitest — seat-rows.test.ts); the viewer's HAND
+    // G-B2 (I-164, superseding L-4 per I-159) · seat-rows-law: every seat's RENDER ≡
+    // planPostings on the 7×4 grid (counts AND poses); the viewer's HAND
     // stages BELOW the books (farther from the table than the ledger, count = the SVG
     // hand law). Non-vacuous at genesis: moe has crew, ownDiscard 0 → hand 0 is the
     // LAWFUL want (count-true both ways). KILL: stop consuming the plan → match false.
+    // I-152/I-164: genesis seeds NO crew — the free first hire (the flick door) makes
+    // the law non-vacuous before the grid render is checked against planPostings.
+    {
+      const pcG = await page.evaluate(() => window.__GAME3D__.poolCounts());
+      const hxyG = await page.evaluate(() => window.__GAME3D__.regionScreenXY('tradespeople-pile'));
+      if (hxyG) {
+        await page.mouse.move(hxyG.x, hxyG.y);
+        await page.mouse.down();
+        for (let i = 1; i <= 4; i++) await page.mouse.move(hxyG.x + i * 12, hxyG.y + i * 10);
+        await page.mouse.up();
+        await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pcG.tradespeople - 1, { timeout: 8000 }).catch(() => {});
+        await page.waitForFunction(() => window.__GAME3D__.supplyPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+      }
+    }
     const rowsInfo = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.seatRowsInfo(i)));
     const rowsOk = rowsInfo.every((r) => r && r.match) && rowsInfo[0].got.crew >= 1;
     const hand = await page.evaluate(() => window.__GAME3D__.handInfo());

@@ -5,15 +5,18 @@
  */
 import * as THREE from 'three';
 import type { PlayAreaContext } from '../component.js';
-import { planSeatRows } from '../seat-rows.js';
+import { planPostings, cellLocal } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
-import { seatPlayCards, seatFrame, seatPlayLastReturn } from './seat-play.js';
+import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick } from './seat-play.js';
+
+const seatStickId = (): string | null => { const st = seatPlayLastStick(); return st ? st.id : null; };
 
 export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, unknown> {
   const cardsRef = seatPlayCards;
   return {
     seatReturn: seatPlayLastReturn, // I-157: the last bottom-return {id, pile}
+    seatStick: seatPlayLastStick, // G-B2 (I-164): the last stuck anchor {id, row, col}
       /** count-true crew rows: per seat — want (projection) vs got (meshes) + in-front. */
       crewRows: () => {
         const v = getCtx().projection();
@@ -36,24 +39,41 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
       /** L-4 (I-131) oracles: the PLAN vs the RENDER for a seat (row kinds/counts/
        *  overlap ≡ meshes by key prefix), and the hand's below-the-books geometry. */
       seatRowsInfo: (i: number) => {
+        // G-B2 (I-164): the RENDER ≡ planPostings — counts per kind AND every card
+        // within 2u of its planned cell in the board's own frame (the grid is the law;
+        // a renderer deciding for itself fails BY NAME here). Shape kept for VG8g4.
         const v = getCtx().projection();
         const seat = v.seats[i];
         if (!seat) return null;
         const mine = seat.id === getCtx().viewSeat;
         const session = v.ownDiscard.filter((id) => CARD_FAMILY[id] === 'session');
-        const plan = planSeatRows(
-          v.crew.filter((m) => m.outfit === seat.id).map((m) => ({ id: m.id, paired: false })),
-          mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}` })) : [],
-          mine ? session.map((id) => ({ id })) : [],
-        );
-        const of = (p: string) => cardsRef().filter((c) => c.key.startsWith(p) && c.mesh.userData['focus'] === `seat-${i}` && !c.mesh.userData['hand']).length;
-        return {
-          plan: plan.map((r) => ({ kind: r.kind, n: r.items.length, overlap: r.overlap })),
-          got: { crew: of('crew:'), equipment: of('asset:'), local: of('local:') },
-          match: plan.filter((r) => r.kind === 'trades').reduce((a, r) => a + r.items.length, 0) === of('crew:')
-            && plan.filter((r) => r.kind === 'equipment').reduce((a, r) => a + r.items.length, 0) === of('asset:')
-            && plan.filter((r) => r.kind === 'local').reduce((a, r) => a + r.items.length, 0) === of('local:'),
+        const seatCards = [
+          ...(mine ? session.map((id) => ({ id, kind: 'bbb' as const })) : []),
+          ...v.crew.filter((m) => m.outfit === seat.id).map((m) => ({ id: m.id, kind: 'trades' as const })),
+          ...(mine ? seat.assets.map((a, k) => ({ id: `${a.ref}:${k}`, kind: 'equipment' as const })) : []),
+        ];
+        const plan = planPostings(seatCards); // sticky claims shift anchors, so POSITION checks only bind when no stick is live for the card
+        const sf = seatFrame(getCtx(), i);
+        const of = (p: string) => cardsRef().filter((c) => c.key.startsWith(p) && c.mesh.userData['focus'] === `seat-${i}`).length;
+        const got = { crew: of('crew:'), equipment: of('asset:'), local: of('local:') };
+        const want = {
+          crew: seatCards.filter((c) => c.kind === 'trades').length,
+          equipment: seatCards.filter((c) => c.kind === 'equipment').length,
+          local: seatCards.filter((c) => c.kind === 'bbb').length,
         };
+        let posed = true;
+        if (sf) {
+          for (const c of seatCards) {
+            const cell = plan.get(c.id);
+            const card = cardsRef().find((k) => k.key.endsWith(`:${c.id}`) && k.mesh.userData['focus'] === `seat-${i}`);
+            if (!cell || !card) continue;
+            if ((seatStickId() === c.id)) continue; // a stuck card owns its own anchor
+            const lc = cellLocal(cell.row, cell.col);
+            const wantPos = sf.c.clone().addScaledVector(sf.lat, lc.lat).addScaledVector(sf.n, 60 + lc.out);
+            if (Math.hypot(card.mesh.position.x - wantPos.x, card.mesh.position.z - wantPos.z) > 2) posed = false;
+          }
+        }
+        return { got, match: got.crew === want.crew && got.equipment === want.equipment && got.local === want.local && posed };
       },
       /** O-2 (I-146): the STATION BOX containment — every seat-0 station mesh's centre
        *  inside the box rect (frame-relative). KILL: move any offset out → fails. */

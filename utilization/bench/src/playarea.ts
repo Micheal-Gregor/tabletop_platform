@@ -1,3 +1,14 @@
+/** I-150 (owner-ruled): THE OBJECT SCALE CONTROL TABLE — the parent's single truth for
+ *  every board object's dimensions ('a control table to ensure each object has a scale
+ *  and stays true to it'). Child games may OVERRIDE per class AS DATA (the TableMode
+ *  pattern); every consumer DERIVES — no object carries a private size again. */
+export const OBJECT_SCALE = {
+  card: { w: 64, h: 96, t: 1.6 }, // near real-card proportion against the 900-wide board
+  die: 45,
+  board: { w: 260, h: 260 },
+  folder: { w: 130, h: 180 },
+} as const;
+
 /**
  * THE PLAY AREA — the RADIAL PARENT TEMPLATE (PA-1, I-141; the owner's law verbatim):
  * "0,0,0 is the center of play … player spots are situated in a radius around 0,0,0 at
@@ -15,7 +26,10 @@
 
 /** the station's chord claim: the wider of the board (260) and the row plan (380),
  *  plus the presentation buffer — "tight, consistent, professional". */
-export const STATION_CHORD = 480;
+// G-B2 (I-164): the chord DERIVES from the seat surface's width (7 cells of card+gutter
+// + margin) — the radial template self-resizes, as designed at PA-1. The 7/12 literals
+// are BOUND to seat-grid's SEAT_COLS/GUTTER by a vitest law (no import — layering).
+export const STATION_CHORD = 7 * (OBJECT_SCALE.card.w + 12) + 48;
 export const TABLE_CLEAR = 60; // F-6 (I-148, owner: 'brought in a little') — was 130
 
 /** the table's half-diagonal (world): the current 900×700 board. Self-resizes when
@@ -63,7 +77,10 @@ export const setTableMode = (m: TableMode): void => { tableMode = m; }; // the d
  *  (the I-144 side), in the seat's own frame: lat ±(chord/2 − buffer), depth 300 out
  *  from the board line. Contents PACK into it (folder column left · rows right · hand
  *  below the folder); the gate asserts containment on the viewer's station. */
-export const STATION_BOX = { halfW: 240, depth: 300 } as const;
+export const STATION_BOX = {
+  halfW: (7 * (OBJECT_SCALE.card.w + 12)) / 2 + 10, // the surface half-width + margin (G-B2, bound by law)
+  depth: 60 + 4 * (OBJECT_SCALE.card.h + 12) + 20, // base offset + 4 rows + margin
+} as const;
 
 /** F-5 (I-148): a WIDE prop occupant ('the box is a little trickier being a wide cube')
  *  sits at its slot's DIRECTION but pushed OUT by its own footprint claim, so it never
@@ -73,13 +90,3 @@ export function propSlot(i: number, occupants: number, push: number, r: number =
   return { x: Math.sin(a) * (r + push), z: Math.cos(a) * (r + push), yaw: a };
 }
 
-/** I-150 (owner-ruled): THE OBJECT SCALE CONTROL TABLE — the parent's single truth for
- *  every board object's dimensions ('a control table to ensure each object has a scale
- *  and stays true to it'). Child games may OVERRIDE per class AS DATA (the TableMode
- *  pattern); every consumer DERIVES — no object carries a private size again. */
-export const OBJECT_SCALE = {
-  card: { w: 64, h: 96, t: 1.6 }, // near real-card proportion against the 900-wide board
-  die: 45,
-  board: { w: 260, h: 260 },
-  folder: { w: 130, h: 180 },
-} as const;
