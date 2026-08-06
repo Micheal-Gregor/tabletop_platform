@@ -167,7 +167,8 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   // third lie: seat-0's yawed board read pulled too far while seat-1's was perfect).
   const sp2 = box.getBoundingSphere(new THREE.Sphere());
   const fovV3 = (camera.fov * Math.PI) / 180;
-  const dSphere = (Math.max(30, sp2.radius) / Math.sin((fovV3 / 2) * 0.9)) * factor;
+  let dSphere = (Math.max(30, sp2.radius) / Math.sin((fovV3 / 2) * 0.9)) * factor;
+  if (focus.startsWith('seat-') && !focus.startsWith('seat-area-')) dSphere *= 0.5; // I-228 (owner-tuned): the SEAT board reads at HALF the distance — seats only; areas are right
   return { pos: c.clone().add(n.clone().multiplyScalar(dSphere)), look: c, up };
 }
 
@@ -401,7 +402,25 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   const isChild = anchor !== zone && anchor !== 'table';
   if (mode === 'read') {
     const readIsZone = readFocus === zone || readFocus === 'table' || readFocus.startsWith('seat-area-');
-    if (readIsZone) { status(isChild || readIsZone ? 'the zone read — select an object to zoom to it' : ''); return; } // min ≡ max: the wheel rests
+    if (readIsZone) {
+      // I-228 (the owner's catch — 'I still can't zoom in on a card'): the zone read
+      // rests ONLY when nothing is selected; with a CHILD selected, wheel-in LEAVES the
+      // rest and descends toward it (the wall math had room all along — the early
+      // return was eating the selection, not the geometry).
+      if (zoomIn && isChild) {
+        const co = focusObject(anchor);
+        if (co) {
+          const cc = new THREE.Box3().setFromObject(co).getBoundingSphere(new THREE.Sphere()).center;
+          mode = 'scene';
+          const dir = cc.clone().sub(camera.position);
+          target = { pos: camera.position.clone().add(dir.multiplyScalar(0.12)), look: cc };
+          status(`descending to ${anchor} — keep wheeling; one notch past full fills its page`);
+          return;
+        }
+      }
+      status('the zone read — select an object to zoom to it');
+      return; // min ≡ max only when nothing is selected
+    }
     if (!zoomIn) { readView(zoneAnchorOf(readFocus)); return; } // a child's read backs out to the zone read
     return; // in: a child's read is the innermost rung
   }
