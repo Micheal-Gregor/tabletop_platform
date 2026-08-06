@@ -106,7 +106,7 @@ export function focusObject(focus: string): THREE.Object3D | null {
     scene.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
     return fan; // I-205: wheel-in on the lifted hand reaches READ (the onion browser is H-4's layer)
   }
-  if (focus.startsWith('seat-area-')) {
+  if (focus.startsWith('seat-area-') || focus === 'box') {
     // PB-1/PB-2 (I-176): the seat PLAY AREA is a first-class anchor — the transparent
     // surface found by its index tag (world-space, rebuilt every state change).
     const idx = Number(focus.slice('seat-area-'.length));
@@ -146,7 +146,7 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
     const up = new THREE.Vector3(0, 0, -1);
     return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * factor)), look: c, up };
   }
-  if (focus.startsWith('seat-area-')) {
+  if (focus.startsWith('seat-area-') || focus === 'box') {
     // PB-2 (I-176, the owner: 'pan to a direct overhead looking down on the play area
     // the way the table does'): straight down, up = toward the board/table so the
     // player's cards read upright; grabs stay live in read (the claim order already
@@ -228,7 +228,7 @@ export function scenicView(focus: string): void {
   let back = R / Math.sin((fovV / 2) * 0.72);
   let horiz = rHoriz + back;
   let h = Math.tan(0.611) * horiz; // 35° down at the CENTER — the default law
-  if (focus.startsWith('seat-area-')) {
+  if (focus.startsWith('seat-area-') || focus === 'box') {
     // I-221 (owner-tuned, superseding the I-219 match): HALF the seat cam's elevation,
     // and the AREA'S NEAREST EDGE FILLS THE ENTIRE BOTTOM EDGE OF THE VIEW — the
     // composition rule outranks look-at-center here: the pitch is set so the near
@@ -240,9 +240,12 @@ export function scenicView(focus: string): void {
     // angled seat measured too wide and pulled too far back): the surface's size comes
     // from ITS LAW (seat-grid), exact at every yaw; the near edge is center + half-depth
     // along the outward radial, by the surface's own construction.
+    // I-224: the BOX takes the same composition as the play areas (owner-asked) — its
+    // width/near-edge come from its bounding SPHERE (rotation-safe, the owner's own
+    // sphere law: the AABB lied once already, I-223); the areas keep their grid truth.
     const ssz = surfaceSize();
-    const W = ssz.w;
-    const rNear = rHoriz + ssz.d / 2;
+    const W = focus === 'box' ? 2 * R : ssz.w;
+    const rNear = focus === 'box' ? rHoriz + R : rHoriz + ssz.d / 2;
     const tanH = Math.tan(fovV / 2) * camera.aspect;
     const slant = (W / 2) / tanH; // the near edge spans the full horizontal FOV at this slant range
     const b2 = Math.sqrt(Math.max(slant * slant - h * h, 60 * 60)); // horizontal back-off behind the edge
