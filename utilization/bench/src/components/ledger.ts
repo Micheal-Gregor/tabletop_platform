@@ -11,9 +11,12 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import * as ledger from '../ledger.js';
+import { STATION_BOX } from '../playarea.js'; // PB-3 (I-177): the reposition clamp
 
 let cx: PlayAreaContext | null = null;
 let bookRoot: THREE.Object3D | null = null;
+let bookOffset: { lat: number; out: number } | null = null; // PB-3 (I-177): the dragged ledger's claim (survives rebuilds)
+let bookGrab: { plane: THREE.Plane; ray: THREE.Raycaster; start: THREE.Vector3; moved: number } | null = null;
 
 // the OPEN spread stands above the closed book, front of the viewing seat's board.
 const anchorOf = (book: THREE.Object3D): THREE.Vector3 =>
@@ -44,7 +47,7 @@ export const ledgerComponent: Component = {
       const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
       n.y = 0; n.normalize(); // toward the player, horizontal
       const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
-      book.position.copy(c).addScaledVector(lat, -190).addScaledVector(n, 168).setY(2); // G-B3 (I-165): the LEDGER SPAN's center (rows 1–3, cols 1–2 → lat −190, out 168) — the folder takes its grid claim; the left-edge law still holds (−190 < −130)
+      book.position.copy(c).addScaledVector(lat, bookOffset?.lat ?? -190).addScaledVector(n, bookOffset?.out ?? 168).setY(2); // G-B3 (I-165) default = the LEDGER SPAN's center · PB-3 (I-177): the OWNER may drag it — the offset is presentation state, like a card's stick
       // I-133 (the owner's screenshot catch — 'the folder rotated 45° instead of staying
       // flat'): the world-yaw PREMULTIPLIES the built pose. Setting rotation.y MUTATED
       // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
@@ -86,6 +89,57 @@ export const ledgerComponent: Component = {
     ctx.status('the ledger closes');
     return true;
   },
+
+  // PB-3 (I-177, the owner: 'I should be able to reposition the ledger … the same way
+  // I move around cards'): a DRAG on the closed folder moves it — the board-frame
+  // offset is stored (presentation state, like a card's stick) and clamped to the
+  // station; release re-seats it. A TAP (<8u) falls through to the open (below).
+  onGrabStart(ctx, hit: PickInfo) {
+    if (hit.tags['ledger'] !== true || !bookRoot || ledger.ledgerState().open) return false;
+    bookGrab = { plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -4), ray: new THREE.Raycaster(), start: bookRoot.position.clone(), moved: 0 };
+    return true;
+  },
+  onGrabMove(ctx, ev: PointerEvent) {
+    if (!bookGrab || !bookRoot) return;
+    const r = ctx.renderer.domElement.getBoundingClientRect();
+    bookGrab.ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
+    const p = new THREE.Vector3();
+    if (bookGrab.ray.ray.intersectPlane(bookGrab.plane, p)) {
+      bookRoot.position.set(p.x, 6, p.z);
+      bookGrab.moved = Math.max(bookGrab.moved, p.distanceTo(bookGrab.start));
+    }
+  },
+  onGrabEnd(ctx, _ev: PointerEvent) {
+    if (!bookGrab || !bookRoot) return false;
+    const wasTap = bookGrab.moved < 8;
+    if (wasTap) {
+      bookRoot.position.copy(bookGrab.start);
+      bookGrab = null;
+      ctx.theater.setLastFocus('ledger');
+      ledger.openLedger(ctx.projection(), ctx.viewSeat, anchorOf(bookRoot));
+      ctx.status('the ledger flips open — the P&L (left) and Balance Sheet (right) rise; click a report to read it');
+      return true;
+    }
+    // store the new claim in the SEAT-0 board frame, clamped to the station box
+    const board = ctx.theater.focusObject('seat-0');
+    if (board) {
+      board.updateWorldMatrix(true, true);
+      const c = new THREE.Box3().setFromObject(board).getCenter(new THREE.Vector3());
+      const q = board.getWorldQuaternion(new THREE.Quaternion());
+      const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q); n.y = 0; n.normalize();
+      const lat = new THREE.Vector3(n.z, 0, -n.x);
+      const rel = bookRoot.position.clone().sub(c);
+      bookOffset = {
+        lat: Math.max(-STATION_BOX.halfW + 70, Math.min(STATION_BOX.halfW - 70, rel.dot(lat))),
+        out: Math.max(40, Math.min(STATION_BOX.depth - 30, rel.dot(n))),
+      };
+    }
+    bookGrab = null;
+    ctx.rebuild(); // the claim re-seats it (the same folder object, re-posed)
+    ctx.status('the ledger settles at its new spot — your claim holds');
+    return true;
+  },
+  onGrabAbort(_ctx) { if (bookGrab && bookRoot) { bookRoot.position.copy(bookGrab.start); bookGrab = null; } },
 
   // Phase 2: the closed folder — click FLIPS it open (cover swings, the reports RISE); an
   // OPEN report page — click ANCHORS it and zooms into its reading view (P-2, I-84).

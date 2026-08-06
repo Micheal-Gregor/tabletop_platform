@@ -18,7 +18,7 @@ import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
 import { uiObject } from '../ui-object.js'; // G-C (I-169): the base-case library — the card's sockets
-import { OBJECT_SCALE } from '../playarea.js'; // I-150: the scale control table
+import { OBJECT_SCALE, STATION_BOX } from '../playarea.js'; // I-150/I-177: the scale control table + the reposition clamp
 import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
 
 let cx: PlayAreaContext | null = null;
@@ -33,6 +33,7 @@ let lastReset: { moved: number; returned: boolean; frames: number } | null = nul
 let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
 const sticky = new Map<string, { row: number; col: number }>(); // G-B2: the viewer's STUCK anchors (presentation state, survives rebuilds)
 let handUp = false; // C-1d (I-171): the flip-all pickup — face-down grouped ↔ all face up (theater state)
+let handOffset: { lat: number; out: number } | null = null; // PB-3 (I-177): the dragged hand's claim
 let lastHandPlay: { id: string } | null = null;
 export const handUpState = () => handUp;
 export const seatPlayLastHandPlay = () => lastHandPlay;
@@ -173,8 +174,8 @@ export const seatPlay: Component = {
           if (!hi) return;
           hi.setFace([hid, 'networking']);
           const t2 = v.ownHand.length > 1 ? hIdx / (v.ownHand.length - 1) : 0.5;
-          const lat2 = a1.lat + (a2.lat - a1.lat) * t2;
-          const hp = sf.c.clone().addScaledVector(sf.lat, lat2).addScaledVector(sf.n, BASE + a1.out);
+          const lat2 = (handOffset?.lat ?? 0) + a1.lat + (a2.lat - a1.lat) * t2; // PB-3: the claim shifts the whole fan
+          const hp = sf.c.clone().addScaledVector(sf.lat, lat2).addScaledVector(sf.n, (handOffset?.out ?? (BASE + a1.out)));
           hi.group.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
             .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), handUp ? -Math.PI / 2 : Math.PI / 2)));
           hi.group.position.set(hp.x, handUp ? 6 : 2.2, hp.z); // picked-up hands lift a touch
@@ -251,6 +252,24 @@ export const seatPlay: Component = {
         }
         ctx.status('refused — not your turn or not in your hand');
         return true;
+      }
+      if (!handUp && moved >= 8) {
+        // PB-3 (I-177): dragging the FACE-DOWN hand slides the whole fan — the claim
+        // (board-frame, clamped to the station) survives rebuilds, like a card's stick.
+        const vH2 = ctx.projection();
+        const myIdx2 = vH2.seats.findIndex((s2) => s2.id === ctx.viewSeat);
+        const sfH = myIdx2 >= 0 ? seatFrame(ctx, myIdx2) : null;
+        if (sfH) {
+          const rel = card.mesh.position.clone().sub(sfH.c);
+          handOffset = {
+            lat: Math.max(-STATION_BOX.halfW + 80, Math.min(STATION_BOX.halfW - 80, rel.dot(sfH.lat))),
+            out: Math.max(40, Math.min(STATION_BOX.depth - 30, rel.dot(sfH.n))),
+          };
+          grab = null;
+          ctx.rebuild();
+          ctx.status('the hand settles at its new spot — your claim holds');
+          return true;
+        }
       }
       resetting = { card, from: card.mesh.position.clone(), t: 0 };
       lastReset = { moved, returned: false, frames: 0 };
