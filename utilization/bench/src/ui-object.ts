@@ -71,11 +71,15 @@ export const uiObject = (id: string): UIObjectDef | undefined => UI_OBJECTS.find
 /** the CHAIN LAW: every span/socket placement names a real parent; a socket names a
  *  real socket on that parent's child grid (referential integrity — the hierarchy
  *  builds out from declared relationships, never dangling). */
-export function chainIntegrity(): { ok: boolean; broken: string[] } {
+export function chainIntegrity(): { ok: boolean; broken: string[] } { return chainIntegrityOf(UI_OBJECTS); }
+/** K7-V M-2: the law takes ANY library, so a synthetic dangling def can prove the
+ *  check has teeth (a positive-only integrity law verifies nothing). */
+export function chainIntegrityOf(defs: readonly UIObjectDef[]): { ok: boolean; broken: string[] } {
   const broken: string[] = [];
-  for (const o of UI_OBJECTS) {
+  const find = (id: string) => defs.find((o) => o.id === id);
+  for (const o of defs) {
     if (o.placement.kind === 'span' || o.placement.kind === 'socket') {
-      const parent = uiObject(o.placement.parent);
+      const parent = find(o.placement.parent);
       if (!parent) { broken.push(`${o.id}→${o.placement.parent} (no parent)`); continue; }
       if (o.placement.kind === 'socket' && o.placement.socket !== 'posting'
         && !(parent.childGrid?.sockets.some((s) => s.id === (o.placement as { socket: string }).socket)))

@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import type { PlayAreaContext } from '../component.js';
-import { planPostings, cellLocal } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
+import { planPostings, cellLocal, cellD } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
 import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, seatPlayLastHandPlay } from './seat-play.js';
@@ -107,7 +107,7 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
         let onStrip = true;
         if (sf) for (const c of handCards) {
           const out = c.mesh.position.clone().sub(sf.c).dot(sf.n);
-          if (out < 60 + 2 * 108 - 5) onStrip = false; // deeper than rows 1–3's zone
+          if (out < 60 + 2 * cellD() - 5) onStrip = false; // deeper than rows 1–3's zone (K7-V minor: DERIVED, never 2·108)
         }
         return { count: handCards.length, want: v.ownHand.length, belowBooks: onStrip, up: handUpState() };
       },

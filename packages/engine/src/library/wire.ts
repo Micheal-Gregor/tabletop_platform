@@ -207,19 +207,19 @@ export function wireLibrary(core: EngineCore, registry: RuleRegistry): void {
   core.registerIntent(
     'hand:play',
     { args: (_s, i) => (typeof i.args['card'] === 'string' ? true : 'card required'), rules: [onTurn] },
-    (state, intent) => playHandCard(state, intent.seat, String(intent.args['card'])) as never, // C-1d (I-171): hand → revealed → the pool's bottom
+    (state, intent) => playHandCard(state, intent.seat, String(intent.args['card'])) as never, // C-1d (I-171): hand → revealed → the pool's bottom · NO LEVY, deliberate (economics deferred — I-138/I-140; K7-V minor closed)
   );
 
   core.registerIntent(
     'crew:attach',
     { args: (_s, i) => (typeof i.args['crew'] === 'string' && typeof i.args['ref'] === 'string' ? true : 'crew + ref required'), rules: [onTurn] },
-    (state, intent) => attachGear(state, intent.seat, String(intent.args['crew']), String(intent.args['ref'])) as never, // G-C2 (I-170): the equipment-under socket
+    (state, intent) => attachGear(state, intent.seat, String(intent.args['crew']), String(intent.args['ref'])) as never, // G-C2 (I-170): the equipment-under socket · NO LEVY, deliberate (I-138/I-140)
   );
 
   core.registerIntent(
     'crew:detach',
     { args: (_s, i) => (typeof i.args['crew'] === 'string' ? true : 'crew required'), rules: [onTurn] },
-    (state, intent) => detachGear(state, intent.seat, String(intent.args['crew'])) as never, // G-C2 (I-170): back to the rack
+    (state, intent) => detachGear(state, intent.seat, String(intent.args['crew'])) as never, // G-C2 (I-170): back to the rack · NO LEVY, deliberate (I-138/I-140)
   );
 
   core.registerIntent(

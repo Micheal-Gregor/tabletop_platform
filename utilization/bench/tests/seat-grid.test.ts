@@ -2,6 +2,7 @@
  *  sticky claims, hit-test round-trip. Pure; the renderer obeys, never decides. */
 import { describe, it, expect } from 'vitest';
 import { cellLocal, cellAt, postingCells, planPostings, firstOpenCell, LEDGER_SPAN, HAND_SPAN, POSTING_SPAN, SEAT_COLS, SEAT_ROWS, cellW, cellD, surfaceSize } from '../src/seat-grid.js';
+import { OBJECT_SCALE } from '../src/playarea.js';
 
 describe('G-B: the seat play surface grid (I-158/I-159)', () => {
   it('the spans partition without overlap: ledger 2×3, hand 2×1, postings 5×4 = 20', () => {
@@ -45,9 +46,9 @@ describe('G-B: the seat play surface grid (I-158/I-159)', () => {
       expect(cellAt(p.lat, p.out)).toEqual({ row: r, col: c });
     }
   });
-  it('the child spacing derives from the scale table (two data tables compose)', () => {
-    expect(surfaceSize()).toEqual({ w: SEAT_COLS * cellW(), d: SEAT_ROWS * cellD() });
-    expect(cellW()).toBeGreaterThan(64); // card width + gutter
-    expect(cellD()).toBeGreaterThan(96);
+  it('the child spacing derives from the scale table (K7-V minor: pinned to the CONTROL TABLE\'S numbers, not to itself)', () => {
+    expect(cellW()).toBe(OBJECT_SCALE.card.w + 12); // the composition law, literal
+    expect(cellD()).toBe(OBJECT_SCALE.card.h + 12);
+    expect(surfaceSize()).toEqual({ w: 7 * (OBJECT_SCALE.card.w + 12), d: 4 * (OBJECT_SCALE.card.h + 12) });
   });
 });

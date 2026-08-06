@@ -37,7 +37,7 @@ export function faceYaw(from: GridPoint, target: GridPoint = { x: 0, y: 0, z: 0 
  *  'identify the grid anchor points within a circumference with radius x'). */
 export function anchorsWithinRadius(r: number, center: GridPoint = { x: 0, y: 0, z: 0 }, y = 0): GridPoint[] {
   const out: GridPoint[] = [];
-  const n = Math.ceil(r / spacing);
+  const n = Math.ceil(r / spacing) + 1; // K7-V minor: +1 covers the off-grid-center boundary (generation walks the SNAPPED lattice; membership measures the TRUE center)
   const cy = Math.round(y / spacing) * spacing;
   for (let i = -n; i <= n; i++) for (let k = -n; k <= n; k++) {
     const x = Math.round(center.x / spacing) * spacing + i * spacing;

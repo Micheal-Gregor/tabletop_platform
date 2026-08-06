@@ -50,9 +50,9 @@ export function setSpreadYaw(y: number): void { spreadYaw = y; }
 /** G-D (I-166): THE UPRIGHT LAW's oracle — each displayed sheet's lean off vertical
  *  (degrees; want ≈0) and heading error vs the seat frame's yaw (want ≈0). A tilted
  *  or mis-yawed pop-up fails BY NAME with its numbers. */
-export function spreadUpright(): Record<string, { lean: number; headingErr: number }> | null {
+export function spreadUpright(): Record<string, { lean: number; headingErr: number; heading: number; posErr: number; quatErr: number }> | null {
   if (phase !== 'displayed') return null;
-  const out: Record<string, { lean: number; headingErr: number }> = {};
+  const out: Record<string, { lean: number; headingErr: number; heading: number; posErr: number; quatErr: number }> = {};
   for (const k of ['pnl', 'balance'] as const) {
     const sh = sheets[k];
     if (!sh) continue;
@@ -61,7 +61,17 @@ export function spreadUpright(): Record<string, { lean: number; headingErr: numb
     const nrm = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
     const heading = Math.atan2(nrm.x, nrm.z);
     const dh = Math.atan2(Math.sin(heading - spreadYaw), Math.cos(heading - spreadYaw));
-    out[k] = { lean: (Math.acos(Math.min(1, Math.max(-1, up.y))) * 180) / Math.PI, headingErr: (dh * 180) / Math.PI };
+    // K7-V M-1: THE EXACT-POSE LAW — at 'displayed' the pose must be the snap's COPY,
+    // bitwise (posErr ≡ 0, quatErr ≡ 0). A deleted settle-snap leaves the ~3e-6 slerp
+    // residual and fails; the 2° lean pin alone could never see it (the reviewer's math).
+    const disp = displayPose(k);
+    out[k] = {
+      lean: (Math.acos(Math.min(1, Math.max(-1, up.y))) * 180) / Math.PI,
+      headingErr: (dh * 180) / Math.PI,
+      heading: (heading * 180) / Math.PI, // ABSOLUTE — the gate checks it against an INDEPENDENT yaw source (M-1's self-reference closed)
+      posErr: sh.position.distanceTo(disp.pos),
+      quatErr: sh.quaternion.angleTo(disp.quat),
+    };
   }
   return out;
 }

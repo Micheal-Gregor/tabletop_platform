@@ -132,3 +132,16 @@ an omission.
 | M12a Outfit · buy | packages/engine/src/library/outfit.ts + wire.ts | S-3 module-native · I-137 · GX-30 | `outfit:buy` (onTurn): pops the top `pools.equipment` PoolCard → seat.assets {ref:id, value:cost}; empty pool → GX-30; cost via the same levy path | building |
 | MP5 projection · pools | packages/presentation/src/projector.ts | S-6 · redaction | pools as COUNTS ONLY (face-down piles); `?? empty` tolerates pool-less v1 states | building |
 | MP3 emitter · verbs | packages/presentation/src/emitter.ts | R-23 · I-137 admission | 'hire' → crew:hire · 'buy-equipment' → outfit:buy (the venture:spawn door precedent) | building |
+
+## Pool cycle + pairs + the hand (I-139 · I-152 · I-157 · I-170 · I-171) — K7-V M-3 closure (rows appended at review; the desync is on the record at I-172)
+
+| Module | File | Traces | Behavior | Status |
+|---|---|---|---|---|
+| M12b Crew · free first hire | packages/engine/src/library/outfit.ts | I-152 (owner-ruled) · GX-30 | a seat's FIRST hire levies nothing (`firstHire` branch); later hires pay the card's cost; falsifiable against a NONZERO-cost fixture (K7-V B-1 closure — the executed kill) | built |
+| M12a/M13-adj · pool:draw | outfit.ts drawFromPool + wire.ts | O-3 I-139 · C-1d I-171 · GX-30 | 'pool-draw' (onTurn): bbb → the seat deck's discard (the local row presents it); networking → the seat's HAND (the whole PoolCard rides — id+cost — so returns need no catalog) | built |
+| M12b Crew · release | outfit.ts releaseCrew + wire.ts | I-157 (the I-149 grammar) · GX-31 | 'release-crew' (onTurn): the crew row leaves for the tradesperson pool's BOTTOM ({id,trade,cost} rebuilt — cost rides the crew row); refusals: not yours · not found · ASSIGNED (drilled pure — K7-V B-2 closure) | built |
+| M12a Outfit · sell | outfit.ts sellEquipment + wire.ts | I-157 · GX-31 | 'sell-equipment' (onTurn): the asset returns to the equipment pool's BOTTOM ({id, name:id, cost:value}) | built |
+| M12b Crew · attach/detach | outfit.ts attachGear/detachGear + wire.ts | G-C2 I-170 · GX-32 · the equipment-under socket (ui-object) | 'attach-gear' (onTurn): the asset LEAVES the rack and rides the crew row as gear+gearValue (one object, one place; ONE socket — a geared member refuses a second); 'detach-gear' restores {ref, value} to the rack; no levy (deliberate — economics deferred, I-138/I-140) | built |
+| M12b Hand · play | outfit.ts playHandCard + wire.ts | C-1d I-171 (the I-149 grammar) · GX-33 | 'play-networking' (onTurn): the card leaves the hand for the networking pool's BOTTOM, object whole; refusal: not in your hand; no levy (deliberate) | built |
+| MP5 projection · hand + gear | packages/presentation/src/projector.ts | S-6 · redaction · I-170/I-171 | crew rows declare `gear`; `ownHand` = the VIEWER'S ids only; every seat's `handCount` public (hidden hands COUNT — redaction-honest) | built |
+| MP3 emitter · verbs | packages/presentation/src/emitter.ts | R-23 | 'release-crew' · 'sell-equipment' · 'attach-gear' · 'detach-gear' · 'play-networking' — intents only | built |

@@ -95,9 +95,19 @@ export async function run(h) {
   // error ≈ 0°) — aligned to the player board, 90° about y. KILL: restore any tilt or
   // drop the settle-snap → the numbers name it.
   const upr = await page.evaluate(() => window.__GAME3D__.ledgerUpright());
-  const uprOk = !!upr && ['pnl', 'balance'].every((k) => upr[k] && Math.abs(upr[k].lean) < 2 && Math.abs(upr[k].headingErr) < 2);
+  // K7-V M-1: (a) EXACT-POSE — posErr/quatErr ≡ 0 (a deleted settle-snap leaves ~3e-6
+  // and fails; the lean pin alone could not see it); (b) the heading is checked against
+  // an INDEPENDENT yaw source (seatYawData(0)), closing the spreadYaw self-reference.
+  const indYaw = await page.evaluate(() => window.__GAME3D__.seatYawData()[0]);
+  const wantHead = (indYaw * 180) / Math.PI;
+  const headsOk = !!upr && ['pnl', 'balance'].every((k) => {
+    const d = Math.abs(((upr[k].heading - wantHead + 540) % 360) - 180);
+    return d < 2;
+  });
+  const uprOk = !!upr && ['pnl', 'balance'].every((k) => upr[k] && Math.abs(upr[k].lean) < 2 && Math.abs(upr[k].headingErr) < 2
+    && upr[k].posErr === 0 && upr[k].quatErr === 0) && headsOk;
   check('VG8n/ledger-upright', uprOk,
-    upr ? `pnl lean ${upr.pnl?.lean?.toFixed(2)}° head ${upr.pnl?.headingErr?.toFixed(2)}° · balance lean ${upr.balance?.lean?.toFixed(2)}° head ${upr.balance?.headingErr?.toFixed(2)}° (want <2° — G-D/I-166)` : 'NO-UPRIGHT-ORACLE (spread not displayed?)');
+    upr ? `pnl lean ${upr.pnl?.lean?.toFixed(2)}° head ${upr.pnl?.heading?.toFixed(1)}° pos ${upr.pnl?.posErr} quat ${upr.pnl?.quatErr} · balance lean ${upr.balance?.lean?.toFixed(2)}° pos ${upr.balance?.posErr} · independent-yaw ${wantHead.toFixed(1)}°:${headsOk} (want lean<2° · pose EXACT ≡0 · heading ≡ seat-0's own yaw — G-D/I-166 + K7-V M-1)` : 'NO-UPRIGHT-ORACLE (spread not displayed?)');
 
   // (renders) — CARRIED VERBATIM from K-C (I-79): both pages carry EXACTLY BOOKS_PANEL's 6
   // region ids with NON-BLANK stamped rows; Balance = identity + fidelity + footnote; P&L =
