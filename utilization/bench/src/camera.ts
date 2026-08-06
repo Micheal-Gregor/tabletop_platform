@@ -244,10 +244,11 @@ export function scenicView(focus: string): void {
     const slant = (W / 2) / tanH; // the near edge spans the full horizontal FOV at this slant range
     const b2 = Math.sqrt(Math.max(slant * slant - h * h, 60 * 60)); // horizontal back-off behind the edge
     const camHoriz = rNear + b2;
-    const pitch = Math.atan2(h, b2) - fovV / 2; // the near edge rides the frame's exact bottom
-    const lookHoriz = camHoriz - h / Math.max(0.05, Math.tan(Math.max(0.06, pitch))); // where the view axis meets the felt, toward center
+    const pitch = Math.max(0.12, Math.atan2(h, b2) - fovV / 2); // the near edge rides the frame's exact bottom (floor: never near-level)
+    const pos2 = new THREE.Vector3(dirOut.x * camHoriz, h, dirOut.z * camHoriz);
+    const fwd = new THREE.Vector3(-dirOut.x * Math.cos(pitch), -Math.sin(pitch), -dirOut.z * Math.cos(pitch)); // I-222: the axis as a DIRECTION — no tan singularity to shoot the gaze level
     camera.up.set(0, 1, 0);
-    target = { pos: new THREE.Vector3(dirOut.x * camHoriz, h, dirOut.z * camHoriz), look: new THREE.Vector3(dirOut.x * lookHoriz, 0, dirOut.z * lookHoriz) };
+    target = { pos: pos2, look: pos2.clone().add(fwd.multiplyScalar(1200)) };
     mode = 'scene';
     currentName = `${focus}:scenic`;
     lastFocus = focus;

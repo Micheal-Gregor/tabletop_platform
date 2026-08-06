@@ -101,8 +101,9 @@ export const seatPlay: Component = {
       const BASE = 60; // row 1's center, out from the board (toward the player)
       const surf = new THREE.Mesh(
         new THREE.PlaneGeometry(ss.w, ss.d),
-        new THREE.MeshBasicMaterial({ color: 0x8fa39a, transparent: true, opacity: 0.1, side: THREE.DoubleSide }),
+        new THREE.MeshBasicMaterial({ color: 0x8fa39a, transparent: true, opacity: 0.22, side: THREE.DoubleSide }), // I-222: the area READS as a place
       );
+      surf.add(new THREE.LineSegments(new THREE.EdgesGeometry(surf.geometry), new THREE.LineBasicMaterial({ color: 0x77816f }))); // I-222: the EDGE — the thing the owner's composition fills the frame's bottom with
       const sc = sf.c.clone().addScaledVector(sf.n, BASE + ss.d / 2 - cellD() / 2);
       surf.position.set(sc.x, 0.8, sc.z);
       surf.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
