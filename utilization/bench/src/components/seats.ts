@@ -55,7 +55,7 @@ export const seats: Component = {
       // every seat sits EQUIDISTANT on the ring around 0,0,0; the radius derives from
       // the stations' chord claim vs the table's clearance; yaw = the seat's angle.
       const st = stationPos(i, RING_N);
-      b.position.set(st.x, 130, st.z);
+      b.position.set(st.x, 144, st.z); // PB-5 (I-180, owner-caught overlap): LIFTED off the play surface — the tilted board's bottom edge clears card row 1; the lift (not an inward step) is the fix because the rows DERIVE from the board's frame and would have followed it inward
       b.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), st.yaw)
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.25)));
       // O-5 (I-146): the board's BACKING SLAB — physical mass (4 world units), diffuse,
