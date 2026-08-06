@@ -14,6 +14,7 @@ import { beginFlourish, completeFlourish } from '@tabletop/presentation';
 import { lcg } from './stacks.js';
 import { pipTexture } from './die-pips.js'; // P-1/I-83 size-gate extraction (verbatim move)
 import * as phys from './die-physics.js'; // R-1a (I-109): the RAPIER wrapper — record & replay
+import { DICE_RING } from './playarea.js'; // I-191: the launch law
 void phys.initDicePhysics(); // fire the wasm init at module load (a pre-ready click refuses)
 
 // ── THE ROUND SEQUENCE (I-55a) — extracted to die-round.ts (I-78), re-exported here so
@@ -109,7 +110,19 @@ function startRoll(inst: ReturnType<typeof beginFlourish> | null, seeded: number
   // R-1a (I-109): ONE real simulation, invisibly, to settle — then the reconcile offset
   // maps the SIM's top face to the DISPLAYED target. Physics never decides; the seeded
   // truth (or the drill's lie) is chosen before a single frame renders.
-  const sim = phys.simulateToss(tableRect, { x: die.position.x, z: die.position.z }, u);
+  // I-191 (owner-caught: a click-roll from the ring HOME started OUTSIDE the circular
+  // wall — and beyond the felt's edge, where the sim falls off the world and never
+  // settles, so the die 'rolled left out of bounds and didn't return'): THE LAUNCH
+  // LAW — every roll begins INSIDE the throw circle. The start clamps radially to
+  // tossRadius − 40 along the home's own angle (the die visibly ENTERS the arena),
+  // and the settled result still glides home by the existing P-1 return.
+  let sx = die.position.x, sz = die.position.z;
+  {
+    const Rt = DICE_RING.tossRadius() - 40;
+    const rr = Math.hypot(sx, sz);
+    if (rr > Rt) { const k = Rt / rr; sx *= k; sz *= k; die.position.x = sx; die.position.z = sz; }
+  }
+  const sim = phys.simulateToss(tableRect, { x: sx, z: sz }, u);
   const nT = FACE_NORMALS.find((f) => f.v === displayedTarget)!.n;
   const nF = FACE_NORMALS.find((f) => f.v === sim.settleFace)!.n;
   const offset = new THREE.Quaternion().setFromUnitVectors(nT, nF); // offset·n_T = n_F — a cube symmetry
