@@ -5,6 +5,13 @@ import { OBJECT_SCALE } from '../src/playarea.js';
 import { gridSpacing } from '../src/anchor-grid.js';
 
 describe('G-C: the UI object base-case (I-168)', () => {
+  it("I-209: every object DECLARES its zone; the seat board is a SEAT citizen and the die a BOARD one (the owner's corrections, pinned)", () => {
+    for (const o of UI_OBJECTS) expect(['board', 'seat']).toContain(o.zone);
+    expect(uiObject('seat-board')!.zone).toBe('seat'); // 'it is in the seat play area'
+    expect(uiObject('die')!.zone).toBe('board'); // 'by accident or default' no more
+    expect(uiObject('table')!.zone).toBe('board');
+    expect(uiObject('folder')!.zone).toBe('seat');
+  });
   it('the kingdom law holds: surfaces immutable+grabless, pieces never immutable', () => {
     expect(kingdomIntegrity()).toEqual({ ok: true, broken: [] });
   });

@@ -160,6 +160,25 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
 }
 
 /** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */
+/** I-209: a focus's ZONE READ — the ontology's zone, expressed as a camera target.
+ *  Seat citizens (boards, areas, reports, the hand, seat-tagged objects) roll to their
+ *  area's overhead; board citizens (table regions, the die, the box) roll to the
+ *  table's. The data lives in ui-object.ts; the live tag wins for movable objects. */
+function zoneReadOf(f: string): string | null {
+  if (f === 'table' || f.startsWith('table:')) return 'table';
+  if (f.startsWith('seat-area-')) return f; // already a zone read
+  if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`; // the BOARD is a seat citizen (the owner's correction)
+  if (f.startsWith('ledger') || f === 'hand-fan') return 'seat-area-0';
+  if (f === 'die' || f === 'box') return 'table';
+  if (f.startsWith('obj:')) {
+    const o = focusObject(f);
+    const z = o?.userData?.['focus'];
+    if (typeof z === 'string' && z.startsWith('seat-')) return `seat-area-${z.slice(5)}`;
+    return 'table';
+  }
+  return null;
+}
+
 const anchorPreset = (f: string): string => {
   // I-207 (the owner's zoom-out conflict: 'it always switches to the overview instead
   // of object anchor, player area overview…'): the ladder lands in the anchor's OWN
@@ -258,7 +277,12 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
       return; // anchor read: zoom-in DISABLED (I-66c)
     }
     if (readFocus === 'table') return; // the far terminal: out is a no-op
-    sceneView(); // anchor read → the anchor's SCENE view (I-66b)
+    // I-209 (the owner's ZONE HIERARCHY): an OBJECT'S read rolls UP to its ZONE'S read
+    // view first — seat citizens to the play-area overhead, board citizens to the
+    // table overhead — and only a ZONE read steps out to the scene (I-66b amended).
+    const zr = zoneReadOf(readFocus);
+    if (zr && zr !== readFocus) { readView(zr); return; }
+    sceneView();
     return;
   }
   const dist = camera.position.distanceTo(currentLook);
