@@ -23,6 +23,7 @@ import { gridSpacing, ringSnap, anchorsWithinRadius } from './anchor-grid.js'; /
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS, RING_N } from './stage.js';
 import { ringRadius, stationLook, stationPos } from './playarea.js'; // PA-1/PA-2 (I-141/I-142)
 import { seatReadEquality } from './camera.js'; // F-8 (I-167)
+import { UI_OBJECTS, chainIntegrity, kingdomIntegrity } from './ui-object.js'; // G-C (I-168)
 import * as cam from './camera.js';
 import type { PlayAreaContext, PickInfo } from './component.js';
 import { assignGate } from './component.js';
@@ -291,6 +292,7 @@ const gate: Record<string, unknown> = {
   cardWorldInfo,
   gridInfo: () => ({ spacing: gridSpacing(), seatRing: ringSnap(ringRadius(RING_N)), anchorsInTableDisc: anchorsWithinRadius(570).length }), // G-A: the grid's public face
   seatReadEquality: () => seatReadEquality(6), // F-8 (I-167): dist + framed bbox per seat
+  uiObjectsInfo: () => ({ count: UI_OBJECTS.length, ids: UI_OBJECTS.map((o) => o.id), chain: chainIntegrity(), kingdoms: kingdomIntegrity() }), // G-C (I-168): the ontology's public face
   // PA-1 (I-141): the ring template's surfaces — the seat-pose and glide laws derive.
   ringInfo: () => ({ r: ringRadius(RING_N), n: RING_N }),
   ringLook: (i: number) => stationLook(i, RING_N),
