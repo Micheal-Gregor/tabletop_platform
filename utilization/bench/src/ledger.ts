@@ -20,7 +20,8 @@ import * as THREE from 'three';
 import type { SeatView } from '@tabletop/presentation';
 import { BOOKS_PANEL } from '../../../packs/boty/src/index.js';
 import { buildSheets, stampSheet, deploySheets, retractSheets, tickSpread, sheetsHome, sheetBBoxes, setSpreadYaw, spreadUpright } from './ledger-spread.js';
-export { spreadUpright }; // G-D (I-166): the upright law's oracle
+export { spreadUpright }; // G-D (I-166): the upright law's oracle (the FLAT law since I-229)
+export { setSheetClaim, sheetClaimOf } from './ledger-spread.js'; // I-230: the reports' drag claims
 
 type Balance = {
   seat: string; cash: number; ar: number; ap: number;

@@ -163,6 +163,7 @@ export function deploySheets(at: THREE.Vector3): void {
  *  pose; at arrival they are folder.attach-ed again (the same objects, back inside). */
 export function retractSheets(): void {
   if (phase === 'in-folder') return;
+  sheetClaims = {}; // I-230: the claims LAPSE — the return-before-close lands the default stack, always
   if (getMode() === 'read' && readState().focus.startsWith('ledger-')) sceneView();
   phase = 'returning';
   setLastFocus('table');
@@ -176,13 +177,24 @@ function displayPose(k: PageKind): Pose {
   const lat = new THREE.Vector3(Math.cos(spreadYaw), 0, -Math.sin(spreadYaw));
   const flat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), spreadYaw)
     .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
+  const n2 = new THREE.Vector3(Math.sin(spreadYaw), 0, Math.cos(spreadYaw));
+  const claim = sheetClaims[k];
   return {
-    pos: anchor.clone().addScaledVector(lat, k === 'pnl' ? -FOLD_W : 0).add(new THREE.Vector3(0, k === 'pnl' ? 3 : 2, 0)),
+    pos: anchor.clone()
+      .addScaledVector(lat, claim ? claim.lat : (k === 'pnl' ? -FOLD_W : 0))
+      .addScaledVector(n2, claim ? claim.out : 0)
+      .add(new THREE.Vector3(0, claim ? 6 : (k === 'pnl' ? 3 : 2), 0)), // I-230: a claimed report rides HIGHEST (the hierarchy's top)
     quat: flat,
     scale: new THREE.Vector3(DISPLAY_SCALE, DISPLAY_SCALE, DISPLAY_SCALE),
   };
 }
 const FOLD_W = 140; // the opened cover's throw — the P&L's slide distance to the LEFT
+// I-230 (owner-ruled): the reports INHERIT the cards' drag-and-drop — a claim per
+// sheet (board-frame offsets from the folder), cleared when the folder closes so the
+// return-before-close always lands the default stack.
+let sheetClaims: Partial<Record<PageKind, { lat: number; out: number }>> = {};
+export function setSheetClaim(k: PageKind, c: { lat: number; out: number }): void { sheetClaims[k] = c; }
+export const sheetClaimOf = (k: PageKind) => sheetClaims[k] ?? null;
 
 /** the per-frame step — the deploy/return lerp between the HOME and DISPLAY poses. */
 export function tickSpread(): void {

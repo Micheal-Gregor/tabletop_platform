@@ -17,6 +17,8 @@ let cx: PlayAreaContext | null = null;
 let bookRoot: THREE.Object3D | null = null;
 let bookOffset: { lat: number; out: number } | null = null; // PB-3 (I-177): the dragged ledger's claim (survives rebuilds)
 let bookGrab: { plane: THREE.Plane; ray: THREE.Raycaster; start: THREE.Vector3; moved: number } | null = null;
+let sheetGrab: { page: ledger.PageKind; plane: THREE.Plane; ray: THREE.Raycaster; moved: number; obj: THREE.Object3D } | null = null; // I-230: the reports drag like cards
+const ledgerYaw = (): number => { const b = bookRoot; if (!b) return 0; const q = b.getWorldQuaternion(new THREE.Quaternion()); const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q); n.y = 0; n.normalize(); return Math.atan2(n.x, n.z); };
 
 // the OPEN spread stands above the closed book, front of the viewing seat's board.
 const anchorOf = (book: THREE.Object3D): THREE.Vector3 =>
@@ -47,7 +49,7 @@ export const ledgerComponent: Component = {
       const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
       n.y = 0; n.normalize(); // toward the player, horizontal
       const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
-      book.position.copy(c).addScaledVector(lat, bookOffset?.lat ?? -190).addScaledVector(n, bookOffset?.out ?? 168).setY(2); // G-B3 (I-165) default = the LEDGER SPAN's center · PB-3 (I-177): the OWNER may drag it — the offset is presentation state, like a card's stick
+      book.position.copy(c).addScaledVector(lat, bookOffset?.lat ?? -190).addScaledVector(n, bookOffset?.out ?? 168).setY(6); // I-230: the HIERARCHY — area, then cards, then the FOLDER above them // G-B3 (I-165) default = the LEDGER SPAN's center · PB-3 (I-177): the OWNER may drag it — the offset is presentation state, like a card's stick
       // I-133 (the owner's screenshot catch — 'the folder rotated 45° instead of staying
       // flat'): the world-yaw PREMULTIPLIES the built pose. Setting rotation.y MUTATED
       // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
@@ -95,11 +97,28 @@ export const ledgerComponent: Component = {
   // offset is stored (presentation state, like a card's stick) and clamped to the
   // station; release re-seats it. A TAP (<8u) falls through to the open (below).
   onGrabStart(ctx, hit: PickInfo) {
+    // I-230: a DEPLOYED report grabs like a card — drag it anywhere in the play area.
+    const pg = hit.tags['ledgerPage'] as ledger.PageKind | undefined;
+    if (pg && ledger.ledgerState().open) {
+      sheetGrab = { page: pg, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -8), ray: new THREE.Raycaster(), moved: 0, obj: (hit.object.parent ?? hit.object) };
+      return true;
+    }
     if (hit.tags['ledger'] !== true || !bookRoot || ledger.ledgerState().open) return false;
     bookGrab = { plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -4), ray: new THREE.Raycaster(), start: bookRoot.position.clone(), moved: 0 };
     return true;
   },
   onGrabMove(ctx, ev: PointerEvent) {
+    if (sheetGrab) {
+      const r = ctx.renderer.domElement.getBoundingClientRect();
+      sheetGrab.ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
+      const p = new THREE.Vector3();
+      if (sheetGrab.ray.ray.intersectPlane(sheetGrab.plane, p)) {
+        const before = sheetGrab.obj.position.clone();
+        sheetGrab.obj.position.set(p.x, Math.max(10, p.y + 12), p.z);
+        sheetGrab.moved += sheetGrab.obj.position.distanceTo(before) > 0 ? sheetGrab.obj.position.distanceTo(before) : 0;
+      }
+      return;
+    }
     if (!bookGrab || !bookRoot) return;
     const r = ctx.renderer.domElement.getBoundingClientRect();
     bookGrab.ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
@@ -110,6 +129,27 @@ export const ledgerComponent: Component = {
     }
   },
   onGrabEnd(ctx, _ev: PointerEvent) {
+    if (sheetGrab) {
+      const g2 = sheetGrab;
+      sheetGrab = null;
+      if (g2.moved < 8) { // the tap keeps its meaning: anchor the page for reading
+        ledger.anchorPage(g2.page);
+        ctx.status(`reading the ${g2.page === 'pnl' ? 'P&L' : 'Balance Sheet'} — zoom in for the close view`);
+        return true;
+      }
+      // the DROP: store the claim in the folder's own frame — the report stays put
+      if (bookRoot) {
+        const anchor = anchorOf(bookRoot);
+        const yaw = ledgerYaw();
+        const lat = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+        const n = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+        const rel = g2.obj.position.clone().sub(anchor);
+        ledger.setSheetClaim(g2.page, { lat: rel.dot(lat), out: rel.dot(n) });
+        g2.obj.position.setY(anchor.y + 6);
+        ctx.status(`${g2.page === 'pnl' ? 'the P&L' : 'the Balance Sheet'} stays where you put it — it returns to the folder when the books close`);
+      }
+      return true;
+    }
     if (!bookGrab || !bookRoot) return false;
     const wasTap = bookGrab.moved < 8;
     if (wasTap) {
