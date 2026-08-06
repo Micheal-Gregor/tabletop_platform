@@ -47,14 +47,17 @@ export const TABLE_HALF_DIAG = Math.hypot(50 * TABLE_SCALE.x, 50 * TABLE_SCALE.y
 // the table's area (the centered similar-rect, scale = √0.75).
 export const DICE_RING = {
   radius: (): number => TABLE_HALF_DIAG, // config — equals the corner circle for BOTY
-  homeOffsetDeg: 20, // I-192 (owner-ruled): 20° past the seat center — 10° still hid behind the board from the seat-0 view
+  homeOffsetDeg: 25, // I-193 (owner-tuned): 25° past the seat center — 20° still clipped the player board
   tossAreaFraction: 0.75, // of the table's area
   /** I-189 (owner-ruled ROUND): the toss boundary is a CIRCLE whose area = the
    *  fraction of the table's — πR² = f·A ⇒ R = √(f·A/π). One number, derived. */
   tossRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI),
-  /** I-192 (owner-ruled, superseding the ring-circumference home): the REST area sits
-   *  100% INSIDE the throw circle — the disc (r≈40) plus margin clears the wall. */
-  homeRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI) - 60,
+  /** I-192/I-193 (owner-ruled): ONE circumference serves throw AND rest — the rest
+   *  ANCHOR lies ON the toss circle at (seat angle + offset) and the disc is DISPLACED
+   *  INWARD by just its own clearance (r≈40 + margin 5), as far back from 0,0,0 as the
+   *  wall allows. Every term derives from the active seat, so the home ROTATES seat to
+   *  seat with equal geometry — the congruence the owner asked to be promised. */
+  homeRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI) - 45,
 } as const;
 
 export function ringRadius(seatCount: number, tableHalfDiag: number = TABLE_HALF_DIAG): number {
