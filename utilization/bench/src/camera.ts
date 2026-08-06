@@ -297,11 +297,13 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     return;
   }
   if (currentName === 'overview') {
-    // I-210 (the owner at seat 0: 'zoom out to max goes to the center of the table
-    // board' — the far rung was hardwired to the table): the FAR RUNG IS ZONE-AWARE —
-    // the pullback lands in the LAST zone's read: a seat context ends hovering over
-    // THAT play area, a board context over the table (the I-181 two-zone law, kept).
-    readView(zoneReadOf(lastFocus) ?? 'table', false);
+    // I-211 (superseding I-210's far rung THE SAME DAY — the owner: 'goes to overview
+    // over 0,0,0 then gets conflicting messages where to max zoom out'): a zone-aware
+    // far rung made a ZOOM-OUT gesture dive BACK IN (the area read is closer than
+    // overview) — incoherent. The ladder is MONOTONIC again: the zone's own overhead
+    // is the roll-up rung ON THE WAY OUT (I-209), overview is the hub, and beyond it
+    // lies only the certified table map (I-66b — the owner's exact walk, restored).
+    readView('table', false);
     return;
   }
   if (next >= OVERVIEW_DIST) { glideTo('overview', false); return; } // scene out → overview
