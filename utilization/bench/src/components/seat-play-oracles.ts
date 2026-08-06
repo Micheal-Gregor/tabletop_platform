@@ -8,7 +8,7 @@ import type { PlayAreaContext } from '../component.js';
 import { planPostings, cellLocal, cellD } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
-import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, handSpreadState, seatPlayLastHandPlay } from './seat-play.js';
+import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, handSpreadState, handPlaceState, seatPlayLastHandPlay } from './seat-play.js';
 
 const seatStickId = (): string | null => { const st = seatPlayLastStick(); return st ? st.id : null; };
 
@@ -18,6 +18,7 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
     seatReturn: seatPlayLastReturn, // I-157: the last bottom-return {id, pile}
     seatStick: seatPlayLastStick, // G-B2 (I-164): the last stuck anchor {id, row, col}
     handPlay: seatPlayLastHandPlay, // C-1d (I-171): the last played networking card
+    handPlace: handPlaceState, // I-208: the hand's placement claim {lat, out} | null
     pairsInfo: () => {
       // G-C2 (I-170): the pair law — every geared crew member (projection truth) has
       // exactly one rendered gear mesh riding its socket; want ≡ got, by name.

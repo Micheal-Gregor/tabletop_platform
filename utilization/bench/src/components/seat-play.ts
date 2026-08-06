@@ -40,6 +40,7 @@ const SPREAD_DEG = [5, 10, 16] as const; // per-card splay at each state — 'he
 let lastHandPlay: { id: string; target?: string | null } | null = null; // I-204: the pay pairing rides the record
 export const handUpState = () => handUp;
 export const handSpreadState = () => handSpread; // I-203
+export const handPlaceState = () => handOffset; // I-208: the placement claim, law-visible
 export const seatPlayLastHandPlay = () => lastHandPlay;
 let lastStick: { id: string; row: number; col: number } | null = null;
 export const seatPlayLastStick = () => lastStick;
@@ -108,19 +109,9 @@ export const seatPlay: Component = {
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
       surf.userData = { seatSurface: i, focus: `seat-${i}` };
       g.add(surf);
-      // G-B3 (I-165): the HAND ZONE marked (row 4, cols 1–2) — C-1d's landing strip,
-      // a subtle outline so the player knows where the hand lives (I-162 readability).
-      if (mine) {
-        const hz = new THREE.Mesh(
-          new THREE.PlaneGeometry(2 * cellW() - 8, cellD() - 8),
-          new THREE.MeshBasicMaterial({ color: 0x7a8fa0, transparent: true, opacity: 0.14, side: THREE.DoubleSide }),
-        );
-        const hc = sf.c.clone().addScaledVector(sf.lat, (1.5 - 4) * cellW()).addScaledVector(sf.n, BASE + 3 * cellD());
-        hz.position.set(hc.x, 1.0, hc.z);
-        hz.quaternion.copy(surf.quaternion);
-        hz.userData = { handZone: true, focus: `seat-${i}` };
-        g.add(hz);
-      }
+      // I-208: the G-B3 hand-zone marker RETIRED (owner: 'that anchor square needs to
+      // go') — the hand sits OVER anything at ANY anchor (I-204); a marker that ate
+      // clicks without anchoring was worse than nothing (it blocked the surface).
       for (const c of seatCards) {
         const cell = plan.get(c.id);
         if (!cell) continue; // over capacity — parked (20 anchors; the overflow law is future)
@@ -178,7 +169,7 @@ export const seatPlay: Component = {
         // hand's BASE; the splay per card is the spread state's. FACE DOWN the fan
         // lies flat, tips spreading; UPRIGHT it stands lifted at 45° like held cards.
         const a1 = cellLocal(4, 1);
-        const base = sf.c.clone().addScaledVector(sf.lat, a1.lat).addScaledVector(sf.n, BASE + a1.out);
+        const base = sf.c.clone().addScaledVector(sf.lat, handOffset?.lat ?? a1.lat).addScaledVector(sf.n, handOffset?.out ?? (BASE + a1.out)); // I-208: the claim RULES the base (the I-204 edit had silently no-opped — grep-caught)
         const nH = v.ownHand.length;
         const step = (SPREAD_DEG[handSpread]! * Math.PI) / 180;
         v.ownHand.forEach((hid, hIdx) => {
