@@ -353,6 +353,7 @@ export const seatPlay: Component = {
       const card = grab.card;
       grab = null;
       card.mesh.position.copy(card.anchor);
+      ctx.theater.setLastFocus(`obj:${card.mesh.uuid}`); // I-226: gear too — selection before its action resolves
       if (ctx.submit('detach-gear', { crew: crewId })) {
         ctx.rebuild();
         ctx.status(`detached — the equipment returns to your rack`);
@@ -367,6 +368,7 @@ export const seatPlay: Component = {
         const card = grab.card;
         grab = null;
         card.mesh.position.copy(card.anchor); // the un-moved click leaves no offset behind
+        ctx.theater.setLastFocus(`obj:${card.mesh.uuid}`); // I-226: an in-play card IS selectable — the click anchors it for the wheel (the loop action rides along)
         loop.crewClick(ctx, crewId, card.mesh, member.assignedTo !== undefined);
         return true;
       }

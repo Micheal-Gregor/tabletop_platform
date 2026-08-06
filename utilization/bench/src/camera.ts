@@ -349,8 +349,10 @@ function zoneAnchorOf(f: string): string {
 /** I-220: read exits ONE STEP — back to the anchor at its 80% (click or wheel-out). */
 export function exitReadStep(): void {
   if (mode !== 'read') return;
+  const zone = zoneAnchorOf(readFocus);
+  if (readFocus !== zone && readFocus !== 'table') { readView(zone === 'table' ? 'table' : zone); return; } // I-226: a child's read backs out to the ZONE read
   mode = 'scene';
-  scenicView(readFocus);
+  scenicView(readFocus); // a zone read exits to the zone's scenic
 }
 /** F-8 (I-167, the owner: 'camera for seat zero … should be in same position as seats
  *  1-5'): the READ-EQUALITY oracle — every seat's read distance and framed bbox, so
@@ -384,42 +386,36 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
   const zoomIn = ev.deltaY < 0;
-  // ── I-220 — THE OWNER'S ZOOM LAW (rule 5 deleted; one recursive rule) ──
-  // A ZONE is an object: zoom to 80% of the frame, NO MORE. Its CHILDREN anchor by
-  // click; a child zooms to ITS 80% (deeper than the zone's 100%). One more notch past
-  // a child's 80% SLIPS INTO READ. Read exits ONE STEP on wheel-out or click. Empty
-  // space is unzoomable — no anchor, no approach. Zones change by click, never scroll.
-  if (mode === 'read') {
-    if (!zoomIn) exitReadStep(); // out: leave read, land at the anchor's 80%
-    return; // in: read is the innermost rung
-  }
+  // ── I-226 — THE SCROLL RULES, the owner's final form ──
+  // The ZONE READ is both the MIN and MAX of a zone when nothing is selected: the
+  // wheel rests. SELECT an object (click) and the wheel serves it: in FILLS the
+  // screen with the object, one more notch = its READ; out backs to the ZONE read.
   const anchor = lastFocus;
   const zone = zoneAnchorOf(anchor);
-  const isChild = anchor !== zone;
+  const isChild = anchor !== zone && anchor !== 'table';
+  if (mode === 'read') {
+    const readIsZone = readFocus === zone || readFocus === 'table' || readFocus.startsWith('seat-area-');
+    if (readIsZone) { status(isChild || readIsZone ? 'the zone read — select an object to zoom to it' : ''); return; } // min ≡ max: the wheel rests
+    if (!zoomIn) { readView(zoneAnchorOf(readFocus)); return; } // a child's read backs out to the zone read
+    return; // in: a child's read is the innermost rung
+  }
   const dist = camera.position.distanceTo(currentLook);
   if (zoomIn) {
-    const wall = fitDist(anchor, 0.8);
-    if (wall === null) { status('nothing here to zoom to — click an object to anchor it'); return; }
-    if (dist * 0.88 <= wall) {
-      if (isChild) { readView(anchor); return; } // past the child's 80% → READ
-      // the zone's wall: 80%, no more — deeper needs a CHILD anchor
-      dollyTo(wall);
-      status('the zone at 80% — click an object inside to go closer');
+    if (!isChild) {
+      const zWall = fitDist(zone, 0.8);
+      if (zWall !== null && dist * 0.88 <= zWall) { readView(zone); return; } // the zone scenic tops out INTO the zone read
+      dollyTo(dist * 0.88);
       return;
     }
+    const wall = fitDist(anchor, 0.8);
+    if (wall === null) { status('nothing here to zoom to — click an object to select it'); return; }
+    if (dist * 0.88 <= wall) { readView(anchor); return; } // the object filled the screen → its READ
     dollyTo(dist * 0.88);
     return;
   }
-  // zoom OUT: climb toward the ZONE's 80% and stop there (the zone terminal);
-  // leaving the zone is a click or a button, never scroll momentum (I-212).
-  const zoneWall = fitDist(zone, 0.8);
-  if (zoneWall === null) { dollyTo(dist * 1.14); return; }
-  if (dist * 1.14 >= zoneWall) {
-    if (lastFocus !== zone) { lastFocus = zone; }
-    dollyTo(zoneWall);
-    status('the zone, full frame (80%) — click another zone or a button to travel');
-    return;
-  }
+  // out: back toward (and into) the ZONE read
+  const zWall2 = fitDist(zone, 0.8);
+  if (zWall2 !== null && dist * 1.14 >= zWall2) { lastFocus = zone; readView(zone); return; }
   dollyTo(dist * 1.14);
 }, { passive: false });
 
