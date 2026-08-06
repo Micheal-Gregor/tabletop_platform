@@ -201,11 +201,12 @@ export const die: Component = {
       /** the `table:dice` REGION's live world centre, recomputed here INDEPENDENTLY of the
        *  die module (K7-P D5: dieHome must match the REGION, not merely itself). */
       dieRegionCenter: () => {
-        const r = cx!.theater.focusObject('table:dice');
-        if (!r) return null;
-        r.updateWorldMatrix(true, true);
-        const b = new THREE.Box3().setFromObject(r);
-        return { x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2 };
+        // PB-6 (I-182, superseding the K7-P D5 region law): the table's dice REGION is
+        // RETIRED — the home's independent want is now THE RING POINT (D-1a/I-174),
+        // re-derived here from playarea math so dieHome ≡ this stays a two-source law.
+        const v = cx!.projection();
+        const phi = seatAngle(v.turn.seatIdx, RING_N);
+        return { x: TABLE_HALF_DIAG * Math.sin(phi), z: TABLE_HALF_DIAG * Math.cos(phi) };
       },
     };
   },

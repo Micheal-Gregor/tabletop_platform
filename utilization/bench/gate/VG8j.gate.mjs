@@ -92,9 +92,12 @@ export async function run(h) {
         const seasonTL = season && season.x <= 4 && season.y <= 4;
         const globRight = glob && season && glob.x >= season.x + season.w && glob.y <= 4;
         const standUnder = stand && season && stand.x === season.x && stand.y >= season.y + season.h;
-        const rowA = r['deck'] && r['discard'] && r['dice']
-          && r['discard'].x > r['deck'].x && r['dice'].x > r['discard'].x + r['discard'].w // dice FAR RIGHT
-          && Math.abs(r['dice'].y - r['deck'].y) <= 8 && r['discard'].y === r['deck'].y;
+        // PB-6 (I-182, RE-PINNED): the dice square is RETIRED (the die lives on the
+        // ring, D-1a) — rowA is deck+discard alone, and the SUPPLY read box must exist
+        // over the exchange rows (a resurrection of 'dice' fails by name).
+        const rowA = r['deck'] && r['discard'] && !r['dice']
+          && r['discard'].x > r['deck'].x && r['discard'].y === r['deck'].y
+          && r['supply'] && r['supply'].w > 40 && r['supply'].h > 40;
         const rowB = r['tradespeople-pile'] && r['equipment-pile']
           && r['tradespeople-pile'].y > r['deck'].y + r['deck'].h
           && r['equipment-pile'].y === r['tradespeople-pile'].y && r['equipment-pile'].x > r['tradespeople-pile'].x;
@@ -104,7 +107,7 @@ export async function run(h) {
         const medalBR = r['medal'] && r['medal'].x >= 60 && r['medal'].y >= 50;
         const windowsGone = !r['windows'];
         arrOk = !!(seasonTL && globRight && standUnder && rowA && rowB && rowC && medalBR && windowsGone);
-        arrDetail = `season-top-left:${!!seasonTL} · global-right:${!!globRight} · standings-under:${!!standUnder} · rowA(dice-far-right):${!!rowA} · rowB(trades+equip):${!!rowB} · rowC(bbb+networking):${!!rowC} · medal-bottom-right:${!!medalBR} · windows-GONE:${windowsGone}`;
+        arrDetail = `season-top-left:${!!seasonTL} · global-right:${!!globRight} · standings-under:${!!standUnder} · rowA(deck+discard, dice-GONE, supply-box):${!!rowA} · rowB(trades+equip):${!!rowB} · rowC(bbb+networking):${!!rowC} · medal-bottom-right:${!!medalBR} · windows-GONE:${windowsGone}`;
       }
       // A16 (I-137): tp/eq are REAL pools — their wants DERIVE from the projection's
       // counts (count-true); bbb/networking stay 6-card staged exhibits.

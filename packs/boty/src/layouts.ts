@@ -128,7 +128,8 @@ export const TOWN_V2_OVERLAY: LayoutOverlay = {
     { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 68, h: 22 }, // GLOBAL CARDS IN PLAY — right of the season
     { id: 'deck', role: 'deck', x: 30, y: 28, w: 12, h: 24 },
     { id: 'discard', role: 'discard', x: 46, y: 28, w: 12, h: 24 },
-    { id: 'dice', role: 'dice', x: 78, y: 32, w: 16, h: 16, z: 1 }, // FAR RIGHT of the deck's row (I-130; P-1's home follows the region)
+    // PB-6 (I-182): the dice region RETIRED — the die lives on the ring (D-1a/I-174); the square was dead weight ('deprecated and should be removed').
+    { id: 'supply', role: 'anchor', x: 30, y: 30, w: 46, h: 52, z: 0 }, // PB-6 (I-182): the SUPPLY AREA's read anchor — one box over the deck/discard/pile rows, so read mode can frame the whole exchange
   ],
   add: [
     { id: 'art-banner', role: 'art', x: 2, y: 2, w: 26, h: 22 }, // the SEASON image block, top-left
