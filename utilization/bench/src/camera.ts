@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { camera, scene, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N } from './stage.js'; // I-216: the SCENE itself — the dynamic lookups had walked up from an UNPARENTED camera (null) since I-149
 import { stationLook } from './playarea.js'; // PA-1 (I-141)
+import { surfaceSize } from './seat-grid.js'; // I-223: the surface's LAW-true size (the AABB lied at every yawed seat)
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
 // SIDE-AWARE (I-65b): a SEAT preset is approached from that seat's own side of the
@@ -234,12 +235,14 @@ export function scenicView(focus: string): void {
     // edge sits exactly on the frame's bottom, and the width sets the pull-back.
     const sp = mapPreset('seat-0');
     h = sp.pos.y / 2;
-    const bb = new THREE.Box3().setFromObject(obj);
-    const lat = new THREE.Vector3(dirOut.z, 0, -dirOut.x);
-    const corners: THREE.Vector3[] = [];
-    for (const cx2 of [bb.min.x, bb.max.x]) for (const cz2 of [bb.min.z, bb.max.z]) corners.push(new THREE.Vector3(cx2, 0, cz2));
-    const W = Math.max(...corners.map((p2) => p2.dot(lat))) - Math.min(...corners.map((p2) => p2.dot(lat))); // the edge's width
-    const rNear = Math.max(...corners.map((p2) => p2.dot(dirOut))); // the edge closest to the camera
+    // I-223 (the owner's OWN diagnostic: 'area 1 DOES fit' — the axis-aligned seat —
+    // while area 0 did not: the world AABB of a YAWED rectangle is INFLATED, so every
+    // angled seat measured too wide and pulled too far back): the surface's size comes
+    // from ITS LAW (seat-grid), exact at every yaw; the near edge is center + half-depth
+    // along the outward radial, by the surface's own construction.
+    const ssz = surfaceSize();
+    const W = ssz.w;
+    const rNear = rHoriz + ssz.d / 2;
     const tanH = Math.tan(fovV / 2) * camera.aspect;
     const slant = (W / 2) / tanH; // the near edge spans the full horizontal FOV at this slant range
     const b2 = Math.sqrt(Math.max(slant * slant - h * h, 60 * 60)); // horizontal back-off behind the edge
