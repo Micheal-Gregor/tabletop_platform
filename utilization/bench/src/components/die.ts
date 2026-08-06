@@ -48,13 +48,11 @@ function tableRect(ctx: PlayAreaContext): TableRect | null {
   if (!t) return null;
   t.updateWorldMatrix(true, true);
   const b = new THREE.Box3().setFromObject(t);
-  // D-1b (I-188): the TOSS RAILS cover 3/4 of the table's AREA — the centered
-  // similar-rect at √fraction ('the circumference of the smaller circle to 3/4 of the
-  // table board area'). The die tumbles inside; the home waits outside on the ring.
-  const k = Math.sqrt(DICE_RING.tossAreaFraction);
-  const cx2 = (b.min.x + b.max.x) / 2, cz2 = (b.min.z + b.max.z) / 2;
-  const hw = ((b.max.x - b.min.x) / 2) * k, hd = ((b.max.z - b.min.z) / 2) * k;
-  return { minX: cx2 - hw, maxX: cx2 + hw, minZ: cz2 - hd, maxZ: cz2 + hd, topY: b.max.y };
+  // I-189 (superseding I-188's rect-pragmatic v1 the same day it shipped — the owner
+  // asked 'can it be round?'; it can, and his original wording always said circle):
+  // the felt keeps the FULL table rect; the boundary is the ROUND wall at tossRadius
+  // (area ≡ 3/4 of the table's — one derived number).
+  return { minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z, topY: b.max.y, circleR: DICE_RING.tossRadius() };
 }
 
 export const die: Component = {

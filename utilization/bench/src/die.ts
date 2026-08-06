@@ -45,7 +45,7 @@ const DIE_SEED = 0x1a4d1e; // the bench LCG seed (stacks.ts lcg) — determinism
 let dieRollCount = 0;
 
 /** The table area the die tumbles across (K-E, I-81) — derived live, never magic. */
-export type TableRect = { minX: number; maxX: number; minZ: number; maxZ: number; topY: number };
+export type TableRect = { minX: number; maxX: number; minZ: number; maxZ: number; topY: number; circleR?: number }; // circleR — I-189: a ROUND throw boundary (world units); when set, the arena walls are a circle, not the rect
 let tableRect: TableRect | null = null;
 
 let die: THREE.Mesh | null = null;

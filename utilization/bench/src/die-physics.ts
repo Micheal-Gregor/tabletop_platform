@@ -66,6 +66,22 @@ function buildArena(r: TableRect): RAPIER.World {
     world.createCollider(RAPIER.ColliderDesc.cuboid(hx, hy, hz).setRestitution(rest).setFriction(fric), b);
   };
   fixed(f.hx, 0.01, f.hz, 0, -0.01, 0, 0.12, 0.7); // the felt (I-109 tuning: fric 0.9→0.7 for real travel)
+  if (r.circleR) {
+    // I-189 (owner-ruled): the ROUND throw boundary — sixteen thin wall segments on
+    // the circle ('the throw circumference'); the felt floor stays the full rect so
+    // a segment gap can never drop the die off the world.
+    const Rf = r.circleR / M2W;
+    const N = 16;
+    const seg = (Math.PI * Rf) / N + 0.02; // half-length with a lap so corners seal
+    for (let i = 0; i < N; i++) {
+      const th = (i / N) * Math.PI * 2;
+      const b = world.createRigidBody(RAPIER.RigidBodyDesc.fixed()
+        .setTranslation(Rf * Math.sin(th), RAIL_H, Rf * Math.cos(th))
+        .setRotation({ x: 0, y: Math.sin((th + Math.PI / 2) / 2), z: 0, w: Math.cos((th + Math.PI / 2) / 2) }));
+      world.createCollider(RAPIER.ColliderDesc.cuboid(seg, RAIL_H, 0.01).setRestitution(0.1).setFriction(0.7), b);
+    }
+    return world;
+  }
   fixed(0.01, RAIL_H, f.hz, -f.hx, RAIL_H, 0, 0.1, 0.7);
   fixed(0.01, RAIL_H, f.hz, f.hx, RAIL_H, 0, 0.1, 0.7);
   fixed(f.hx, RAIL_H, 0.01, 0, RAIL_H, -f.hz, 0.1, 0.7);
