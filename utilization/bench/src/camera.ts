@@ -222,7 +222,7 @@ export function scenicView(focus: string): void {
   const dirOut = rHoriz > 40
     ? new THREE.Vector3(c.x, 0, c.z).normalize()
     : new THREE.Vector3(Math.sin(SEAT_YAWS[0] ?? 0), 0, Math.cos(SEAT_YAWS[0] ?? 0)); // the centered table: over the viewer's shoulder
-  // the sphere fill: horizontal pull-back so the object subtends ~72% of the frame
+  // the sphere fill: horizontal pull-back so the object subtends 80% of the frame (I-220)
   const fovV = (camera.fov * Math.PI) / 180;
   let back = R / Math.sin((fovV / 2) * 0.72);
   let horiz = rHoriz + back;
@@ -293,6 +293,35 @@ export function panBy(dx: number, dy: number): void {
 // zoom-in is DISABLED (I-66c: read = fit pose + pan only) and zoom-out steps to the
 // anchor's scene. The anchor survives every ladder move; only clicks re-anchor.
 const readFitDist = (focus: string): number => { const m = mapRead(focus); return m.pos.distanceTo(m.look); };
+/** I-220 (the owner's zoom law): the distance at which `focus` fills `fill` of the
+ *  frame — SPHERE-fit, the one measure every rung uses. */
+function fitDist(focus: string, fill = 0.8): number | null {
+  const obj = focusObject(focus) ?? focusGroups[focus] ?? null;
+  if (!obj) return null;
+  const sp = new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
+  const fovV = (camera.fov * Math.PI) / 180;
+  return Math.max(30, sp.radius) / Math.sin((fovV / 2) * fill);
+}
+/** the anchor's ZONE anchor (the board zone is JUST a zone centered at 0,0,0 — I-220). */
+function zoneAnchorOf(f: string): string {
+  if (f === 'table' || f.startsWith('table:') || f === 'die' || f === 'box') return 'table';
+  if (f.startsWith('seat-area-')) return f;
+  if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`;
+  if (f.startsWith('ledger') || f === 'hand-fan') return 'seat-area-0';
+  if (f.startsWith('obj:')) {
+    const o = focusObject(f);
+    const z = o?.userData?.['focus'];
+    if (typeof z === 'string' && z.startsWith('seat-')) return `seat-area-${z.slice(5)}`;
+    return 'table';
+  }
+  return 'table';
+}
+/** I-220: read exits ONE STEP — back to the anchor at its 80% (click or wheel-out). */
+export function exitReadStep(): void {
+  if (mode !== 'read') return;
+  mode = 'scene';
+  scenicView(readFocus);
+}
 /** F-8 (I-167, the owner: 'camera for seat zero … should be in same position as seats
  *  1-5'): the READ-EQUALITY oracle — every seat's read distance and framed bbox, so
  *  inequality NAMES its seat and its cause (a fat bbox vs a camera fault). */
@@ -325,56 +354,43 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
   const zoomIn = ev.deltaY < 0;
+  // ── I-220 — THE OWNER'S ZOOM LAW (rule 5 deleted; one recursive rule) ──
+  // A ZONE is an object: zoom to 80% of the frame, NO MORE. Its CHILDREN anchor by
+  // click; a child zooms to ITS 80% (deeper than the zone's 100%). One more notch past
+  // a child's 80% SLIPS INTO READ. Read exits ONE STEP on wheel-out or click. Empty
+  // space is unzoomable — no anchor, no approach. Zones change by click, never scroll.
   if (mode === 'read') {
-    // I-212 (the owner's ZONE CAMERA LOCK — 'zoom in on an object in the play area to
-    // get close to it… and see the play area maximizing screen space on max out'):
-    // INSIDE a seat-area read the wheel is the ZONE'S OWN range — in DIVES toward the
-    // surface (drag-pan to aim, wheel to approach any object), out climbs back to the
-    // area's FIT and STOPS (the zone maximizes the screen at max-out; the global
-    // ladder never steals the view). Leaving the zone is a CLICK, never a wheel.
-    if (readFocus.startsWith('seat-area-')) {
-      const fit = readFitDist(readFocus);
-      const d = camera.position.distanceTo(currentLook);
-      if (zoomIn) {
-        if (performance.now() - areaEntryT < 350) return; // I-213: scroll momentum at entry no longer dives you deep ('zooms in too far')
-        dollyTo(Math.max(90, d * 0.88)); mode = 'read'; return;
-      }
-      if (d * 1.14 >= fit) { readView(readFocus, false); status('the play area, full frame — click the table or another area to leave'); return; }
-      dollyTo(d * 1.14); mode = 'read';
+    if (!zoomIn) exitReadStep(); // out: leave read, land at the anchor's 80%
+    return; // in: read is the innermost rung
+  }
+  const anchor = lastFocus;
+  const zone = zoneAnchorOf(anchor);
+  const isChild = anchor !== zone;
+  const dist = camera.position.distanceTo(currentLook);
+  if (zoomIn) {
+    const wall = fitDist(anchor, 0.8);
+    if (wall === null) { status('nothing here to zoom to — click an object to anchor it'); return; }
+    if (dist * 0.88 <= wall) {
+      if (isChild) { readView(anchor); return; } // past the child's 80% → READ
+      // the zone's wall: 80%, no more — deeper needs a CHILD anchor
+      dollyTo(wall);
+      status('the zone at 80% — click an object inside to go closer');
       return;
     }
-    if (zoomIn) {
-      if (readFocus === 'table') glideTo('overview', false); // table read is the far rung: in → overview
-      return; // anchor read: zoom-in DISABLED (I-66c) for object reads
-    }
-    if (readFocus === 'table') return; // the far terminal: out is a no-op
-    // I-209: an OBJECT'S read rolls UP to its ZONE'S read view; a zone read (non-area)
-    // steps out to the scene (I-66b amended).
-    const zr = zoneReadOf(readFocus);
-    if (zr && zr !== readFocus) { readView(zr); return; }
-    sceneView();
+    dollyTo(dist * 0.88);
     return;
   }
-  const dist = camera.position.distanceTo(currentLook);
-  const next = dist * (zoomIn ? 0.9 : 1.12);
-  if (zoomIn) {
-    if (currentName === 'overview') { glideTo(anchorPreset(lastFocus), false); return; } // overview → anchor scene
-    if (next <= readFitDist(lastFocus)) { readView(lastFocus); return; } // organic read entry (I-64b carries)
-    dollyTo(next);
+  // zoom OUT: climb toward the ZONE's 80% and stop there (the zone terminal);
+  // leaving the zone is a click or a button, never scroll momentum (I-212).
+  const zoneWall = fitDist(zone, 0.8);
+  if (zoneWall === null) { dollyTo(dist * 1.14); return; }
+  if (dist * 1.14 >= zoneWall) {
+    if (lastFocus !== zone) { lastFocus = zone; }
+    dollyTo(zoneWall);
+    status('the zone, full frame (80%) — click another zone or a button to travel');
     return;
   }
-  if (currentName === 'overview') {
-    // I-211 (superseding I-210's far rung THE SAME DAY — the owner: 'goes to overview
-    // over 0,0,0 then gets conflicting messages where to max zoom out'): a zone-aware
-    // far rung made a ZOOM-OUT gesture dive BACK IN (the area read is closer than
-    // overview) — incoherent. The ladder is MONOTONIC again: the zone's own overhead
-    // is the roll-up rung ON THE WAY OUT (I-209), overview is the hub, and beyond it
-    // lies only the certified table map (I-66b — the owner's exact walk, restored).
-    readView('table', false);
-    return;
-  }
-  if (next >= OVERVIEW_DIST) { glideTo('overview', false); return; } // scene out → overview
-  dollyTo(next);
+  dollyTo(dist * 1.14);
 }, { passive: false });
 
 /** The per-frame glide step — extracted VERBATIM from tick() (game3d calls this first). */

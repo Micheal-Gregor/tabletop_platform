@@ -218,6 +218,9 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   }
   // Phase 0: consumeClick in registry order (overlay closes — round modal, onion, ledger)
   for (const c of COMPONENTS) if (c.consumeClick?.(ctx, ev)) return;
+  // I-220 (the owner's read law: 'click to zoom out once and you leave read mode') —
+  // a plain click in read mode is THE EXIT STEP, consumed here before any re-anchor.
+  if (!wasDrag && cam.getMode() === 'read') { cam.exitReadStep(); return; } // a drag-end is not the exit click
   // the drag/read guard stays BETWEEN Phase 0 and the raycast
   if (wasDrag || cam.getMode() === 'read') return; // reads don't refocus on click; drags never do
   // Phase 2: raycast nearest→far; onPick in registry order, first true stops
