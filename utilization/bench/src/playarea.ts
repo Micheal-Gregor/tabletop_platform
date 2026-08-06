@@ -51,13 +51,13 @@ export const DICE_RING = {
   tossAreaFraction: 0.75, // of the table's area
   /** I-189 (owner-ruled ROUND): the toss boundary is a CIRCLE whose area = the
    *  fraction of the table's — πR² = f·A ⇒ R = √(f·A/π). One number, derived. */
-  tossRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI),
+  tossRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI) * 1.1, // I-194 (owner-tuned): +10% radius — clear felt opens between the wall and the table's edge
   /** I-192/I-193 (owner-ruled): ONE circumference serves throw AND rest — the rest
    *  ANCHOR lies ON the toss circle at (seat angle + offset) and the disc is DISPLACED
    *  INWARD by just its own clearance (r≈40 + margin 5), as far back from 0,0,0 as the
    *  wall allows. Every term derives from the active seat, so the home ROTATES seat to
    *  seat with equal geometry — the congruence the owner asked to be promised. */
-  homeRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI) - 45,
+  homeRadius: (): number => DICE_RING.tossRadius() - 45, // I-194: derives from tossRadius directly — one formula, no drift (the I-193 duplicate retired)
 } as const;
 
 export function ringRadius(seatCount: number, tableHalfDiag: number = TABLE_HALF_DIAG): number {
