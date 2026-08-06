@@ -173,31 +173,6 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
 }
 
 /** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */
-/** I-209: a focus's ZONE READ — the ontology's zone, expressed as a camera target.
- *  Seat citizens (boards, areas, reports, the hand, seat-tagged objects) roll to their
- *  area's overhead; board citizens (table regions, the die, the box) roll to the
- *  table's. The data lives in ui-object.ts; the live tag wins for movable objects. */
-function zoneReadOf(f: string): string | null {
-  if (f === 'box') return null; // I-210 (hoisted guard — see below)
-  // I-213: a PILE'S read rolls up to its BOX'S read first (the supply 2×2 → the supply
-  // box · deck/discard → the exchange) — the box views the owner could not click
-  // (their interiors are blanketed by the piles' own tags) join the ladder instead.
-  if (f === 'table:tradespeople-pile' || f === 'table:equipment-pile' || f === 'table:bbb-pile' || f === 'table:networking-pile') return 'table:supply';
-  if (f === 'table:deck' || f === 'table:discard') return 'table:exchange';
-  if (f === 'table' || f.startsWith('table:')) return 'table';
-  if (f.startsWith('seat-area-')) return f; // already a zone read
-  if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`; // the BOARD is a seat citizen (the owner's correction)
-  if (f.startsWith('ledger') || f === 'hand-fan') return 'seat-area-0';
-  if (f === 'die') return 'table';
-
-  if (f.startsWith('obj:')) {
-    const o = focusObject(f);
-    const z = o?.userData?.['focus'];
-    if (typeof z === 'string' && z.startsWith('seat-')) return `seat-area-${z.slice(5)}`;
-    return 'table';
-  }
-  return null;
-}
 
 const anchorPreset = (f: string): string => {
   // I-207 (the owner's zoom-out conflict: 'it always switches to the overview instead
@@ -218,7 +193,6 @@ const anchorPreset = (f: string): string => {
   return 'overview';
 };
 
-let areaEntryT = 0; // I-213: the area read's entry moment — the dive waits a beat
 /** I-215 (the owner's corrections, superseding the I-214 law the same day): THE
  *  SCENIC LAW v2 — (a) the fit is the object's BOUNDING SPHERE, never the box (the
  *  play space is a sphere; box corners gave the camera 'fake square corners' to
@@ -283,7 +257,6 @@ export function scenicView(focus: string): void {
 
 export function readView(focus?: string, reanchor = true): void {
   readFocus = focus ?? lastFocus; // the ANCHOR is the default read target (I-66a; supersedes the I-63g1 camera-based default)
-  if (readFocus.startsWith('seat-area-')) areaEntryT = performance.now(); // I-213
   if (reanchor) lastFocus = readFocus;
   const m = mapRead(readFocus);
   camera.up.copy(m.up);

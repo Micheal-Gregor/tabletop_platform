@@ -207,7 +207,6 @@ export function tickSpread(): void {
       const disp = displayPose(k);
       sh.position.lerpVectors(home.pos, disp.pos, e);
       sh.quaternion.slerpQuaternions(home.quat, disp.quat, e);
-      sh.scale.lerpVectors(home.scale, disp.scale, e);
     }
     if (phase === 'deploying' && amt >= 0.999) {
       amt = 1; phase = 'displayed';
@@ -217,7 +216,7 @@ export function tickSpread(): void {
         const sh = sheets[k];
         if (!sh) continue;
         const disp = displayPose(k);
-        sh.position.copy(disp.pos); sh.quaternion.copy(disp.quat); sh.scale.copy(disp.scale);
+        sh.position.copy(disp.pos); sh.quaternion.copy(disp.quat); // I-232: scale is UNTOUCHED — paper slides, it never morphs
       }
     }
     if (phase === 'returning' && amt <= 0.001) {
