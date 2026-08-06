@@ -23,6 +23,17 @@ const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } =>
   // its ring station's table-side apron and approaches along the seat's yaw normal
   // (over the player's shoulder) — both from the SAME template expressions the boards
   // use (stationLook/SEAT_YAWS). Non-seat presets keep the row look + +z approach.
+  if (name === 'hand-fan') {
+    // I-205: the LIFTED HAND's scenic zoom — the camera closes on the fan's live
+    // center, over the viewer's shoulder (the seat-0 yaw), near enough to read backs.
+    let fan: THREE.Object3D | null = null;
+    camera.parent?.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
+    if (fan) {
+      const c = (fan as THREE.Object3D).getWorldPosition(new THREE.Vector3());
+      const yaw = SEAT_YAWS[0] ?? 0;
+      return { pos: new THREE.Vector3(c.x + Math.sin(yaw) * 260, c.y + 150, c.z + Math.cos(yaw) * 260), look: c };
+    }
+  }
   if (name.startsWith('seat-')) {
     const i = Number(name.slice(5));
     const yaw = SEAT_YAWS[i] ?? 0;
@@ -41,7 +52,7 @@ camera.position.copy(target.pos);
 camera.lookAt(currentLook);
 
 export function glideTo(name: string, reanchor = true): void {
-  if (!presets[name]) throw new Error(`glideTo refused: unknown preset "${name}" (have: ${Object.keys(presets).join(', ')})`);
+  if (name !== 'hand-fan' && !presets[name]) throw new Error(`glideTo refused: unknown preset "${name}" (have: ${Object.keys(presets).join(', ')})`); // I-205: hand-fan is dynamic
   target = mapPreset(name);
   currentName = name;
   // a USER choice re-anchors (I-66a); a LADDER move (reanchor=false) preserves the anchor
@@ -83,6 +94,11 @@ function fitAlong(box: THREE.Box3, look: THREE.Vector3, n: THREE.Vector3, upv: T
  *  REGION ('table:<region>' — the region quad inside the table group). */
 export function focusObject(focus: string): THREE.Object3D | null {
   if (focusGroups[focus]) return focusGroups[focus]!;
+  if (focus === 'hand-fan') {
+    let fan: THREE.Object3D | null = null;
+    camera.parent?.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
+    return fan; // I-205: wheel-in on the lifted hand reaches READ (the onion browser is H-4's layer)
+  }
   if (focus.startsWith('seat-area-')) {
     // PB-1/PB-2 (I-176): the seat PLAY AREA is a first-class anchor — the transparent
     // surface found by its index tag (world-space, rebuilt every state change).

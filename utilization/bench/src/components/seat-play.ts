@@ -189,11 +189,15 @@ export const seatPlay: Component = {
           let hq: THREE.Quaternion;
           let hp: THREE.Vector3;
           if (handUp) {
+            // I-205 (owner-consistent): the lifted fan CENTERS in the play space and
+            // stands 30° OFF THE GROUND, well lifted; it ANIMATES there (arrivals).
+            const ss2 = surfaceSize();
+            const fanC = sf.c.clone().addScaledVector(sf.n, BASE + ss2.d / 2 - cellD() / 2);
             hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw)
-              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 4))
+              .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 3)) // 30° off ground
               .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -splay));
-            hp = base.clone().addScaledVector(sf.lat, Math.sin(splay) * 44);
-            hp.y = 30 + Math.cos(splay) * 14; // lifted — the 45° held fan
+            hp = fanC.clone().addScaledVector(sf.lat, Math.sin(splay) * 44);
+            hp.y = 64 + Math.cos(splay) * 12; // I-205: 'lift it more off the ground'
           } else {
             const reach = 40;
             hq = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), sf.yaw + splay)
@@ -312,7 +316,9 @@ export const seatPlay: Component = {
           card2.mesh.position.copy(card2.anchor);
           handUp = true;
           ctx.rebuild();
-          ctx.status('hand picked up — the 45° fan; drag a card onto any play-area anchor to resolve it');
+          ctx.theater.setLastFocus('hand-fan');
+          ctx.theater.glideTo('hand-fan'); // I-205: the camera closes on the fan in scenic view; wheel-in reaches READ
+          ctx.status('hand raised — the camera closes in; play a card onto an anchor, wheel in to read, click to set down');
           return true;
         }
         const vH2 = ctx.projection();
