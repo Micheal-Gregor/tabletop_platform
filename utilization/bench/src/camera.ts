@@ -83,6 +83,14 @@ function fitAlong(box: THREE.Box3, look: THREE.Vector3, n: THREE.Vector3, upv: T
  *  REGION ('table:<region>' — the region quad inside the table group). */
 export function focusObject(focus: string): THREE.Object3D | null {
   if (focusGroups[focus]) return focusGroups[focus]!;
+  if (focus.startsWith('seat-area-')) {
+    // PB-1/PB-2 (I-176): the seat PLAY AREA is a first-class anchor — the transparent
+    // surface found by its index tag (world-space, rebuilt every state change).
+    const idx = Number(focus.slice('seat-area-'.length));
+    let hit2: THREE.Object3D | null = null;
+    camera.parent?.traverse((o: THREE.Object3D) => { if (!hit2 && o.userData?.['seatSurface'] === idx) hit2 = o; });
+    return hit2;
+  }
   if (focus.startsWith('table:')) {
     const rid = focus.slice('table:'.length);
     let hit: THREE.Object3D | null = null;
@@ -114,6 +122,15 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
     const n = new THREE.Vector3(0, 1, 0);
     const up = new THREE.Vector3(0, 0, -1);
     return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * factor)), look: c, up };
+  }
+  if (focus.startsWith('seat-area-')) {
+    // PB-2 (I-176, the owner: 'pan to a direct overhead looking down on the play area
+    // the way the table does'): straight down, up = toward the board/table so the
+    // player's cards read upright; grabs stay live in read (the claim order already
+    // routes card drags before the pan).
+    const n = new THREE.Vector3(0, 1, 0);
+    const up = new THREE.Vector3(-c.x, 0, -c.z).normalize();
+    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * 1.05)), look: c, up };
   }
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion((obj as THREE.Group).quaternion).normalize(); // the board's outward normal (90° to its face)
   const up = new THREE.Vector3(0, 1, 0);

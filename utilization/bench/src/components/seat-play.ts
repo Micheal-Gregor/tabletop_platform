@@ -189,6 +189,17 @@ export const seatPlay: Component = {
     return null; // self-added (rebuilt every state change via the purge above)
   },
 
+  // PB-1 (I-176): clicking the PLAY AREA anchors it — the read ladder then pans to
+  // the DIRECT OVERHEAD of THIS surface (never the ledger's stale anchor — the hijack
+  // the owner caught: 'the reading view looks like it is on The Books point of center').
+  onPick(ctx, hit: PickInfo) {
+    const idx = hit.tags['seatSurface'];
+    if (typeof idx !== 'number') return false;
+    ctx.theater.setLastFocus(`seat-area-${idx}`);
+    ctx.status(`anchored: your play area — reading mode now reads it straight down`);
+    return true;
+  },
+
   // GRAB (contract v2): any seat-play card — drag on the ground plane, reset on release.
   onGrabStart(ctx, hit: PickInfo) {
     if (grab || resetting) return false;
