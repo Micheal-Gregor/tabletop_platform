@@ -15,6 +15,7 @@
  */
 import { BOARD_PARENT, CARD_PARENT, PANEL_PARENT, TABLE_PARENT, extendLayout } from '@tabletop/presentation';
 import type { LayoutDef, LayoutOverlay } from '@tabletop/presentation';
+import { T_ART, T_GLOBAL, T_SUMMARY, T_LOG, T_SUPPLY, T_EXCHANGE, T_MEDAL, T_TRADES, T_EQUIP, T_BBB, T_NWK, T_DECK, T_DISCARD } from './table-grid.js'; // I-185: the table's child grid — regions SNAP, never drift
 
 /**
  * The OVERLAYS are exported alongside the children so the construction path is
@@ -125,22 +126,22 @@ export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
 export const TOWN_V2_OVERLAY: LayoutOverlay = {
   id: 'boty:town-table-v2',
   override: [
-    { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 68, h: 22 }, // I-184: right edge 98 — ALIGNED with the exchange + medal (the owner's edge law supersedes the I-183 width cut, on the record)
-    { id: 'deck', role: 'deck', x: 69, y: 30, w: 13, h: 20 }, // I-184: the EVENT EXCHANGE column — deck + discard in their own box between global and medal
-    { id: 'discard', role: 'discard', x: 84, y: 30, w: 13, h: 20 },
+    { id: 'global-play', role: 'play-zone', ...T_GLOBAL }, // I-185: SNAPPED — spans middle+right, right edge ≡ the medal's BY ARITHMETIC
+    { id: 'deck', role: 'deck', ...T_DECK }, // I-185: the exchange's left slot — ROOM FOR BOTH (the owner's note)
+    { id: 'discard', role: 'discard', ...T_DISCARD }, // I-185: the exchange's right slot
     // PB-6 (I-182): the dice region RETIRED — the die lives on the ring (D-1a/I-174); the square was dead weight ('deprecated and should be removed').
   ],
   add: [
-    { id: 'supply', role: 'art', x: 30, y: 26, w: 34, h: 72 }, // PB-6/I-184: the FOUR SUPPLY DECKS' shared box (middle column, bottom 98)
-    { id: 'exchange', role: 'art', x: 68, y: 26, w: 30, h: 28 }, // I-184: the EVENT deck + discard's OWN box — fills the space between global and medal, edges aligned
-    { id: 'art-banner', role: 'art', x: 2, y: 2, w: 26, h: 22 }, // the SEASON image block, top-left
-    { id: 'standings', role: 'standings', x: 2, y: 28, w: 26, h: 32 }, // player summary, under the season
-    { id: 'log', role: 'table-log', x: 2, y: 64, w: 26, h: 34 }, // I-184: bottom 98 — the left column closes flush
-    { id: 'tradespeople-pile', role: 'deck', x: 33, y: 30, w: 12, h: 20 }, // I-184: the supply box's 2×2 — top row
-    { id: 'equipment-pile', role: 'deck', x: 49, y: 30, w: 12, h: 20 },
-    { id: 'bbb-pile', role: 'deck', x: 33, y: 60, w: 12, h: 20 }, // I-184: the supply box's 2×2 — bottom row
-    { id: 'networking-pile', role: 'deck', x: 49, y: 60, w: 12, h: 20 },
-    { id: 'medal', role: 'art', x: 68, y: 58, w: 30, h: 40 }, // I-184: left/right edges ≡ the exchange's (68..98), bottom 98
+    { id: 'supply', role: 'art', ...T_SUPPLY }, // I-185: SNAPPED — the four supply decks' shared box
+    { id: 'exchange', role: 'art', ...T_EXCHANGE }, // I-185: SNAPPED — aligned with the supply band, edges shared with global + medal
+    { id: 'art-banner', role: 'art', ...T_ART }, // I-185: SNAPPED
+    { id: 'standings', role: 'standings', ...T_SUMMARY }, // I-185: SNAPPED — the player summary
+    { id: 'log', role: 'table-log', ...T_LOG }, // I-185: SNAPPED — flush bottom by construction
+    { id: 'tradespeople-pile', role: 'deck', ...T_TRADES }, // I-185: the supply 2×2, DERIVED
+    { id: 'equipment-pile', role: 'deck', ...T_EQUIP },
+    { id: 'bbb-pile', role: 'deck', ...T_BBB }, // I-185: the bottom row aligns with the third band by construction
+    { id: 'networking-pile', role: 'deck', ...T_NWK },
+    { id: 'medal', role: 'art', ...T_MEDAL }, // I-185: SNAPPED — edges ≡ the exchange's by arithmetic
   ],
   suppress: ['windows', 'dice'], // PB-6 (I-182): the dice square retired — the die lives on the ring (D-1a) // I-130: removed altogether — prompts are onion-layer citizens now
 };
