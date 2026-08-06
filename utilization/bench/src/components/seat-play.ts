@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import { panelTexture } from '../surfaces.js';
-import { planPostings, cellLocal, cellD, cellAt, surfaceSize, POSTING_SPAN } from '../seat-grid.js'; // G-B2 (I-164): the 7×4 grid IS the layout law
+import { planPostings, cellLocal, cellW, cellD, cellAt, surfaceSize, POSTING_SPAN } from '../seat-grid.js'; // G-B2/G-B3 (I-164/I-165): the 7×4 grid IS the layout law
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import * as loop from '../crew-loop.js'; // A6 (I-136): the v4 working loop's state machine
 import { cardInstance } from '../card-world.js'; // C-1a (I-149): the permanence world
@@ -97,6 +97,19 @@ export const seatPlay: Component = {
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)));
       surf.userData = { seatSurface: i, focus: `seat-${i}` };
       g.add(surf);
+      // G-B3 (I-165): the HAND ZONE marked (row 4, cols 1–2) — C-1d's landing strip,
+      // a subtle outline so the player knows where the hand lives (I-162 readability).
+      if (mine) {
+        const hz = new THREE.Mesh(
+          new THREE.PlaneGeometry(2 * cellW() - 8, cellD() - 8),
+          new THREE.MeshBasicMaterial({ color: 0x7a8fa0, transparent: true, opacity: 0.14, side: THREE.DoubleSide }),
+        );
+        const hc = sf.c.clone().addScaledVector(sf.lat, (1.5 - 4) * cellW()).addScaledVector(sf.n, BASE + 3 * cellD());
+        hz.position.set(hc.x, 1.0, hc.z);
+        hz.quaternion.copy(surf.quaternion);
+        hz.userData = { handZone: true, focus: `seat-${i}` };
+        g.add(hz);
+      }
       for (const c of seatCards) {
         const cell = plan.get(c.id);
         if (!cell) continue; // over capacity — parked (20 anchors; the overflow law is future)

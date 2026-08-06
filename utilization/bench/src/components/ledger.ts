@@ -44,7 +44,7 @@ export const ledgerComponent: Component = {
       const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
       n.y = 0; n.normalize(); // toward the player, horizontal
       const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
-      book.position.copy(c).addScaledVector(lat, -180).addScaledVector(n, 130).setY(2); // O-2 (I-146): the station box's folder column (lat −180, inside ±240)
+      book.position.copy(c).addScaledVector(lat, -190).addScaledVector(n, 168).setY(2); // G-B3 (I-165): the LEDGER SPAN's center (rows 1–3, cols 1–2 → lat −190, out 168) — the folder takes its grid claim; the left-edge law still holds (−190 < −130)
       // I-133 (the owner's screenshot catch — 'the folder rotated 45° instead of staying
       // flat'): the world-yaw PREMULTIPLIES the built pose. Setting rotation.y MUTATED
       // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
