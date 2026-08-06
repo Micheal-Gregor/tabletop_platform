@@ -47,11 +47,14 @@ export const TABLE_HALF_DIAG = Math.hypot(50 * TABLE_SCALE.x, 50 * TABLE_SCALE.y
 // the table's area (the centered similar-rect, scale = √0.75).
 export const DICE_RING = {
   radius: (): number => TABLE_HALF_DIAG, // config — equals the corner circle for BOTY
-  homeOffsetDeg: 10, // past the seat center (the intersection relationship, I-175)
+  homeOffsetDeg: 20, // I-192 (owner-ruled): 20° past the seat center — 10° still hid behind the board from the seat-0 view
   tossAreaFraction: 0.75, // of the table's area
   /** I-189 (owner-ruled ROUND): the toss boundary is a CIRCLE whose area = the
    *  fraction of the table's — πR² = f·A ⇒ R = √(f·A/π). One number, derived. */
   tossRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI),
+  /** I-192 (owner-ruled, superseding the ring-circumference home): the REST area sits
+   *  100% INSIDE the throw circle — the disc (r≈40) plus margin clears the wall. */
+  homeRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI) - 60,
 } as const;
 
 export function ringRadius(seatCount: number, tableHalfDiag: number = TABLE_HALF_DIAG): number {
