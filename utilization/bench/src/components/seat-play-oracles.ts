@@ -8,7 +8,7 @@ import type { PlayAreaContext } from '../component.js';
 import { planPostings, cellLocal, cellD } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
-import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, seatPlayLastHandPlay } from './seat-play.js';
+import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, handSpreadState, seatPlayLastHandPlay } from './seat-play.js';
 
 const seatStickId = (): string | null => { const st = seatPlayLastStick(); return st ? st.id : null; };
 
@@ -109,7 +109,7 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
           const out = c.mesh.position.clone().sub(sf.c).dot(sf.n);
           if (out < 60 + 2 * cellD() - 5) onStrip = false; // deeper than rows 1–3's zone (K7-V minor: DERIVED, never 2·108)
         }
-        return { count: handCards.length, want: v.ownHand.length, belowBooks: onStrip, up: handUpState() };
+        return { count: handCards.length, want: v.ownHand.length, belowBooks: onStrip, up: handUpState(), spread: handSpreadState() }; // I-203: the fan state is law-visible
       },
   };
 }

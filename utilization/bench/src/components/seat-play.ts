@@ -33,10 +33,12 @@ let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } 
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
 const sticky = new Map<string, { row: number; col: number }>(); // G-B2: the viewer's STUCK anchors (presentation state, survives rebuilds)
-let handUp = false; // C-1d (I-171): the flip-all pickup — face-down grouped ↔ all face up (theater state)
-let handOffset: { lat: number; out: number } | null = null; // PB-3 (I-177): the dragged hand's claim
+let handUp = false; // C-1d (I-171): face-down rest ↔ the UPRIGHT 45° held fan (I-203)
+let handSpread = 0; // I-203: the fan's spread state — 0 tight · 1 loose · 2 looser (click cycles, face down)
+const SPREAD_DEG = [5, 10, 16] as const; // per-card splay at each state — 'held at the base'
 let lastHandPlay: { id: string } | null = null;
 export const handUpState = () => handUp;
+export const handSpreadState = () => handSpread; // I-203
 export const seatPlayLastHandPlay = () => lastHandPlay;
 let lastStick: { id: string; row: number; col: number } | null = null;
 export const seatPlayLastStick = () => lastStick;
@@ -238,9 +240,14 @@ export const seatPlay: Component = {
       if (moved < 8) {
         grab = null;
         card.mesh.position.copy(card.anchor);
-        handUp = !handUp;
+        if (handUp) {
+          handUp = false; // I-203: a click on the upright hand SETS IT DOWN
+          ctx.status('hand set down — face down, fanned');
+        } else {
+          handSpread = (handSpread + 1) % 3; // I-203: tight → loose → looser → tight
+          ctx.status(`hand fan: ${['tight', 'loose', 'looser'][handSpread]}`);
+        }
         ctx.rebuild();
-        ctx.status(handUp ? 'hand picked up — all cards face up; drag one into play' : 'hand set down — face down, grouped');
         return true;
       }
       const vH = ctx.projection();
@@ -257,22 +264,15 @@ export const seatPlay: Component = {
         return true;
       }
       if (!handUp && moved >= 8) {
-        // PB-3 (I-177): dragging the FACE-DOWN hand slides the whole fan — the claim
-        // (board-frame, clamped to the station) survives rebuilds, like a card's stick.
-        const vH2 = ctx.projection();
-        const myIdx2 = vH2.seats.findIndex((s2) => s2.id === ctx.viewSeat);
-        const sfH = myIdx2 >= 0 ? seatFrame(ctx, myIdx2) : null;
-        if (sfH) {
-          const rel = card.mesh.position.clone().sub(sfH.c);
-          handOffset = {
-            lat: Math.max(-STATION_BOX.halfW + 80, Math.min(STATION_BOX.halfW - 80, rel.dot(sfH.lat))),
-            out: Math.max(40, Math.min(STATION_BOX.depth - 30, rel.dot(sfH.n))),
-          };
-          grab = null;
-          ctx.rebuild();
-          ctx.status('the hand settles at its new spot — your claim holds');
-          return true;
-        }
+        // I-203 (superseding the I-177 hand-slide): GRAB-AND-DRAG PICKS THE HAND UP —
+        // it flips upright and lifts to the 45° held fan (the photo). The organize
+        // arrangement returns with the I-199 saved feature.
+        grab = null;
+        card.mesh.position.copy(card.anchor);
+        handUp = true;
+        ctx.rebuild();
+        ctx.status('hand picked up — the fan stands at 45°; drag a card out to play it, click to set down');
+        return true;
       }
       resetting = { card, from: card.mesh.position.clone(), t: 0 };
       lastReset = { moved, returned: false, frames: 0 };
