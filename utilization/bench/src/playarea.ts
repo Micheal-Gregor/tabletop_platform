@@ -59,11 +59,14 @@ export const DICE_RING = {
    *  the wall on open ground. Rolls re-enter by the I-191 launch law (the belt earns
    *  its keep); every term derives from the active seat — the congruence holds. */
   homePoint: (phiSeat: number): { x: number; z: number } => {
-    const R = DICE_RING.tossRadius();
-    const L = R * Math.tan((DICE_RING.hypotenuseDeg * Math.PI) / 180);
-    return { x: R * Math.sin(phiSeat) + L * Math.cos(phiSeat), z: R * Math.cos(phiSeat) - L * Math.sin(phiSeat) };
+    // I-197 (the owner's INSIDE dual): the perpendicular drops FROM the perimeter
+    // touch ONTO the 30° hypotenuse — its foot is the rest point: the same ray at
+    // φ + 30°, radius R·cos(30°) ≈ 0.866R — INSIDE the wall, on the open felt.
+    const R = DICE_RING.tossRadius() * Math.cos((DICE_RING.hypotenuseDeg * Math.PI) / 180);
+    const phi = phiSeat + (DICE_RING.hypotenuseDeg * Math.PI) / 180;
+    return { x: R * Math.sin(phi), z: R * Math.cos(phi) };
   },
-  homeDist: (): number => DICE_RING.tossRadius() / Math.cos((DICE_RING.hypotenuseDeg * Math.PI) / 180), // the hypotenuse's length
+  homeDist: (): number => DICE_RING.tossRadius() * Math.cos((DICE_RING.hypotenuseDeg * Math.PI) / 180), // I-197: the projection's length — inside
   dragRadius: (): number => DICE_RING.tossRadius() * 1.25, // I-196: the held die's range COVERS the home (the stale clamp the owner caught)
 } as const;
 
