@@ -90,7 +90,8 @@ export const seats: Component = {
           return true;
         }
       }
-      ctx.theater.glideTo(`seat-${idx}`);
+      ctx.theater.setLastFocus(`seat-${idx}`); // I-227: select, never travel
+      ctx.status(`anchored: seat ${idx}'s board — wheel in to read it`);
       return true;
     }
     return false;

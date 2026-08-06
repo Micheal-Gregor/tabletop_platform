@@ -347,6 +347,12 @@ function zoneAnchorOf(f: string): string {
   return 'table';
 }
 /** I-220: read exits ONE STEP — back to the anchor at its 80% (click or wheel-out). */
+/** I-227: is the current read the ZONE's own (the resting state)? Zone reads accept
+ *  SELECTION clicks; only a CHILD's read exits on click. */
+export function readIsZone(): boolean {
+  if (mode !== 'read') return false;
+  return readFocus === 'table' || readFocus.startsWith('seat-area-');
+}
 export function exitReadStep(): void {
   if (mode !== 'read') return;
   const zone = zoneAnchorOf(readFocus);

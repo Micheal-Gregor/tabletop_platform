@@ -220,9 +220,9 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   for (const c of COMPONENTS) if (c.consumeClick?.(ctx, ev)) return;
   // I-220 (the owner's read law: 'click to zoom out once and you leave read mode') —
   // a plain click in read mode is THE EXIT STEP, consumed here before any re-anchor.
-  if (!wasDrag && cam.getMode() === 'read') { cam.exitReadStep(); return; } // a drag-end is not the exit click
+  if (!wasDrag && cam.getMode() === 'read' && !cam.readIsZone()) { cam.exitReadStep(); return; } // I-227: only a CHILD's read exits on click — at the ZONE read (the resting state) clicks SELECT
   // the drag/read guard stays BETWEEN Phase 0 and the raycast
-  if (wasDrag || cam.getMode() === 'read') return; // reads don't refocus on click; drags never do
+  if (wasDrag || (cam.getMode() === 'read' && !cam.readIsZone())) return; // I-227: the ZONE read passes clicks through to selection; child reads and drags never refocus
   // Phase 2: raycast nearest→far; onPick in registry order, first true stops
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);

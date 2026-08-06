@@ -214,7 +214,9 @@ export const table: Component = {
   // its fidget always. Fidget = PURE THEATER.
   onPick(ctx, hit: PickInfo) {
     if (hit.focus !== 'table') return false;
-    ctx.theater.glideTo('table');
+    // I-227 (owner: 'every time I select a child it zooms out') — the pick's legacy
+    // glideTo('table') RETIRED: a click SELECTS, it never travels; travel is the
+    // wheel's and the buttons' alone (the I-226 grammar).
     const region = hit.region;
     if (region) { ctx.theater.setLastFocus(`table:${region}`); ctx.status(`anchored: ${region} — zoom in for its read view`); }
     if (region === 'deck') {
