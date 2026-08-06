@@ -22,7 +22,7 @@ export function manifestBackdrop(): void {
   grad.addColorStop(1, '#f4f3ee'); // off-white — the play area manifested
   g.fillStyle = grad;
   g.fillRect(0, 0, 1024, 1024);
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(2600, 64), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }));
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(2100, 64), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) })); // I-218: the haze ring hugs the round counter — one circular horizon, no square anywhere
   disc.rotation.x = -Math.PI / 2;
   disc.position.y = -2;
   disc.userData['backdrop'] = true;
