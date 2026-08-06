@@ -162,7 +162,14 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
     return { pos: c.clone().add(n.clone().multiplyScalar(dFit)), look: c, up };
   }
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion((obj as THREE.Group).quaternion).normalize(); // the board's outward normal (90° to its face)
-  const up = new THREE.Vector3(0, 1, 0);
+  // I-233 (the owner's twist, root-caused: a FLAT card's face-on read looks STRAIGHT
+  // DOWN, and up=(0,1,0) is then parallel to the view — mathematically undefined, so
+  // the roll was arbitrary; the board zone escaped because its overhead reads carry an
+  // explicit horizontal up): a flat object's up points from the seat TOWARD the
+  // center, so cards read upright the way the player sits.
+  const up = Math.abs(n.y) > 0.85
+    ? (Math.hypot(c.x, c.z) > 20 ? new THREE.Vector3(-c.x, 0, -c.z).normalize() : new THREE.Vector3(0, 0, -1))
+    : new THREE.Vector3(0, 1, 0);
   // I-225: the face-on fit measures the bounding SPHERE — rotation-safe (the AABB's
   // third lie: seat-0's yawed board read pulled too far while seat-1's was perfect).
   const sp2 = box.getBoundingSphere(new THREE.Sphere());
@@ -385,6 +392,9 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
         if (co) {
           const cc = new THREE.Box3().setFromObject(co).getBoundingSphere(new THREE.Sphere()).center;
           mode = 'scene';
+          // I-233: the descent keeps the ZONE's horizontal up (toward center) — the
+          // camera can drop onto a flat card without the roll ever going undefined.
+          if (Math.hypot(cc.x, cc.z) > 20) camera.up.set(-cc.x, 0, -cc.z).normalize();
           const dir = cc.clone().sub(camera.position);
           target = { pos: camera.position.clone().add(dir.multiplyScalar(0.12)), look: cc };
           status(`descending to ${anchor} — keep wheeling; one notch past full fills its page`);
