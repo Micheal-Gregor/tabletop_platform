@@ -153,11 +153,22 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
     // routes card drags before the pan).
     const n = new THREE.Vector3(0, 1, 0);
     const up = new THREE.Vector3(-c.x, 0, -c.z).normalize();
-    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * 1.18)), look: c, up }; // I-213: a touch more air on the area fit ('zooms in too far')
+    // I-225 (the owner's third catch of the AABB class — 'seat 1 play area read is
+    // perfect… same issue, for sure'): the overhead fit measures the GRID'S OWN size,
+    // exact at every yaw (the axis-aligned box inflates for every angled seat).
+    const ssz2 = surfaceSize();
+    const fovV2 = (camera.fov * Math.PI) / 180;
+    const dFit = Math.max((ssz2.w / 2) / (Math.tan(fovV2 / 2) * camera.aspect), (ssz2.d / 2) / Math.tan(fovV2 / 2)) * 1.08;
+    return { pos: c.clone().add(n.clone().multiplyScalar(dFit)), look: c, up };
   }
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion((obj as THREE.Group).quaternion).normalize(); // the board's outward normal (90° to its face)
   const up = new THREE.Vector3(0, 1, 0);
-  return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * factor)), look: c, up };
+  // I-225: the face-on fit measures the bounding SPHERE — rotation-safe (the AABB's
+  // third lie: seat-0's yawed board read pulled too far while seat-1's was perfect).
+  const sp2 = box.getBoundingSphere(new THREE.Sphere());
+  const fovV3 = (camera.fov * Math.PI) / 180;
+  const dSphere = (Math.max(30, sp2.radius) / Math.sin((fovV3 / 2) * 0.9)) * factor;
+  return { pos: c.clone().add(n.clone().multiplyScalar(dSphere)), look: c, up };
 }
 
 /** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */
