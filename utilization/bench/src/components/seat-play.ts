@@ -28,7 +28,7 @@ let cards: { key: string; mesh: THREE.Object3D; anchor: THREE.Vector3 }[] = [];
 export const seatPlayCards = () => cards; // the oracle module's read (O-2 size extraction)
 
 // ── the grab/reset state machine ──
-let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster; t0: number } | null = null;
+let grab: { card: (typeof cards)[number]; plane: THREE.Plane; ray: THREE.Raycaster; t0: number; group: (typeof cards)[number][] } | null = null; // I-207: grouped objects DRAG TOGETHER
 let resetting: { card: (typeof cards)[number]; from: THREE.Vector3; t: number } | null = null;
 let lastReset: { moved: number; returned: boolean; frames: number } | null = null; // frames: G-1 (I-101) glide trace — a snap mutant records ≤1
 let lastReturn: { id: string; pile: string } | null = null; // I-157: the last bottom-return (oracle)
@@ -235,7 +235,13 @@ export const seatPlay: Component = {
     if (!key) return false;
     const card = cards.find((c) => c.key === key);
     if (!card) return false;
-    grab = { card, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -6), ray: new THREE.Raycaster(), t0: performance.now() };
+    // I-207 (owner-ruled: 'when grouped… they should move together'): the gesture's
+    // GROUP — the face-down hand moves as ONE; an attached pair moves as ONE.
+    let groupKeys: string[] = [key];
+    if (key.startsWith('hand:') && !handUpState()) groupKeys = cards.filter((c) => c.key.startsWith('hand:')).map((c) => c.key);
+    else if (key.startsWith('crew:')) { const gid = `gear:${key.slice(5)}`; if (cards.some((c) => c.key === gid)) groupKeys = [key, gid]; }
+    else if (key.startsWith('gear:')) { const cid = `crew:${key.slice(5)}`; if (cards.some((c) => c.key === cid)) groupKeys = [key, cid]; }
+    grab = { card, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -6), ray: new THREE.Raycaster(), t0: performance.now(), group: cards.filter((c) => groupKeys.includes(c.key)) };
     ctx.status(`picked up ${key} — it will reset where it belongs`);
     return true;
   },
@@ -244,7 +250,12 @@ export const seatPlay: Component = {
     const r = ctx.renderer.domElement.getBoundingClientRect();
     grab.ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), ctx.camera);
     const p = new THREE.Vector3();
-    if (grab.ray.ray.intersectPlane(grab.plane, p)) grab.card.mesh.position.set(p.x, Math.max(10, p.y + 14), p.z);
+    if (grab.ray.ray.intersectPlane(grab.plane, p)) {
+      const to = new THREE.Vector3(p.x, Math.max(10, p.y + 14), p.z);
+      const delta = to.clone().sub(grab.card.mesh.position);
+      grab.card.mesh.position.copy(to);
+      for (const m of grab.group) if (m !== grab.card) m.mesh.position.add(delta); // I-207: the group rides the same hand
+    }
   },
   onGrabEnd(ctx, _ev: PointerEvent) {
     if (!grab) return false;
@@ -386,6 +397,15 @@ export const seatPlay: Component = {
             ? vNow.crew.some((m) => m.id === id && m.outfit === ctx.viewSeat)
             : vNow.seats.find((s2) => s2.id === ctx.viewSeat)!.assets.some((a) => a.ref === id);
           if (myTurn && own) {
+            if (key.startsWith('crew:')) {
+              const geared = vNow.crew.find((m) => m.id === id)?.gear !== undefined;
+              if (geared) { // I-207: the pair is ONE object — detach first (a silent gear-vanish is refusal-not-repair's enemy)
+                grab = null;
+                ctx.rebuild();
+                ctx.status('refused — detach the equipment first; a paired tradesperson returns alone');
+                return true;
+              }
+            }
             const verb = key.startsWith('crew:') ? 'release-crew' : 'sell-equipment';
             const args = key.startsWith('crew:') ? { crew: id } : { ref: id };
             const cardRef = grab.card;
@@ -465,6 +485,12 @@ export const seatPlay: Component = {
       cardR.mesh.position.copy(cardR.anchor);
       ctx.theater.setLastFocus(`obj:${cardR.mesh.uuid}`);
       ctx.status(`anchored: ${cardR.key} — wheel in for its read view`);
+      return true;
+    }
+    if (grab.group.length > 1) {
+      grab = null;
+      ctx.rebuild(); // I-207: a grouped release rebuilds — arrivals glide the WHOLE group home together
+      ctx.status('the group settles back together');
       return true;
     }
     resetting = { card: grab.card, from: grab.card.mesh.position.clone(), t: 0 };

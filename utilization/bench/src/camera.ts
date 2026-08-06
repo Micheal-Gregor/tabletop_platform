@@ -160,7 +160,23 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
 }
 
 /** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */
-const anchorPreset = (f: string): string => (presets[f] ? f : f.startsWith('table:') ? 'table' : 'overview');
+const anchorPreset = (f: string): string => {
+  // I-207 (the owner's zoom-out conflict: 'it always switches to the overview instead
+  // of object anchor, player area overview…'): the ladder lands in the anchor's OWN
+  // ZONE — a table region backs out to the table; a seat-area/hand/report/object
+  // anchor backs out to ITS seat; only a true unknown falls to overview.
+  if (presets[f]) return f;
+  if (f.startsWith('table:')) return 'table';
+  if (f.startsWith('seat-area-')) { const k = `seat-${f.slice('seat-area-'.length)}`; return presets[k] ? k : 'overview'; }
+  if (f.startsWith('ledger') || f === 'hand-fan') return presets['seat-0'] ? 'seat-0' : 'overview';
+  if (f.startsWith('obj:')) {
+    const o = focusObject(f);
+    const z = o?.userData?.['focus'];
+    if (typeof z === 'string' && presets[z]) return z;
+    return 'table';
+  }
+  return 'overview';
+};
 
 export function readView(focus?: string, reanchor = true): void {
   readFocus = focus ?? lastFocus; // the ANCHOR is the default read target (I-66a; supersedes the I-63g1 camera-based default)
