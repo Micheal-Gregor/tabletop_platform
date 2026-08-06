@@ -51,7 +51,7 @@ export const DICE_RING = {
   tossAreaFraction: 0.75, // of the table's area
   /** I-189 (owner-ruled ROUND): the toss boundary is a CIRCLE whose area = the
    *  fraction of the table's — πR² = f·A ⇒ R = √(f·A/π). One number, derived. */
-  tossRadius: (): number => Math.sqrt((0.75 * (100 * TABLE_SCALE.x) * (100 * TABLE_SCALE.y)) / Math.PI) * 1.1, // I-194 (owner-tuned): +10% radius — clear felt opens between the wall and the table's edge
+  tossRadius: (): number => ringRadius(7), // I-195 (owner-ruled): the throw circle IS the seat circle — one radius shared with the ring (7 = RING_N, six seats + the box slot)
   /** I-192/I-193 (owner-ruled): ONE circumference serves throw AND rest — the rest
    *  ANCHOR lies ON the toss circle at (seat angle + offset) and the disc is DISPLACED
    *  INWARD by just its own clearance (r≈40 + margin 5), as far back from 0,0,0 as the

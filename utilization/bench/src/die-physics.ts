@@ -66,7 +66,14 @@ function buildArena(r: TableRect): RAPIER.World {
     const b = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(x, y, z));
     world.createCollider(RAPIER.ColliderDesc.cuboid(hx, hy, hz).setRestitution(rest).setFriction(fric), b);
   };
-  fixed(f.hx, 0.01, f.hz, 0, -0.01, 0, 0.12, 0.7); // the felt (I-109 tuning: fric 0.9→0.7 for real travel)
+  // I-195: with a circular wall the FLOOR must cover the whole circle (the wall can
+  // stand beyond the table's rect — the seat-radius arena) or the die falls off the
+  // world at the table's edge (the I-191 class). Stratum caveat on the record: beyond
+  // the table the floor stays at TABLE height (the die rides an invisible extension
+  // ~16u over the counter) — honest, visible, and the owner's to re-rule if it reads.
+  const floorH = r.circleR ? Math.max(f.hx, f.hz, r.circleR / M2W) + 0.1 : 0;
+  if (r.circleR) fixed(floorH, 0.01, floorH, 0, -0.01, 0, 0.12, 0.7);
+  else fixed(f.hx, 0.01, f.hz, 0, -0.01, 0, 0.12, 0.7); // the felt (I-109 tuning)
   if (r.circleR) {
     // I-189 (owner-ruled): the ROUND throw boundary — sixteen thin wall segments on
     // the circle ('the throw circumference'); the felt floor stays the full rect so
