@@ -9,7 +9,7 @@
  * overview pose is set on the shared camera, and the #stage wheel listener is attached.
  */
 import * as THREE from 'three';
-import { camera, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N } from './stage.js';
+import { camera, scene, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N } from './stage.js'; // I-216: the SCENE itself — the dynamic lookups had walked up from an UNPARENTED camera (null) since I-149
 import { stationLook } from './playarea.js'; // PA-1 (I-141)
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
@@ -27,7 +27,7 @@ const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } =>
     // I-205: the LIFTED HAND's scenic zoom — the camera closes on the fan's live
     // center, over the viewer's shoulder (the seat-0 yaw), near enough to read backs.
     let fan: THREE.Object3D | null = null;
-    camera.parent?.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
+    scene.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
     if (fan) {
       const c = (fan as THREE.Object3D).getWorldPosition(new THREE.Vector3());
       const yaw = SEAT_YAWS[0] ?? 0;
@@ -98,11 +98,11 @@ export function focusObject(focus: string): THREE.Object3D | null {
     // I-206: ANY object with the read affordance anchors by uuid — the generic
     // zoom-to-read every in-play object was missing (mapRead frames its live bbox).
     const id = focus.slice(4);
-    return camera.parent?.getObjectByProperty('uuid', id) ?? null;
+    return scene.getObjectByProperty('uuid', id) ?? null;
   }
   if (focus === 'hand-fan') {
     let fan: THREE.Object3D | null = null;
-    camera.parent?.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
+    scene.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
     return fan; // I-205: wheel-in on the lifted hand reaches READ (the onion browser is H-4's layer)
   }
   if (focus.startsWith('seat-area-')) {
@@ -110,7 +110,7 @@ export function focusObject(focus: string): THREE.Object3D | null {
     // surface found by its index tag (world-space, rebuilt every state change).
     const idx = Number(focus.slice('seat-area-'.length));
     let hit2: THREE.Object3D | null = null;
-    camera.parent?.traverse((o: THREE.Object3D) => { if (!hit2 && o.userData?.['seatSurface'] === idx) hit2 = o; });
+    scene.traverse((o: THREE.Object3D) => { if (!hit2 && o.userData?.['seatSurface'] === idx) hit2 = o; });
     return hit2;
   }
   if (focus.startsWith('table:')) {
@@ -121,7 +121,7 @@ export function focusObject(focus: string): THREE.Object3D | null {
     // C-1b (I-149): under the permanence world a region's OBJECT may stand in world
     // space (instance stacks are world-sized, never children of the scaled table) —
     // the anchor law generalizes: search the scene for the region tag.
-    camera.parent?.traverse((o: THREE.Object3D) => { if (!hit && o.userData?.['region'] === rid) hit = o; });
+    scene.traverse((o: THREE.Object3D) => { if (!hit && o.userData?.['region'] === rid) hit = o; });
     return hit;
   }
   return null;
