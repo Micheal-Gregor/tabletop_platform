@@ -165,11 +165,13 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
  *  area's overhead; board citizens (table regions, the die, the box) roll to the
  *  table's. The data lives in ui-object.ts; the live tag wins for movable objects. */
 function zoneReadOf(f: string): string | null {
+  if (f === 'box') return null; // I-210 (hoisted guard — see below)
   if (f === 'table' || f.startsWith('table:')) return 'table';
   if (f.startsWith('seat-area-')) return f; // already a zone read
   if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`; // the BOARD is a seat citizen (the owner's correction)
   if (f.startsWith('ledger') || f === 'hand-fan') return 'seat-area-0';
-  if (f === 'die' || f === 'box') return 'table';
+  if (f === 'die') return 'table';
+
   if (f.startsWith('obj:')) {
     const o = focusObject(f);
     const z = o?.userData?.['focus'];
@@ -186,6 +188,7 @@ const anchorPreset = (f: string): string => {
   // anchor backs out to ITS seat; only a true unknown falls to overview.
   if (presets[f]) return f;
   if (f.startsWith('table:')) return 'table';
+  if (f === 'box') return 'overview'; // I-210: the box's scene is the ring itself
   if (f.startsWith('seat-area-')) { const k = `seat-${f.slice('seat-area-'.length)}`; return presets[k] ? k : 'overview'; }
   if (f.startsWith('ledger') || f === 'hand-fan') return presets['seat-0'] ? 'seat-0' : 'overview';
   if (f.startsWith('obj:')) {
@@ -293,7 +296,14 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     dollyTo(next);
     return;
   }
-  if (currentName === 'overview') { readView('table', false); return; } // overview → TABLE READ (the far rung)
+  if (currentName === 'overview') {
+    // I-210 (the owner at seat 0: 'zoom out to max goes to the center of the table
+    // board' — the far rung was hardwired to the table): the FAR RUNG IS ZONE-AWARE —
+    // the pullback lands in the LAST zone's read: a seat context ends hovering over
+    // THAT play area, a board context over the table (the I-181 two-zone law, kept).
+    readView(zoneReadOf(lastFocus) ?? 'table', false);
+    return;
+  }
   if (next >= OVERVIEW_DIST) { glideTo('overview', false); return; } // scene out → overview
   dollyTo(next);
 }, { passive: false });
