@@ -16,6 +16,7 @@ import { stackTop } from './draw-route.js';
 import { cardInstance } from './card-world.js';
 import { nudgeStack } from './stacks.js';
 import { seatFrame } from './components/seat-play.js';
+import { startPath, stepPath, type PathRun } from './paths.js'; // PB-9 (I-200): travel is a PATH, not a lerp
 
 const FLICK_T = 0.35; // px/ms — the deck's own threshold (I-91)
 const TILT_MAX = 0.9;
@@ -39,7 +40,7 @@ type Theater = {
   samples: { x: number; y: number; t: number }[]; angle: number;
   newId: string | null; identityOk: boolean | null;
   t: number; flipDir: number; flipSpeed: number; flipLift: number; flipped: boolean;
-  routeFrom: THREE.Vector3 | null; routeTo: THREE.Vector3 | null; settleFrom: THREE.Vector3 | null;
+  routeFrom: THREE.Vector3 | null; routeTo: THREE.Vector3 | null; settleFrom: THREE.Vector3 | null; run: PathRun | null;
 };
 let theater: Theater | null = null;
 let lastGestureRec: { verdict: 'flicked' | 'weak'; velocity: number } | null = null;
@@ -66,7 +67,7 @@ export function grabStart(ctx: PlayAreaContext, hit: PickInfo): boolean {
     mesh: m, rid: hit.region, from: st.pos.clone(), homeGroup, homeLocal, bound,
     samples: [{ x: hit.event.clientX, y: hit.event.clientY, t: performance.now() }], angle: 0,
     newId: null, identityOk: null, t: 0, flipDir: 0, flipSpeed: 0.06, flipLift: 16, flipped: false,
-    routeFrom: null, routeTo: null, settleFrom: null,
+    routeFrom: null, routeTo: null, settleFrom: null, run: null,
   };
   phase = 'grabbing';
   ctx.status(`grabbed the ${POOL_KEY[hit.region]} top card — flick to take it`);
@@ -182,18 +183,22 @@ export function tickSupply(ctx: PlayAreaContext): void {
       theater.routeTo = sf
         ? sf.c.clone().addScaledVector(sf.n, 90).setY(theater.from.y)
         : theater.mesh.position.clone();
+      // PB-9 (I-200): the journey is a PATH — computed once from here to the anchor,
+      // length-true clocked (a far seat takes longer), the same object all the way.
+      theater.run = startPath({
+        from: { x: theater.routeFrom.x, y: theater.routeFrom.y, z: theater.routeFrom.z },
+        to: { x: theater.routeTo.x, y: theater.routeTo.y, z: theater.routeTo.z },
+        lift: 40,
+      });
       theater.t = 0;
       phase = 'routing';
     }
     return;
   }
-  if (phase === 'routing' && theater.routeFrom && theater.routeTo) {
-    theater.t = Math.min(1, theater.t + 0.055);
-    const pT = theater.t;
-    const ease = pT * pT * (3 - 2 * pT);
-    theater.mesh.position.lerpVectors(theater.routeFrom, theater.routeTo, ease);
-    theater.mesh.position.y += Math.sin(pT * Math.PI) * 34; // the carry arc — no teleport
-    if (pT >= 1) {
+  if (phase === 'routing' && theater.run && theater.routeTo) {
+    const st = stepPath(theater.run); // PB-9: the path IS the motion
+    theater.mesh.position.set(st.p.x, st.p.y, st.p.z);
+    if (st.done) {
       lastMoveRec = {
         rid: theater.rid, id: theater.newId ?? '(none)', identityOk: theater.identityOk === true,
         endX: theater.mesh.position.x, endY: theater.mesh.position.y, endZ: theater.mesh.position.z,
