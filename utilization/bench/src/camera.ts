@@ -224,9 +224,24 @@ export function scenicView(focus: string): void {
     : new THREE.Vector3(Math.sin(SEAT_YAWS[0] ?? 0), 0, Math.cos(SEAT_YAWS[0] ?? 0)); // the centered table: over the viewer's shoulder
   // the sphere fill: horizontal pull-back so the object subtends ~72% of the frame
   const fovV = (camera.fov * Math.PI) / 180;
-  const back = R / Math.sin((fovV / 2) * 0.72);
-  const horiz = rHoriz + back;
-  const h = Math.tan(0.611) * horiz; // 35° down at the CENTER — the law, exactly
+  let back = R / Math.sin((fovV / 2) * 0.72);
+  let horiz = rHoriz + back;
+  let h = Math.tan(0.611) * horiz; // 35° down at the CENTER — the default law
+  if (focus.startsWith('seat-area-')) {
+    // I-219 (owner-specified, exact): the AREA camera matches the SEAT camera — the
+    // SAME y elevation and the SAME gap from the area's outer edge that the seat cam
+    // keeps from the board's outer face; both measured LIVE from the seat-0 law and
+    // the live board sphere (symmetric for every seat by the preset's own symmetry).
+    const sp = mapPreset('seat-0');
+    const board = focusObject('seat-0');
+    if (board) {
+      const bs = new THREE.Box3().setFromObject(board).getBoundingSphere(new THREE.Sphere());
+      const boardOuter = Math.hypot(bs.center.x, bs.center.z) + bs.radius;
+      const gap = Math.hypot(sp.pos.x, sp.pos.z) - boardOuter;
+      horiz = (rHoriz + R) + gap; // the area's outer edge + the seat cam's own gap
+      h = sp.pos.y; // the seat cam's own elevation
+    }
+  }
   camera.up.set(0, 1, 0);
   target = { pos: new THREE.Vector3(dirOut.x * horiz, h, dirOut.z * horiz), look: new THREE.Vector3(0, 0, 0) };
   mode = 'scene';
