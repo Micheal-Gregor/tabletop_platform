@@ -20,8 +20,11 @@ describe('I-185: the table child grid — the snap law', () => {
   it('the piles derive from their boxes (inner sub-grids, the same margin M)', () => {
     expect(rect(rg('tradespeople-pile'))).toEqual(inner(T_SUPPLY, 2, 2, 0, 0));
     expect(rect(rg('networking-pile'))).toEqual(inner(T_SUPPLY, 2, 2, 1, 1));
-    expect(rect(rg('deck'))).toEqual(inner(T_EXCHANGE, 2, 1, 0, 0));
-    expect(rect(rg('discard'))).toEqual(inner(T_EXCHANGE, 2, 1, 1, 0));
+    expect(rect(rg('deck'))).toEqual(inner(T_EXCHANGE, 4, 1, 0, 0)); // I-187: left-aligned pair
+    expect(rect(rg('discard'))).toEqual(inner(T_EXCHANGE, 4, 1, 1, 0));
+    // I-187: the spread runway — the discard's right edge leaves ≥ the box's right half free
+    const disc = inner(T_EXCHANGE, 4, 1, 1, 0);
+    expect(disc.x + disc.w).toBeLessThanOrEqual(T_EXCHANGE.x + T_EXCHANGE.w / 2 + 1);
   });
   it("the owner's edge law, by arithmetic: global/exchange/medal share the right edge; the supply's bottom row aligns with the third band", () => {
     expect(T_GLOBAL.x + T_GLOBAL.w).toBe(T_MEDAL.x + T_MEDAL.w);

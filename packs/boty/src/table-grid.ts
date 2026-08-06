@@ -48,6 +48,8 @@ export const T_TRADES = inner(T_SUPPLY, 2, 2, 0, 0);
 export const T_EQUIP = inner(T_SUPPLY, 2, 2, 1, 0);
 export const T_BBB = inner(T_SUPPLY, 2, 2, 0, 1);
 export const T_NWK = inner(T_SUPPLY, 2, 2, 1, 1);
-// the exchange's two slots: deck left, discard right — ROOM FOR BOTH (the owner's note)
-export const T_DECK = inner(T_EXCHANGE, 2, 1, 0, 0);
-export const T_DISCARD = inner(T_EXCHANGE, 2, 1, 1, 0);
+// I-187 (owner-ruled): deck + discard LEFT-ALIGNED in the exchange — the first two of
+// four sub-columns, so the discard's spread-five fan stays ON the table (the right
+// half of the box is its runway, deliberately empty at rest).
+export const T_DECK = inner(T_EXCHANGE, 4, 1, 0, 0);
+export const T_DISCARD = inner(T_EXCHANGE, 4, 1, 1, 0);
