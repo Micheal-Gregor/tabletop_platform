@@ -101,7 +101,7 @@ export const table: Component = {
     part.global.slice(0, 6).forEach((id, i) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(OBJECT_SCALE.card.w / 9, OBJECT_SCALE.card.h / 7), new THREE.MeshBasicMaterial({ map: panelTexture([id], 9, 15) })); // I-150: the control-table card size (÷ the table scale)
       m.position.set(gpR.x + 8 + i * 11 - 50, 50 - (gpR.y + gpR.h - 9), 0.7); // left-fill along the section
-      m.userData = { card: true, slotCard: id, family: 'global' };
+      m.userData = { card: true, slotCard: id, family: 'global', region: 'global-play' }; // I-213: a click on a global CARD anchors the SQUARE (the minis predate the anchor system — the stale-anchor conflict closed; C-1e's instances inherit the tag)
       t.add(m);
     });
     // L-4 (I-131): the SESSION (local) cards MOVED to the viewer's seat-front BOTTOM ROW

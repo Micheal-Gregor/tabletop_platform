@@ -152,7 +152,7 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
     // routes card drags before the pan).
     const n = new THREE.Vector3(0, 1, 0);
     const up = new THREE.Vector3(-c.x, 0, -c.z).normalize();
-    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * 1.05)), look: c, up };
+    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * 1.18)), look: c, up }; // I-213: a touch more air on the area fit ('zooms in too far')
   }
   const n = new THREE.Vector3(0, 0, 1).applyQuaternion((obj as THREE.Group).quaternion).normalize(); // the board's outward normal (90° to its face)
   const up = new THREE.Vector3(0, 1, 0);
@@ -166,6 +166,11 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
  *  table's. The data lives in ui-object.ts; the live tag wins for movable objects. */
 function zoneReadOf(f: string): string | null {
   if (f === 'box') return null; // I-210 (hoisted guard — see below)
+  // I-213: a PILE'S read rolls up to its BOX'S read first (the supply 2×2 → the supply
+  // box · deck/discard → the exchange) — the box views the owner could not click
+  // (their interiors are blanketed by the piles' own tags) join the ladder instead.
+  if (f === 'table:tradespeople-pile' || f === 'table:equipment-pile' || f === 'table:bbb-pile' || f === 'table:networking-pile') return 'table:supply';
+  if (f === 'table:deck' || f === 'table:discard') return 'table:exchange';
   if (f === 'table' || f.startsWith('table:')) return 'table';
   if (f.startsWith('seat-area-')) return f; // already a zone read
   if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`; // the BOARD is a seat citizen (the owner's correction)
@@ -200,8 +205,10 @@ const anchorPreset = (f: string): string => {
   return 'overview';
 };
 
+let areaEntryT = 0; // I-213: the area read's entry moment — the dive waits a beat
 export function readView(focus?: string, reanchor = true): void {
   readFocus = focus ?? lastFocus; // the ANCHOR is the default read target (I-66a; supersedes the I-63g1 camera-based default)
+  if (readFocus.startsWith('seat-area-')) areaEntryT = performance.now(); // I-213
   if (reanchor) lastFocus = readFocus;
   const m = mapRead(readFocus);
   camera.up.copy(m.up);
@@ -284,7 +291,10 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     if (readFocus.startsWith('seat-area-')) {
       const fit = readFitDist(readFocus);
       const d = camera.position.distanceTo(currentLook);
-      if (zoomIn) { dollyTo(Math.max(90, d * 0.88)); mode = 'read'; return; }
+      if (zoomIn) {
+        if (performance.now() - areaEntryT < 350) return; // I-213: scroll momentum at entry no longer dives you deep ('zooms in too far')
+        dollyTo(Math.max(90, d * 0.88)); mode = 'read'; return;
+      }
       if (d * 1.14 >= fit) { readView(readFocus, false); status('the play area, full frame — click the table or another area to leave'); return; }
       dollyTo(d * 1.14); mode = 'read';
       return;
