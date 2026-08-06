@@ -47,17 +47,24 @@ export const TABLE_HALF_DIAG = Math.hypot(50 * TABLE_SCALE.x, 50 * TABLE_SCALE.y
 // the table's area (the centered similar-rect, scale = √0.75).
 export const DICE_RING = {
   radius: (): number => TABLE_HALF_DIAG, // config — equals the corner circle for BOTY
-  homeOffsetDeg: 25, // I-193 (owner-tuned): 25° past the seat center — 20° still clipped the player board
+  hypotenuseDeg: 30, // I-196 (owner's triangle): the hypotenuse's angle off the seat axis
   tossAreaFraction: 0.75, // of the table's area
   /** I-189 (owner-ruled ROUND): the toss boundary is a CIRCLE whose area = the
    *  fraction of the table's — πR² = f·A ⇒ R = √(f·A/π). One number, derived. */
   tossRadius: (): number => ringRadius(7), // I-195 (owner-ruled): the throw circle IS the seat circle — one radius shared with the ring (7 = RING_N, six seats + the box slot)
-  /** I-192/I-193 (owner-ruled): ONE circumference serves throw AND rest — the rest
-   *  ANCHOR lies ON the toss circle at (seat angle + offset) and the disc is DISPLACED
-   *  INWARD by just its own clearance (r≈40 + margin 5), as far back from 0,0,0 as the
-   *  wall allows. Every term derives from the active seat, so the home ROTATES seat to
-   *  seat with equal geometry — the congruence the owner asked to be promised. */
-  homeRadius: (): number => DICE_RING.tossRadius() - 45, // I-194: derives from tossRadius directly — one formula, no drift (the I-193 duplicate retired)
+  /** I-196 (owner's RIGHT-TRIANGLE law, superseding the offset tunes I-192..194): the
+   *  ADJACENT runs from 0,0,0 along the seat axis to the perimeter touch P; the
+   *  OPPOSITE stands PERPENDICULAR at P; the 30° HYPOTENUSE from center cuts it at the
+   *  rest point — home = P + t̂·R·tan(30°), tangentially to the player's right, OUTSIDE
+   *  the wall on open ground. Rolls re-enter by the I-191 launch law (the belt earns
+   *  its keep); every term derives from the active seat — the congruence holds. */
+  homePoint: (phiSeat: number): { x: number; z: number } => {
+    const R = DICE_RING.tossRadius();
+    const L = R * Math.tan((DICE_RING.hypotenuseDeg * Math.PI) / 180);
+    return { x: R * Math.sin(phiSeat) + L * Math.cos(phiSeat), z: R * Math.cos(phiSeat) - L * Math.sin(phiSeat) };
+  },
+  homeDist: (): number => DICE_RING.tossRadius() / Math.cos((DICE_RING.hypotenuseDeg * Math.PI) / 180), // the hypotenuse's length
+  dragRadius: (): number => DICE_RING.tossRadius() * 1.25, // I-196: the held die's range COVERS the home (the stale clamp the owner caught)
 } as const;
 
 export function ringRadius(seatCount: number, tableHalfDiag: number = TABLE_HALF_DIAG): number {

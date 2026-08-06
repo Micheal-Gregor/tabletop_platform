@@ -78,8 +78,7 @@ export const die: Component = {
     // layout label only). A HOME DISC marks the spot (grid-ring anchored — G-A's law).
     if (homeDisc) { homeDisc.parent?.remove(homeDisc); homeDisc = null; }
     const vD = ctx.projection();
-    const phi = seatAngle(vD.turn.seatIdx, RING_N) + (DICE_RING.homeOffsetDeg * Math.PI) / 180; // I-188: ~10° PAST the seat center — never blocked by the board
-    const home = { x: DICE_RING.homeRadius() * Math.sin(phi), z: DICE_RING.homeRadius() * Math.cos(phi) }; // I-192: 100% inside the throw circle
+    const home = DICE_RING.homePoint(seatAngle(vD.turn.seatIdx, RING_N)); // I-196: the right-triangle law — tangential at the perimeter touch
     const disc = new THREE.Mesh(
       new THREE.RingGeometry(34, 40, 40),
       new THREE.MeshBasicMaterial({ color: 0x9a8a6a, transparent: true, opacity: 0.5, side: THREE.DoubleSide }),
@@ -167,9 +166,9 @@ export const die: Component = {
         return {
           x: d.position.x, z: d.position.z,
           r: Math.hypot(d.position.x, d.position.z),
-          wantR: DICE_RING.homeRadius(), // I-192
+          wantR: DICE_RING.homeDist(), // I-196: the hypotenuse's length
           angleDeg: (Math.atan2(d.position.x, d.position.z) * 180) / Math.PI,
-          wantAngleDeg: (seatAngle(v.turn.seatIdx, RING_N) * 180) / Math.PI + DICE_RING.homeOffsetDeg, // I-188: the offset is part of the law
+          wantAngleDeg: (seatAngle(v.turn.seatIdx, RING_N) * 180) / Math.PI + DICE_RING.hypotenuseDeg, // I-196: the hypotenuse angle IS the offset
           activeSeat: v.seats[v.turn.seatIdx]!.id,
         };
       },
@@ -209,8 +208,7 @@ export const die: Component = {
         // RETIRED — the home's independent want is now THE RING POINT (D-1a/I-174),
         // re-derived here from playarea math so dieHome ≡ this stays a two-source law.
         const v = cx!.projection();
-        const phi = seatAngle(v.turn.seatIdx, RING_N) + (DICE_RING.homeOffsetDeg * Math.PI) / 180; // I-188
-        return { x: DICE_RING.homeRadius() * Math.sin(phi), z: DICE_RING.homeRadius() * Math.cos(phi) }; // I-192
+        return DICE_RING.homePoint(seatAngle(v.turn.seatIdx, RING_N)); // I-196: the two-source law re-derives the triangle
       },
     };
   },

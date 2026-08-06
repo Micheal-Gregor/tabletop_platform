@@ -227,7 +227,7 @@ export function dragMove(worldX: number, worldZ: number): void {
   // range is the ROUND play boundary (radial clamp at the OUTER dice ring), never
   // the table's square. Released outside the toss circle, the escape law already
   // brings it home (R-1a2) — freedom to shake, the arena still judges the throw.
-  const Rf = DICE_RING.radius() / M2W;
+  const Rf = DICE_RING.dragRadius() / M2W; // I-196: the held range covers the home (the owner caught the stale clamp)
   const r = Math.hypot(s.px, s.pz);
   const k = r > Rf ? Rf / r : 1;
   live.body.setNextKinematicTranslation({ x: s.px * k, y: DRAG_LIFT, z: s.pz * k });
