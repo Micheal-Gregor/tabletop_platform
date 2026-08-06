@@ -589,7 +589,7 @@ export async function run(h) {
         hdr: document.getElementById('hdr').textContent,
       }));
       const ranked2 = [...after.v.seats].sort((a, b) => b.cash - a.cash);
-      const wantStandings = ['THE TABLE', ...ranked2.map((x) => `${x.id === after.v.active ? '★ ' : ''}${x.id}  $${x.cash}`)];
+      const wantStandings = ['THE TABLE', ...ranked2.map((x) => `${x.id === after.v.active ? '★ ' : ''}${x.id}  $${x.cash} ⚒${x.crew} ✋${x.hand}`)]; // I-183: the PLAYER SUMMARY law
       const standingsOk = JSON.stringify(after.standings) === JSON.stringify(wantStandings) && after.v.active === 'pete';
       const hdrOk = after.hdr.includes(`${after.v.active}'s turn`);
       const logOk = after.log && after.log.some((l) => l === 'moe · turn:end') && after.log.some((l) => l === 'moe · deck:draw'); // the engine's intent type names

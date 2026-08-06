@@ -20,7 +20,7 @@ import * as supply from '../supply-draw.js'; // C-1c (I-156): the flick-move doo
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
 import { CARD_FAMILY, genesisDrawFor, genesisPoolOrders } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92) · I-154/I-156: remaining orders
 const SESSION_SEED = 'maple-hollow'; // the bench session (game3d's host seed — single-source debt on I-154)
-import { getTableMode, setTableMode, OBJECT_SCALE } from '../playarea.js'; // I-145/I-150
+import { getTableMode, setTableMode, OBJECT_SCALE, TABLE_SCALE } from '../playarea.js'; // I-145/I-150/I-183
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
 import { worldPoolStack, worldEventStack, eventStackTargets } from '../stacks3d.js'; // C-1b/C-1b2 (I-149/I-154): every pile as instance stacks
 import { SEAT_YAWS } from '../stage.js';
@@ -67,7 +67,9 @@ export const table: Component = {
     const v = ctx.projection();
     const active = v.seats[v.turn.seatIdx]!.id;
     const ranked = [...v.seats].sort((a, b) => b.cash - a.cash);
-    const standings = ranked.map((s) => `${s.id === active ? '★ ' : ''}${s.id}  $${s.cash}`);
+    // PB-7 (I-183, owner: 'the center left box show player summary info'): the
+    // standings grow into the PLAYER SUMMARY — cash · crew · hand per seat, ranked.
+    const standings = ranked.map((s) => `${s.id === active ? '★ ' : ''}${s.id}  $${s.cash} ⚒${v.crew.filter((m) => m.outfit === s.id).length} ✋${s.handCount}`);
     const moves = ctx.moves(); // I-52-registered class (display-only)
     const log = moves.slice(-4).map((m) => `${m.seat} · ${m.type}`);
     // the table: flat on the ground, fills stamped from the projection; deck+discard
@@ -135,7 +137,7 @@ export const table: Component = {
     if (getTableMode() === 'rotate-to-active') {
       t.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), SEAT_YAWS[v.turn.seatIdx] ?? 0));
     }
-    t.scale.set(9, 7, 1);
+    t.scale.set(TABLE_SCALE.x, TABLE_SCALE.y, 1); // PB-7 (I-183): the single-source scale — the ring follows
     t.position.y = 16.4; // F-3 (I-148): the table SITS ON the counter — slab bottom at y≈0, felt on top ('y+a above the surface, not cut in two')
     t.userData['focus'] = 'table';
     tableRoot = t; // G-1 (I-101): the oracle's walk root

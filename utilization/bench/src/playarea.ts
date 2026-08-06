@@ -34,7 +34,12 @@ export const TABLE_CLEAR = 60; // F-6 (I-148, owner: 'brought in a little') — 
 
 /** the table's half-diagonal (world): the current 900×700 board. Self-resizes when
  *  the table object changes — pass the live value where known. */
-export const TABLE_HALF_DIAG = Math.hypot(450, 350);
+// PB-7 (I-183, owner-ruled 'the table board could be reduced slightly … reduce the
+// perimeter of the seats to bring them closer'): THE TABLE SCALE is single-source —
+// the def is 100×100; world = 100·scale. Shrinking here pulls TABLE_HALF_DIAG, the
+// dice circle, and the seat ring in TOGETHER (the radial template self-resizes).
+export const TABLE_SCALE = { x: 8.4, y: 6.6 } as const; // was 9×7 (900×700 → 840×660)
+export const TABLE_HALF_DIAG = Math.hypot(50 * TABLE_SCALE.x, 50 * TABLE_SCALE.y);
 
 export function ringRadius(seatCount: number, tableHalfDiag: number = TABLE_HALF_DIAG): number {
   const rSeats = STATION_CHORD / (2 * Math.sin(Math.PI / Math.max(2, seatCount)));

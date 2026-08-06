@@ -16,7 +16,7 @@ export async function run(h) {
   // VG8b: the standings panel stamp ≡ an expectation the GATE derives from the projection
   // surface (a hardcoded or stale panel diverges and fails — the asked-text stamp class, I-62b)
   const st8 = await page.evaluate(() => ({ stamp: window.__GAME3D__.stamped('standings'), v: window.__GAME3D__.viewData() }));
-  const wantLines = ['THE TABLE', ...[...st8.v.seats].sort((a, b) => b.cash - a.cash).map((s) => `${s.id === st8.v.active ? '★ ' : ''}${s.id}  $${s.cash}`)];
+  const wantLines = ['THE TABLE', ...[...st8.v.seats].sort((a, b) => b.cash - a.cash).map((s) => `${s.id === st8.v.active ? '★ ' : ''}${s.id}  $${s.cash} ⚒${s.crew} ✋${s.hand}`)]; // I-183: the PLAYER SUMMARY law
   check('VG8b/3d-standings-stamp-vs-projection', JSON.stringify(st8.stamp) === JSON.stringify(wantLines), `stamp [${(st8.stamp ?? []).join(' | ')}] vs law [${wantLines.join(' | ')}]`);
   // VG8c: the GLIDE obeys the preset law AT REST — seat-0 (every axis differs from default),
   // provable-move vs table, purity on re-glide (I-62c; the dead-camera class stays dead)

@@ -125,7 +125,7 @@ export const TOWN_TABLE: LayoutDef = extendLayout(TABLE_PARENT, TOWN_OVERLAY);
 export const TOWN_V2_OVERLAY: LayoutOverlay = {
   id: 'boty:town-table-v2',
   override: [
-    { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 68, h: 22 }, // GLOBAL CARDS IN PLAY — right of the season
+    { id: 'global-play', role: 'play-zone', x: 30, y: 2, w: 60, h: 22 }, // GLOBAL CARDS IN PLAY — PB-7 (I-183): width reduced (the owner's one sanctioned focus-box cut)
     { id: 'deck', role: 'deck', x: 30, y: 28, w: 12, h: 24 },
     { id: 'discard', role: 'discard', x: 46, y: 28, w: 12, h: 24 },
     // PB-6 (I-182): the dice region RETIRED — the die lives on the ring (D-1a/I-174); the square was dead weight ('deprecated and should be removed').

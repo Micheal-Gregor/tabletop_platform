@@ -300,7 +300,7 @@ const gate: Record<string, unknown> = {
 
   viewData: () => {
     const v = projectNow();
-    return { seats: v.seats.map((s) => ({ id: s.id, cash: s.cash })), round: v.turn.round, active: v.seats[v.turn.seatIdx]!.id };
+    return { seats: v.seats.map((s) => ({ id: s.id, cash: s.cash, crew: v.crew.filter((m) => m.outfit === s.id).length, hand: s.handCount })), round: v.turn.round, active: v.seats[v.turn.seatIdx]!.id }; // I-183: the summary's derivation, shared with the gates
   },
   glideTo: cam.glideTo,
   gliding: cam.gliding,
