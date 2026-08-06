@@ -25,7 +25,7 @@ type Fills = Readonly<Record<string, readonly string[]>>;
 type Pose = { pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3 };
 
 // ── geometry constants ──
-const DISPLAY_SCALE = 2.4; // the standing display size (the sealed read law)
+const DISPLAY_SCALE = 1; // I-231 (owner-caught 'trickery afoot' — CONFIRMED): the 2.4× inflation was the standing-pop-up era's reading crutch; FLAT paper keeps its TRUE size — a report is smaller than its folder, as physics insists; readability lives in the READ view (the sphere fit + small-object factor), never in scaling the object
 const HOME_SCALE = 1.22; // tucked inside the 150×200 folder (138×177 — right edge peeks)
 const GAP = 160; // display x-offset from the spread anchor
 const PAPER_W = 112, PAPER_H = 145; // report-sized (portrait) paper — P-2b, carried
