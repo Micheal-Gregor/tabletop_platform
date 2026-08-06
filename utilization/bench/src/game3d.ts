@@ -19,6 +19,7 @@ import type { SeatView } from '@tabletop/presentation';
 import { emit, project } from '@tabletop/presentation';
 import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob, CARD_SET_6 } from '../../../packs/boty/src/index.js';
 import { createCardWorld, cardWorldInfo } from './card-world.js'; // C-1a (I-149): the permanence world
+import { gridSpacing, ringSnap, anchorsWithinRadius } from './anchor-grid.js'; // G-A (I-158/I-159)
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS, RING_N } from './stage.js';
 import { ringRadius, stationLook, stationPos } from './playarea.js'; // PA-1/PA-2 (I-141/I-142)
 import * as cam from './camera.js';
@@ -287,6 +288,7 @@ const gate: Record<string, unknown> = {
   poolCounts: () => projectNow().pools,
   // C-1a (I-149): the CONSERVATION oracle — instances constant, recreates 0, forever.
   cardWorldInfo,
+  gridInfo: () => ({ spacing: gridSpacing(), seatRing: ringSnap(ringRadius(RING_N)), anchorsInTableDisc: anchorsWithinRadius(570).length }), // G-A: the grid's public face
   // PA-1 (I-141): the ring template's surfaces — the seat-pose and glide laws derive.
   ringInfo: () => ({ r: ringRadius(RING_N), n: RING_N }),
   ringLook: (i: number) => stationLook(i, RING_N),
