@@ -15,6 +15,7 @@ import { nudgeStack } from './stacks.js';
 import * as onion from './onion.js';
 import { routeDestFor, findCardMesh, stackTop } from './draw-route.js'; // R-1a6 (I-115): the owed extraction
 import { cardInstance } from './card-world.js'; // C-1b2 (I-154): the permanence world's reveal
+import { startPath, stepPath, type PathRun } from './paths.js'; // I-202: the drawn card's route is a PATH (the owner's 'same tool' ruling)
 
 // C-1b2 (I-154): a Card3D instance lies FACE DOWN at rotation.x = +π/2 (its face plane
 // is local +z); the legacy box lay face-down at −π/2 (its face was the −z slot). One
@@ -180,9 +181,18 @@ export function startRoute(ctx: PlayAreaContext): void {
   theater.routeFrom = theater.mesh.position.clone();
   theater.routeTo = (theater.destPos ?? stackTop(ctx, 'discard').pos).clone();
   theater.dest = theater.dest ?? 'discard';
+  // I-202 (the owner: 'the same tool is used when a global card… gets pulled from the
+  // event deck'): the route is a PATH — global cards, levies, session cards all travel
+  // by the one law, length-true, exact landing.
+  routeRun = startPath({
+    from: { x: theater.routeFrom.x, y: theater.routeFrom.y, z: theater.routeFrom.z },
+    to: { x: theater.routeTo.x, y: theater.routeTo.y, z: theater.routeTo.z },
+    lift: 40,
+  });
   theater.t = 0;
   phase = 'routing';
 }
+let routeRun: PathRun | null = null;
 
 function finishTheater(ctx: PlayAreaContext, reattach = false): void {
   if (!theater) return;
@@ -264,13 +274,11 @@ export function tickDraw(ctx: PlayAreaContext): void {
     if (theater.t >= 1) finishTheater(ctx, true); // the SAME card, back on the pile — nothing happened (I-112)
     return;
   }
-  if (phase === 'routing' && theater.routeFrom && theater.routeTo) {
-    theater.t = Math.min(1, theater.t + 0.055);
-    const pT = theater.t;
-    const ease = pT * pT * (3 - 2 * pT);
-    theater.mesh.position.lerpVectors(theater.routeFrom, theater.routeTo, ease);
-    theater.mesh.position.y += Math.sin(pT * Math.PI) * 34; // the carry arc — no teleport
-    if (pT >= 1) {
+  if (phase === 'routing' && routeRun && theater.routeTo) {
+    const stR = stepPath(routeRun); // I-202: the path IS the route
+    theater.mesh.position.set(stR.p.x, stR.p.y, stR.p.z);
+    if (stR.done) {
+      routeRun = null;
       theater.mesh.position.copy(theater.routeTo);
       lastRouteRec = {
         dest: theater.dest ?? 'discard',
