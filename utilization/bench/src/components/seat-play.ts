@@ -311,7 +311,7 @@ export const seatPlay: Component = {
         const grabT0 = grab.t0;
         const card2 = grab.card;
         grab = null;
-        const quick = performance.now() - grabT0 < 260;
+        const quick = performance.now() - grabT0 < 220 && moved > 40; // I-206: a FLICK is fast AND far — everything else is a PLACEMENT drag ('the group can be dragged and dropped around the seat play area')
         if (quick) {
           card2.mesh.position.copy(card2.anchor);
           handUp = true;
@@ -456,6 +456,16 @@ export const seatPlay: Component = {
           return true;
         }
       }
+    }
+    // I-206: a CLICK on a posted card (asset/local — crew and gear have their own
+    // clicks) anchors ITS OWN read — the per-object zoom the ontology now declares.
+    if (moved < 8 && (grab.card.key.startsWith('asset:') || grab.card.key.startsWith('local:'))) {
+      const cardR = grab.card;
+      grab = null;
+      cardR.mesh.position.copy(cardR.anchor);
+      ctx.theater.setLastFocus(`obj:${cardR.mesh.uuid}`);
+      ctx.status(`anchored: ${cardR.key} — wheel in for its read view`);
+      return true;
     }
     resetting = { card: grab.card, from: grab.card.mesh.position.clone(), t: 0 };
     lastReset = { moved, returned: false, frames: 0 };

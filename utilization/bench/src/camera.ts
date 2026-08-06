@@ -94,6 +94,12 @@ function fitAlong(box: THREE.Box3, look: THREE.Vector3, n: THREE.Vector3, upv: T
  *  REGION ('table:<region>' — the region quad inside the table group). */
 export function focusObject(focus: string): THREE.Object3D | null {
   if (focusGroups[focus]) return focusGroups[focus]!;
+  if (focus.startsWith('obj:')) {
+    // I-206: ANY object with the read affordance anchors by uuid — the generic
+    // zoom-to-read every in-play object was missing (mapRead frames its live bbox).
+    const id = focus.slice(4);
+    return camera.parent?.getObjectByProperty('uuid', id) ?? null;
+  }
   if (focus === 'hand-fan') {
     let fan: THREE.Object3D | null = null;
     camera.parent?.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });

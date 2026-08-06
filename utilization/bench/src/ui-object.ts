@@ -29,6 +29,7 @@ export interface ChildGrid { readonly spacing: number; readonly sockets: readonl
 export interface Affordances {
   readonly grab?: boolean; readonly flick?: boolean; readonly stick?: boolean;
   readonly socketable?: boolean; readonly click?: string; // the intent VERB a click emits — never an outcome
+  readonly read?: boolean; // I-206 (owner-ruled): zoom-in-to-reading-mode is an OBJECT FEATURE, set per object; zoom-out returns to the last zone
 }
 
 export interface UIObjectDef {
@@ -48,22 +49,22 @@ const card = OBJECT_SCALE.card;
  *  base-case (each was built concrete first; the ontology now names them — the next
  *  object is a few lines of data here, not a new module). */
 export const UI_OBJECTS: readonly UIObjectDef[] = [
-  { id: 'table', kind: 'surface', placement: { kind: 'origin', above: true }, boundGp: gp(570), physics: 'immutable', affordances: {} },
-  { id: 'seat-board', kind: 'surface', placement: { kind: 'ring', slot: 0, of: 7 }, boundGp: gp(184), physics: 'immutable', affordances: {} },
+  { id: 'table', kind: 'surface', placement: { kind: 'origin', above: true }, boundGp: gp(570), physics: 'immutable', affordances: { read: true } },
+  { id: 'seat-board', kind: 'surface', placement: { kind: 'ring', slot: 0, of: 7 }, boundGp: gp(184), physics: 'immutable', affordances: { read: true } },
   { id: 'seat-surface', kind: 'surface', placement: { kind: 'ring', slot: 0, of: 7 }, boundGp: gp(300), physics: 'immutable', affordances: { stick: true },
     childGrid: { spacing: card.w + 12, sockets: [] } }, // its sockets ARE the 7×4 cells (seat-grid.ts — the span module)
   { id: 'game-box', kind: 'piece', placement: { kind: 'ring', slot: 6, of: 7 }, boundGp: gp(180), physics: 'kinematic', affordances: {} },
   { id: 'card', kind: 'piece', placement: { kind: 'socket', parent: 'seat-surface', socket: 'posting' }, boundGp: gp(Math.hypot(card.w, card.h) / 2),
-    physics: 'dynamic', affordances: { grab: true, flick: true, stick: true, socketable: true },
+    physics: 'dynamic', affordances: { grab: true, flick: true, stick: true, socketable: true, read: true }, // I-206: every card zooms to read
     childGrid: { spacing: 8, sockets: [
       { id: 'equipment-under', at: { x: 0, y: -(card.h / 2 - 10), z: 0 } }, // 'the equipment under and to the side' — the pair's socket
       { id: 'token-tl', at: { x: -(card.w / 2 - 8), y: card.h / 2 - 8, z: 0 } }, // a modifier chip's perch
       { id: 'token-tr', at: { x: card.w / 2 - 8, y: card.h / 2 - 8, z: 0 } },
     ] } },
-  { id: 'die', kind: 'piece', placement: { kind: 'free' }, boundGp: gp(OBJECT_SCALE.die / 2), physics: 'dynamic', affordances: { grab: true, flick: true } },
+  { id: 'die', kind: 'piece', placement: { kind: 'free' }, boundGp: gp(OBJECT_SCALE.die / 2), physics: 'dynamic', affordances: { grab: true, flick: true, read: true } },
   { id: 'folder', kind: 'piece', placement: { kind: 'span', parent: 'seat-surface', span: 'ledger' }, boundGp: gp(Math.hypot(OBJECT_SCALE.folder.w, OBJECT_SCALE.folder.h) / 2),
-    physics: 'kinematic', affordances: { click: 'open-ledger' } },
-  { id: 'medal', kind: 'piece', placement: { kind: 'span', parent: 'table', span: 'medal' }, boundGp: gp(60), physics: 'kinematic', affordances: {} },
+    physics: 'kinematic', affordances: { click: 'open-ledger', read: true } } // I-206: + each RISEN REPORT reads INDIVIDUALLY (ledger-pnl/ledger-balance anchors — drilled at VG8n),
+  { id: 'medal', kind: 'piece', placement: { kind: 'span', parent: 'table', span: 'medal' }, boundGp: gp(60), physics: 'kinematic', affordances: { read: true } },
 ] as const;
 
 export const uiObject = (id: string): UIObjectDef | undefined => UI_OBJECTS.find((o) => o.id === id);
