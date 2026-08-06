@@ -228,19 +228,31 @@ export function scenicView(focus: string): void {
   let horiz = rHoriz + back;
   let h = Math.tan(0.611) * horiz; // 35° down at the CENTER — the default law
   if (focus.startsWith('seat-area-')) {
-    // I-219 (owner-specified, exact): the AREA camera matches the SEAT camera — the
-    // SAME y elevation and the SAME gap from the area's outer edge that the seat cam
-    // keeps from the board's outer face; both measured LIVE from the seat-0 law and
-    // the live board sphere (symmetric for every seat by the preset's own symmetry).
+    // I-221 (owner-tuned, superseding the I-219 match): HALF the seat cam's elevation,
+    // and the AREA'S NEAREST EDGE FILLS THE ENTIRE BOTTOM EDGE OF THE VIEW — the
+    // composition rule outranks look-at-center here: the pitch is set so the near
+    // edge sits exactly on the frame's bottom, and the width sets the pull-back.
     const sp = mapPreset('seat-0');
-    const board = focusObject('seat-0');
-    if (board) {
-      const bs = new THREE.Box3().setFromObject(board).getBoundingSphere(new THREE.Sphere());
-      const boardOuter = Math.hypot(bs.center.x, bs.center.z) + bs.radius;
-      const gap = Math.hypot(sp.pos.x, sp.pos.z) - boardOuter;
-      horiz = (rHoriz + R) + gap; // the area's outer edge + the seat cam's own gap
-      h = sp.pos.y; // the seat cam's own elevation
-    }
+    h = sp.pos.y / 2;
+    const bb = new THREE.Box3().setFromObject(obj);
+    const lat = new THREE.Vector3(dirOut.z, 0, -dirOut.x);
+    const corners: THREE.Vector3[] = [];
+    for (const cx2 of [bb.min.x, bb.max.x]) for (const cz2 of [bb.min.z, bb.max.z]) corners.push(new THREE.Vector3(cx2, 0, cz2));
+    const W = Math.max(...corners.map((p2) => p2.dot(lat))) - Math.min(...corners.map((p2) => p2.dot(lat))); // the edge's width
+    const rNear = Math.max(...corners.map((p2) => p2.dot(dirOut))); // the edge closest to the camera
+    const tanH = Math.tan(fovV / 2) * camera.aspect;
+    const slant = (W / 2) / tanH; // the near edge spans the full horizontal FOV at this slant range
+    const b2 = Math.sqrt(Math.max(slant * slant - h * h, 60 * 60)); // horizontal back-off behind the edge
+    const camHoriz = rNear + b2;
+    const pitch = Math.atan2(h, b2) - fovV / 2; // the near edge rides the frame's exact bottom
+    const lookHoriz = camHoriz - h / Math.max(0.05, Math.tan(Math.max(0.06, pitch))); // where the view axis meets the felt, toward center
+    camera.up.set(0, 1, 0);
+    target = { pos: new THREE.Vector3(dirOut.x * camHoriz, h, dirOut.z * camHoriz), look: new THREE.Vector3(dirOut.x * lookHoriz, 0, dirOut.z * lookHoriz) };
+    mode = 'scene';
+    currentName = `${focus}:scenic`;
+    lastFocus = focus;
+    status(`scenic: ${focus} — the near edge fills the bottom of the frame`);
+    return;
   }
   camera.up.set(0, 1, 0);
   target = { pos: new THREE.Vector3(dirOut.x * horiz, h, dirOut.z * horiz), look: new THREE.Vector3(0, 0, 0) };
