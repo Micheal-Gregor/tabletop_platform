@@ -11,6 +11,10 @@
  * stays harness-level per the plan; the round sequence is this component's feature).
  */
 import * as THREE from 'three';
+import { seatAngle, TABLE_HALF_DIAG } from '../playarea.js'; // D-1 (I-174): the dice ring
+import { RING_N } from '../stage.js';
+let homeDisc: THREE.Mesh | null = null;
+export const diceHomeDisc = () => homeDisc;
 import type { Component, PlayAreaContext, PickInfo } from '../component.js';
 import {
   buildDie, rollDie, deadRoll, tickDie, diePos, diePhaseState, dieVerdictState,
@@ -63,13 +67,24 @@ export const die: Component = {
     ctx.scene.updateMatrixWorld(true);
     // P-1 (I-83): the HOME = the live `table:dice` REGION object's world-bbox centre —
     // derived, not a magic point; the home marker only, never the roll cage (I-81 stands).
-    let home: { x: number; z: number } | null = null;
-    const region = ctx.theater.focusObject('table:dice');
-    if (region) {
-      region.updateWorldMatrix(true, true);
-      const rb = new THREE.Box3().setFromObject(region);
-      home = { x: (rb.min.x + rb.max.x) / 2, z: (rb.min.z + rb.max.z) / 2 };
-    }
+    // D-1 (I-174, the owner's dice-ring ruling): the die's HOME is a small circle ON
+    // the circumference the table's corners touch (R = the half-diagonal), ROTATED to
+    // the ACTIVE player — 'centered on that circumference … moved to be available to
+    // the active player'. The old table:dice region retires as the home (it stays a
+    // layout label only). A HOME DISC marks the spot (grid-ring anchored — G-A's law).
+    if (homeDisc) { homeDisc.parent?.remove(homeDisc); homeDisc = null; }
+    const vD = ctx.projection();
+    const phi = seatAngle(vD.turn.seatIdx, RING_N);
+    const home = { x: TABLE_HALF_DIAG * Math.sin(phi), z: TABLE_HALF_DIAG * Math.cos(phi) };
+    const disc = new THREE.Mesh(
+      new THREE.RingGeometry(34, 40, 40),
+      new THREE.MeshBasicMaterial({ color: 0x9a8a6a, transparent: true, opacity: 0.5, side: THREE.DoubleSide }),
+    );
+    disc.rotation.x = -Math.PI / 2;
+    disc.position.set(home.x, 0.6, home.z);
+    disc.userData = { diceHome: true };
+    ctx.scene.add(disc);
+    homeDisc = disc;
     buildDie(ctx.scene, tableRect(ctx), home);
     return null;
   },
@@ -139,6 +154,21 @@ export const die: Component = {
       /** A4 (I-73) surfaces: the seeded rolling die exhibit (gates WAIT ON diePhase STATE,
        *  assert geometry/verdict STATE never pixels) and the round-card sequence. */
       diePhase: diePhaseState,
+      /** D-1 (I-174): the ring home — where it stands, whose turn it serves, and the
+       *  law it must satisfy (ON the corner circumference, AT the active seat's angle). */
+      diceHomeInfo: () => {
+        const v = cx!.projection();
+        const d = diceHomeDisc();
+        if (!d) return null;
+        return {
+          x: d.position.x, z: d.position.z,
+          r: Math.hypot(d.position.x, d.position.z),
+          wantR: TABLE_HALF_DIAG,
+          angleDeg: (Math.atan2(d.position.x, d.position.z) * 180) / Math.PI,
+          wantAngleDeg: (seatAngle(v.turn.seatIdx, RING_N) * 180) / Math.PI,
+          activeSeat: v.seats[v.turn.seatIdx]!.id,
+        };
+      },
       dieVerdict: dieVerdictState,
       dieUpFace,
       dieFaces,
