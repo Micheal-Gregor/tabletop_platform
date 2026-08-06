@@ -275,14 +275,27 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
   const zoomIn = ev.deltaY < 0;
   if (mode === 'read') {
+    // I-212 (the owner's ZONE CAMERA LOCK — 'zoom in on an object in the play area to
+    // get close to it… and see the play area maximizing screen space on max out'):
+    // INSIDE a seat-area read the wheel is the ZONE'S OWN range — in DIVES toward the
+    // surface (drag-pan to aim, wheel to approach any object), out climbs back to the
+    // area's FIT and STOPS (the zone maximizes the screen at max-out; the global
+    // ladder never steals the view). Leaving the zone is a CLICK, never a wheel.
+    if (readFocus.startsWith('seat-area-')) {
+      const fit = readFitDist(readFocus);
+      const d = camera.position.distanceTo(currentLook);
+      if (zoomIn) { dollyTo(Math.max(90, d * 0.88)); mode = 'read'; return; }
+      if (d * 1.14 >= fit) { readView(readFocus, false); status('the play area, full frame — click the table or another area to leave'); return; }
+      dollyTo(d * 1.14); mode = 'read';
+      return;
+    }
     if (zoomIn) {
       if (readFocus === 'table') glideTo('overview', false); // table read is the far rung: in → overview
-      return; // anchor read: zoom-in DISABLED (I-66c)
+      return; // anchor read: zoom-in DISABLED (I-66c) for object reads
     }
     if (readFocus === 'table') return; // the far terminal: out is a no-op
-    // I-209 (the owner's ZONE HIERARCHY): an OBJECT'S read rolls UP to its ZONE'S read
-    // view first — seat citizens to the play-area overhead, board citizens to the
-    // table overhead — and only a ZONE read steps out to the scene (I-66b amended).
+    // I-209: an OBJECT'S read rolls UP to its ZONE'S read view; a zone read (non-area)
+    // steps out to the scene (I-66b amended).
     const zr = zoneReadOf(readFocus);
     if (zr && zr !== readFocus) { readView(zr); return; }
     sceneView();
