@@ -31,6 +31,8 @@ import { assignGate } from './component.js';
 import { COMPONENTS } from './components/registry.js';
 import { openRoundSequence } from './components/die.js';
 import { openHandOnion, closeHandOnion, handOnionOpen } from './hand-onion.js'; // H-4 (I-241): the hand browser
+import { handUpState } from './components/seat-play.js'; // I-242: the onion serves the FACE-UP hand only
+import { zoneOf } from './zones.js'; // I-242: the travel law consults the zone class
 import { manifestBackdrop } from './backdrop.js'; // S-1c (I-107): the verbatim size-gate extraction
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
@@ -50,6 +52,7 @@ const builtRoots: THREE.Object3D[] = [];
 // exact single-gesture-lock defect class I-95 fixed one layer down, now fixed in the
 // spine, once, before R-1 rides it (touch is an owner requirement, I-82/A17).
 const claims = new Map<number, (typeof COMPONENTS)[number]>();
+let downXY: { x: number; y: number } | null = null; // I-242: pointerdown origin — a claimed release under 6px is a TAP and still SELECTS
 let releasing: number | null = null; // the pointer whose onGrabEnd is executing (buildScene skips it)
 let forceGrabThrow = false; // the VG8q release-on-throw drill (the forceFlipMismatch precedent)
 let forceMoveThrow = false; // S-1c (I-107): the VG8q move-throw drill — K7-S MAJOR-1's kill
@@ -105,8 +108,13 @@ const ctx: PlayAreaContext = {
 };
 
 // H-4 (I-241): zooming close on the HAND opens the onion browser — the camera calls
-// this hook at the hand's wall instead of entering a read.
-cam.setHandZoomHook(() => openHandOnion(projectNow().ownHand));
+// this hook at the hand's wall instead of entering a read. I-242 (owner-refined):
+// FACE UP only — the face-down hand reads like any other card.
+cam.setHandZoomHook(() => {
+  if (!handUpState()) return false;
+  openHandOnion(projectNow().ownHand);
+  return true;
+});
 
 // ── buildScene(): a LOOP over the non-persistent components (I-67g: rebuilt from a fresh
 // projection on every state change) + the chrome header (I-51d) ──
@@ -154,10 +162,14 @@ let dragMoved = false;
 const ray = new THREE.Raycaster();
 renderer.domElement.addEventListener('pointerdown', (ev) => {
   dragFrom = { x: ev.clientX, y: ev.clientY }; dragMoved = false;
+  downXY = { x: ev.clientX, y: ev.clientY }; // I-242: the claimed-tap ruler
   // THE GRAB PROTOCOL (I-91, v3 at I-103): scene mode only — raycast; the first
   // onGrabStart=true claims THIS POINTER (camera suppressed until its release); the
   // pointer is CAPTURED so the release always comes home. Read mode keeps its pan.
-  if (cam.getMode() !== 'read' && !claims.has(ev.pointerId)) {
+  // I-242 (the owner's regression catch — 'I cannot move the other cards in the play
+  // area now'): grabs are LIVE at the ZONE read (the overhead is where cards get
+  // organized — the I-176 promise); only a CHILD's page read keeps grabs off.
+  if ((cam.getMode() !== 'read' || cam.readIsZone()) && !claims.has(ev.pointerId)) {
     const r0 = renderer.domElement.getBoundingClientRect();
     ray.setFromCamera(new THREE.Vector2(((ev.clientX - r0.left) / r0.width) * 2 - 1, -((ev.clientY - r0.top) / r0.height) * 2 + 1), camera);
     outer: for (const hit of ray.intersectObjects(scene.children, true)) {
@@ -206,8 +218,22 @@ renderer.domElement.addEventListener('pointercancel', (ev) => {
 });
 renderer.domElement.addEventListener('pointerup', (ev) => {
   const wasDrag = dragMoved; dragFrom = null; dragMoved = false;
+  const tap = downXY !== null && Math.hypot(ev.clientX - downXY.x, ev.clientY - downXY.y) < 6;
+  downXY = null;
   const claimant = claims.get(ev.pointerId);
   if (claimant) { // the claimed gesture releases first (I-91)
+    // I-242: a CLAIMED TAP still SELECTS AND TRAVELS before its action runs (I-236's
+    // 'selection before any action' — claimed gestures had bypassed the resolver
+    // entirely, so card taps acted without ever anchoring). Resolved from a fresh
+    // raycast BEFORE the release (which may rebuild the scene under us).
+    if (tap) {
+      const r2 = renderer.domElement.getBoundingClientRect();
+      ray.setFromCamera(new THREE.Vector2(((ev.clientX - r2.left) / r2.width) * 2 - 1, -((ev.clientY - r2.top) / r2.height) * 2 + 1), camera);
+      for (const hit2 of ray.intersectObjects(scene.children, true)) {
+        const sel2 = resolveSelection(computePick(hit2, ev));
+        if (sel2) { cam.setLastFocus(sel2); travelFor(sel2); break; }
+      }
+    }
     let consumed = false;
     const prev = releasing; // S-1c (K7-S MINOR-5): save/restore — a nested synthetic
     // release can no longer null out an outer release's rebuild-skip mid-flight.
@@ -246,13 +272,7 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
     if (sel) {
       cam.setLastFocus(sel);
       status(`selected: ${sel.startsWith('obj:') ? 'the object under the cursor' : sel} — wheel to zoom`);
-      // I-240 (the owner's travel law): clicking a ZONE moves the camera to the SAME
-      // default view its button gives — table region → the table preset (anchor keeps
-      // the region), seat board → its seat preset, play area → its area scenic. A
-      // CHILD object (obj:/hand) selects only; the wheel serves it from where you stand.
-      if (sel.startsWith('seat-area-')) cam.scenicView(sel);
-      else if (/^seat-\d+$/.test(sel)) cam.glideTo(sel);
-      else if (sel.startsWith('table:')) cam.glideTo('table', false);
+      travelFor(sel); // I-242: EVERY selection travels to its zone's default view (children included)
     }
     for (const c of COMPONENTS) if (c.onPick?.(ctx, pick)) return;
     if (sel) return;
@@ -274,12 +294,30 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
 function resolveSelection(pick: PickInfo): string | null {
   let m: THREE.Object3D | null = pick.object;
   while (m && !(m.userData?.['card3d'] || m.userData?.['card'] === true || m.userData?.['ledger'] === true || m.userData?.['die'] || m.userData?.['box'] || m.userData?.['ledgerPage'])) m = m.parent;
+  if (m && (m as THREE.Object3D).userData?.['box']) return 'box'; // I-242: the box selects as ITS ZONE — the wheel then rides the box axis, not a raw object
   if (m) return `obj:${m.uuid}`;
   if (typeof pick.tags['seatSurface'] === 'number') return `seat-area-${pick.tags['seatSurface']}`;
   if (typeof pick.tags['seatIdx'] === 'number') return `seat-${pick.tags['seatIdx']}`; // the BOARD owns its panels — a seat region is the board's, never the table's
   if (pick.region && pick.focus === 'table') return `table:${pick.region}`; // ownership checked: only the table's own regions anchor table:
+  if (pick.focus === 'table') return 'table'; // I-242 (the owner's center-click): the table's own felt selects THE TABLE ZONE
   if (pick.tags['handFan']) return 'hand-fan';
   return null;
+}
+
+/** I-242 — THE TRAVEL LAW, unified (the owner: 'whether it's a child object in the
+ *  zone, or the zone object, when selected we move the camera to the default zone
+ *  camera position'): EVERY selection normalizes the camera to its zone's button
+ *  view; the anchor stays on what was clicked, so the wheel then serves IT. The die
+ *  is the recorded exception — its own view (30° above, sighting the center). */
+function travelFor(sel: string): void {
+  if (sel.startsWith('obj:') && cam.focusObject(sel)?.userData?.['die']) { cam.diceView(); cam.setLastFocus(sel); return; }
+  if (sel.startsWith('seat-area-')) { cam.scenicView(sel); return; }
+  if (/^seat-\d+$/.test(sel)) { cam.glideTo(sel); return; }
+  if (sel === 'box') { cam.scenicView('box'); return; }
+  if (sel === 'table' || sel.startsWith('table:')) { cam.glideTo('table', false); cam.setLastFocus(sel); return; }
+  const z = zoneOf(sel)?.focusOf() ?? null; // a CHILD: its zone's default view, the child kept anchored
+  if (z === 'table') { cam.glideTo('table', false); cam.setLastFocus(sel); return; }
+  if (z !== null) { cam.scenicView(z); cam.setLastFocus(sel); }
 }
 
 // PickInfo, precomputed ONCE per intersection: the merged userData up the ancestor chain
@@ -309,6 +347,7 @@ document.getElementById('bar')!.innerHTML =
   // buttons return to the boards; the 'board' button removed as ordered.
   [0, 1, 2, 3, 4, 5].map((i) => `<button data-scenic="seat-area-${i}" title="seat ${i}'s play area — maximized, 35° to center">area ${i}</button>`).join('') +
   `<button data-scenic="box" title="the game box, by the scenic law">📦 box</button>` +
+  `<button id="dice-btn" title="above the die, 30° down to the center (I-242 — the recorded dice view)">⚄ dice</button>` +
   `<button id="mode-btn" title="flat data view — overhead for the table, face-on for a board">⊞ read view</button>` +
   `<button id="end-btn" title="pass the turn (the engine's end-turn verb — I-67f)">⏭ end turn</button>` +
   `<button id="round-btn" title="the round sequence — preamble → round card (I-55a)">🎲 round</button>` +
@@ -317,6 +356,7 @@ document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
   if (t.dataset['scenic']) { cam.scenicView(t.dataset['scenic']); return; } // I-214/I-215
+  if (t.id === 'dice-btn') { cam.diceView(); return; } // I-242: the recorded dice view
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
   // A6 (I-136): the SPAWN DOOR — the SVG bench's exhibit chrome (#spawn-job) in 3D; a

@@ -143,6 +143,14 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   const sz = box.getSize(new THREE.Vector3());
   const small = Math.max(sz.x, sz.y, sz.z) < 200;
   const factor = small ? 1.7 : 1.0;
+  if ((obj as THREE.Object3D).userData?.['die']) {
+    // I-242 (the owner: 'we shouldn't zoom in tight on the dice'): the die reads
+    // OVERHEAD at a generous pull-back — never face-on along its post-roll +z (an
+    // arbitrary axis after physics), never tight.
+    const n = new THREE.Vector3(0, 1, 0);
+    const up = Math.hypot(c.x, c.z) > 20 ? new THREE.Vector3(-c.x, 0, -c.z).normalize() : new THREE.Vector3(0, 0, -1);
+    return { pos: c.clone().add(n.clone().multiplyScalar(fitAlong(box, c, n, up) * 3.4)), look: c, up };
+  }
   if (focus === 'table' || focus.startsWith('table:')) {
     const n = new THREE.Vector3(0, 1, 0);
     const up = new THREE.Vector3(0, 0, -1);
@@ -232,6 +240,25 @@ function scenicPose(focus: string): { pos: THREE.Vector3; look: THREE.Vector3 } 
     return { pos: pos2, look: pos2.clone().add(fwd.multiplyScalar(1200)) };
   }
   return { pos: new THREE.Vector3(dirOut.x * horiz, h, dirOut.z * horiz), look: new THREE.Vector3(0, 0, 0) };
+}
+/** I-242 (owner-specified, with the button recorded as asked): THE DICE VIEW — the
+ *  camera stands above and just beyond the LIVE die, sighting 30° down through it to
+ *  the world's center. Selecting the die travels here; the 🎲 dice button records it. */
+export function diceView(): void {
+  let die: THREE.Object3D | null = null;
+  scene.traverse((o: THREE.Object3D) => { if (!die && o.userData?.['die']) die = o; });
+  if (!die) { status('no die on the table'); return; }
+  const dp = (die as THREE.Object3D).getWorldPosition(new THREE.Vector3());
+  const rH = Math.max(60, Math.hypot(dp.x, dp.z));
+  const dir = new THREE.Vector3(dp.x / rH, 0, dp.z / rH);
+  const rCam = rH + 130; // a step beyond the die — the die sits under the sight line
+  const h = Math.tan(Math.PI / 6) * rCam; // 30° down at 0,0,0
+  camera.up.set(0, 1, 0);
+  target = { pos: new THREE.Vector3(dir.x * rCam, h, dir.z * rCam), look: new THREE.Vector3(0, 0, 0) };
+  mode = 'scene';
+  currentName = 'dice';
+  trace('view', 'DICE view');
+  status('the dice view — above the die, 30° down to the center');
 }
 export function scenicView(focus: string): void {
   const p = scenicPose(focus);
@@ -376,9 +403,11 @@ function dollyTo(dist: number): void {
 let wheelGate: (() => boolean) | null = null;
 export function setWheelGate(f: () => boolean): void { wheelGate = f; }
 /** I-241 (H-4): the HAND-ZOOM hook — zooming close on the hand opens the onion browser
- *  instead of a read (game3d registers it; camera stays ignorant of the overlay). */
-let handZoomHook: (() => void) | null = null;
-export function setHandZoomHook(f: () => void): void { handZoomHook = f; }
+ *  instead of a read (game3d registers it; camera stays ignorant of the overlay).
+ *  I-242: the hook DECIDES — false (e.g. the hand is face down) falls through to the
+ *  ordinary read, like any other card. */
+let handZoomHook: (() => boolean) | null = null;
+export function setHandZoomHook(f: () => boolean): void { handZoomHook = f; }
 document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
@@ -427,9 +456,9 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   if (zoomIn) {
     const wall = fitDist(anchor, 0.8); // the ONE rule: the anchor's own wall, whoever it is
     if (wall === null) {
-      // I-241 (the owner: 'when objects aren't selected … there needs to be boundaries'):
-      // the free dolly has a FLOOR — never closer than reading range without a selection.
-      if (dist * 0.88 < 140) { status('close enough — click something to read it'); return; }
+      // I-242 (the owner tightened I-241's bounds: 'the unbound camera range needs to
+      // be about 1/2 max zoom out and zoom in'): the free dolly runs at HALF range.
+      if (dist * 0.88 < 280) { status('close enough — click something to read it'); return; }
       dollyTo(dist * 0.88);
       return;
     }
@@ -438,17 +467,21 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
       // never a frozen read (exited by clicking outside the cards or wheeling out).
       const oA = focusObject(anchor);
       const spc = oA?.userData?.['seatPlayCard'];
-      if (handZoomHook && (anchor === 'hand-fan' || (typeof spc === 'string' && spc.startsWith('hand:')))) { handZoomHook(); return; }
+      if (handZoomHook && (anchor === 'hand-fan' || (typeof spc === 'string' && spc.startsWith('hand:')))) {
+        if (handZoomHook()) return; // face UP → the onion; face down falls through — an ordinary card read (I-242)
+      }
       readView(anchor);
       return; // crossing the wall ENTERS the read — the one entry
     }
     dollyTo(dist * 0.88);
     return;
   }
-  // out: a plain dolly back, clamped at the zone's edge — read never sits on this path
+  // out: a plain dolly back, clamped at the zone's edge — read never sits on this path.
+  // I-242: UNANCHORED (no zone), the range is HALVED — the free camera roams half as far.
   const max = maxOutDist(zone ?? 'table');
   const zc = zoneCenterOf(zone ?? 'table');
-  if (max !== null && zc !== null && camera.position.distanceTo(zc) * 1.14 > max) {
+  const eff = max !== null && zone === null ? max * 0.5 : max;
+  if (eff !== null && zc !== null && camera.position.distanceTo(zc) * 1.14 > eff) {
     status(`the ${zone ?? 'world'} zone's edge — click another zone to travel`);
     return;
   }

@@ -17,6 +17,7 @@ let cx: PlayAreaContext | null = null;
 let bookRoot: THREE.Object3D | null = null;
 let bookOffset: { lat: number; out: number } | null = null; // PB-3 (I-177): the dragged ledger's claim (survives rebuilds)
 let bookGrab: { plane: THREE.Plane; ray: THREE.Raycaster; start: THREE.Vector3; moved: number } | null = null;
+let armedOpen = false; // I-242 (the owner: 'when books are closed I cannot select and zoom to read'): tap 1 SELECTS the closed folder (wheel reads its cover); tap 2 opens
 let sheetGrab: { page: ledger.PageKind; plane: THREE.Plane; ray: THREE.Raycaster; moved: number; obj: THREE.Object3D } | null = null; // I-230: the reports drag like cards
 const ledgerYaw = (): number => { const b = bookRoot; if (!b) return 0; const q = b.getWorldQuaternion(new THREE.Quaternion()); const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q); n.y = 0; n.normalize(); return Math.atan2(n.x, n.z); };
 
@@ -164,11 +165,21 @@ export const ledgerComponent: Component = {
     if (wasTap) {
       bookRoot.position.copy(bookGrab.start);
       bookGrab = null;
+      // I-242: the FIRST tap selects (the closed cover is readable — wheel in); the
+      // SECOND opens. The selection itself landed via the harness's claimed-tap
+      // resolver (obj: the folder) before this release ran.
+      if (!armedOpen) {
+        armedOpen = true;
+        ctx.status('the books selected — wheel in to read the cover; click again to open');
+        return true;
+      }
+      armedOpen = false;
       ctx.theater.setLastFocus('ledger');
       ledger.openLedger(ctx.projection(), ctx.viewSeat, anchorOf(bookRoot));
       ctx.status('the ledger flips open — the P&L (left) and Balance Sheet (right) rise; click a report to read it');
       return true;
     }
+    armedOpen = false; // a real drag disarms the double-tap
     // store the new claim in the SEAT-0 board frame, clamped to the station box
     const board = ctx.theater.focusObject('seat-0');
     if (board) {
@@ -200,6 +211,13 @@ export const ledgerComponent: Component = {
       return true;
     }
     if (hit.tags['ledger'] === true && bookRoot) {
+      // I-242: the same two-tap law on the unclaimed path — select first, open second.
+      if (!armedOpen) {
+        armedOpen = true;
+        ctx.status('the books selected — wheel in to read the cover; click again to open');
+        return true;
+      }
+      armedOpen = false;
       ctx.theater.setLastFocus('ledger');
       ledger.openLedger(ctx.projection(), ctx.viewSeat, anchorOf(bookRoot));
       ctx.status('the ledger flips open — the P&L (left) and Balance Sheet (right) rise; click a report to read it');
