@@ -33,8 +33,10 @@ export async function run(h) {
     const rolled = await rollOnce();
     const tr = await G(() => window.__GAME3D__.dieSimTrace());
     const traceOk = !!tr && tr.steps > 5 && tr.frames > 5 && tr.settleFace >= 1 && tr.settleFace <= 6;
+    const uiTr = await G(() => window.__GAME3D__.uiTraceText().split('\n').slice(-5).join(' | ')); // I-259: the click's fate testifies
+    const phaseNow = await G(() => window.__GAME3D__.diePhase());
     check('VG8r/physics-sim-real', rolled && traceOk,
-      `rolled:${rolled} · trace{steps:${tr?.steps} frames:${tr?.frames} settleFace:${tr?.settleFace}} — one real simulation, recorded then replayed`);
+      `rolled:${rolled} · trace{steps:${tr?.steps} frames:${tr?.frames} settleFace:${tr?.settleFace}} · phase:${phaseNow} · ui[${uiTr}] — one real simulation, recorded then replayed`);
   }
 
   // 2 · reconcile-not-decide — THE R-1 LAW CHECK: find a roll whose SIM settled on a face
