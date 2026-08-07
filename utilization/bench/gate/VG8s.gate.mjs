@@ -143,6 +143,38 @@ export async function run(h) {
   check('VG8s/card-world-conserved', !!cw && cw.instances === cw.createdAtGenesis && cw.recreateAttempts === 0 && cw.instances > 200,
     `instances ${cw?.instances} ≡ genesis ${cw?.createdAtGenesis} · recreate-attempts ${cw?.recreateAttempts} (want 0) — the permanence constitution holds (I-149)`);
 
+  // 6c · I-252 — THE POOL-ORDER LAW (the slick-lawyer pin): a BOTTOM-RETURN must render
+  // identity-true. Sell the just-bought equipment back (a real drag onto its pile): the
+  // pool grows by one AT THE BOTTOM, the rendered pile ≡ the projection's poolOrders,
+  // and the sold ref sits LAST. KILL: restore the genesis-suffix reconstruction → the
+  // returned card is claimed by nobody and the rendered ids diverge → fails by name.
+  const soldRef = await page.evaluate(() => window.__GAME3D__.supplyLastMove()?.id ?? null);
+  let sellOk = false, orderOk = false, bottomOk = false;
+  let orderDetail = `NO-SOLD-REF (${soldRef})`;
+  if (soldRef) {
+    await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+    const kxy = await page.evaluate((k) => window.__GAME3D__.seatPlayCardXY(k), `asset:${soldRef}:${a0.want}`);
+    const pxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('equipment-pile'));
+    if (kxy && pxy2) {
+      await page.mouse.move(kxy.x, kxy.y);
+      await page.mouse.down();
+      const dvx = pxy2.x - kxy.x, dvy = pxy2.y - kxy.y;
+      for (let i = 1; i <= 6; i++) await page.mouse.move(kxy.x + (dvx / 6) * i, kxy.y + (dvy / 6) * i);
+      await page.mouse.up(); // released ON the pile — the sell verb, the bottom-return
+      try {
+        await page.waitForFunction((want) => window.__GAME3D__.poolCounts().equipment === want, pc2.equipment + 1, { timeout: 8000 });
+        sellOk = true;
+      } catch { /* named below */ }
+      const rendered = await page.evaluate((r) => window.__GAME3D__.renderedPoolIds(r), 'equipment-pile');
+      const law = await page.evaluate(() => window.__GAME3D__.poolOrdersView().equipment);
+      const renderedTopFirst = [...rendered].reverse(); // rendered is bottom→top; the law is top→bottom
+      orderOk = Array.isArray(rendered) && rendered.length === law.length && renderedTopFirst.every((id, i) => id === law[i]);
+      bottomOk = law[law.length - 1] === soldRef;
+      orderDetail = `sold:${soldRef} · sell-landed:${sellOk} · rendered(${rendered.length}) ≡ poolOrders(${law.length}):${orderOk} · sold-at-bottom:${bottomOk}`;
+    } else orderDetail = `NO-XY (card:${JSON.stringify(kxy)} pile:${JSON.stringify(pxy2)})`;
+  }
+  check('VG8s/pool-order-law', sellOk && orderOk && bottomOk, orderDetail);
+
   // 7 · O-6 (I-146) · board-actions-end-turn: the actions strip on YOUR board, YOUR
   // turn → the END-TURN verb (the SVG's board-foot law). KILL: cut the actions branch →
   // the click glides instead → active holds → fails.

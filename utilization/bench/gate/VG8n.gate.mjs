@@ -25,7 +25,7 @@ export const id = 'VG8n';
 export async function run(h) {
   const { page, check, gotoStage } = h;
   const G = (fn, ...a) => page.evaluate(fn, ...a);
-  const NAMES = ['ledger-two-page-risen', 'ledger-renders', 'ledger-anchor-balance', 'ledger-anchor-switch', 'ledger-opaque', 'ledger-flip-open-state', 'ledger-sheet-objects'];
+  const NAMES = ['ledger-two-page-risen', 'ledger-renders', 'ledger-anchor-balance', 'ledger-anchor-switch', 'ledger-opaque', 'ledger-flip-open-state', 'ledger-sheet-objects']; // (two-tap is checked unconditionally above the early-fail)
 
   await gotoStage('game3d.html');
 
@@ -42,11 +42,18 @@ export async function run(h) {
   const form0 = await G(() => window.__GAME3D__.ledgerFolderForm());
   const lxy = await G(() => window.__GAME3D__.ledgerScreenXY());
   let opened = false;
+  let afterOne = null;
   if (lxy) {
-    await page.mouse.click(lxy.x, lxy.y); // the REAL open gesture — the folder flips open
+    // I-242 — THE TWO-TAP LAW (owner-ruled: 'when books are closed I cannot select and
+    // zoom to read'): tap ONE selects the closed folder (readable cover); tap TWO opens.
+    await page.mouse.click(lxy.x, lxy.y); // tap one — SELECTS, must NOT open
+    afterOne = await G(() => window.__GAME3D__.ledgerState().open);
+    await page.mouse.click(lxy.x, lxy.y); // tap two — the REAL open gesture
     try { await page.waitForFunction(() => window.__GAME3D__.ledgerState().open === true, null, { timeout: 60000 }); opened = true; }
     catch { opened = false; }
   }
+  check('VG8n/ledger-two-tap', afterOne === false && opened,
+    `first-click-selects-not-opens:${afterOne === false} · second-click-opens:${opened}`);
   // wait on the RISE + COVER animation STATE to settle (never a clock) before geometry reads
   let settled = false;
   if (opened) {

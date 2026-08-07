@@ -416,6 +416,18 @@ const gate: Record<string, unknown> = {
   uiTrace, uiTraceText, // I-238: the interaction trace — 'copy(__GAME3D__.uiTraceText())' in the console hands me the whole session
   handOnionOpen, closeHandOnion, // H-4 (I-241): the hand browser's gate face
   strayCards, // I-248: the orphan oracle — the phantom card names itself
+  // I-252/I-253: THE POOL-ORDER LAW's two faces — the projection's order and the
+  // rendered pile's ids (bottom→top by idx); VG8s pins them identical after a
+  // bottom-return, the drill the genesis reconstruction fails by name.
+  poolOrdersView: () => projectNow().poolOrders,
+  renderedPoolIds: (rid: string) => {
+    const grp = cam.focusObject(`table:${rid}`);
+    const ids: string[] = [];
+    grp?.traverse((o: THREE.Object3D) => {
+      if (o.userData?.['card'] && typeof o.userData?.['cardId'] === 'string' && typeof o.userData?.['idx'] === 'number') ids[o.userData['idx'] as number] = o.userData['cardId'] as string;
+    });
+    return ids;
+  },
   seatReadEquality: () => seatReadEquality(6), // F-8 (I-167): dist + framed bbox per seat
   spawnJob: () => { const ok2 = submitVerb('spawn-venture', { spec: botyJob() }); if (ok2) buildScene(); return ok2; }, // I-215: the drill door (the chrome button is gone)
   uiObjectsInfo: () => ({ count: UI_OBJECTS.length, ids: UI_OBJECTS.map((o) => o.id), chain: chainIntegrity(), kingdoms: kingdomIntegrity() }), // G-C (I-168): the ontology's public face

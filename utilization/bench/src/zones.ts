@@ -65,12 +65,21 @@ export function zoneOf(focus: string): Zone | null {
   for (const z of ZONES) if (z.contains(focus)) return z;
   if (focus.startsWith('obj:')) {
     const o = scene.getObjectByProperty('uuid', focus.slice(4));
-    const tag = o?.userData?.['focus'];
-    if (typeof tag === 'string') for (const z of ZONES) if (z.contains(tag)) return z;
-    if (o) { // a board-zone object without a seat tag (piles, die, minis)
+    if (o) {
+      // I-253 (the battery sweep's find): LIVE PARENTAGE FIRST — userData focus tags
+      // LINGER across claims (a card once in a seat keeps 'seat-N' forever), so a
+      // deck instance tapped in a PILE was zoned to its old seat. The ancestor walk
+      // reads current membership; the tag is only the fallback for loose objects.
       let m: THREE.Object3D | null = o;
-      while (m && m.userData?.['focus'] !== 'table' && !m.userData?.['worldStack']) m = m.parent;
-      if (m) return ZONES[0]!;
+      while (m) {
+        const ud = m.userData ?? {};
+        if (ud['focus'] === 'table' || ud['worldStack']) return ZONES[0]!;
+        if (ud['handFan']) return ZONES[1]!; // the viewer's fan — seat 0's zone
+        if (typeof ud['seatSurface'] === 'number') { const z2 = ZONES[1 + (ud['seatSurface'] as number)]; if (z2) return z2; }
+        m = m.parent;
+      }
+      const tag = o.userData?.['focus'];
+      if (typeof tag === 'string') for (const z of ZONES) if (z.contains(tag)) return z;
     }
   }
   return null;
