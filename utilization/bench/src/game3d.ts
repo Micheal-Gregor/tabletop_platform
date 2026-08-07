@@ -196,6 +196,7 @@ renderer.domElement.addEventListener('pointerdown', (ev) => {
       const pick = computePick(hit, ev);
       for (const c of COMPONENTS) if (c.onGrabStart?.(ctx, pick)) {
         claims.set(ev.pointerId, c);
+        trace('claim', `${c.id} takes the pointer @${Math.round(ev.clientX)},${Math.round(ev.clientY)} hit=[${Object.keys(pick.tags).slice(0, 5).join(',')}]`); // I-259: claims testify
         try { renderer.domElement.setPointerCapture(ev.pointerId); } catch { /* synthetic pointers have no capture */ }
         break outer;
       }
@@ -249,10 +250,12 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
     if (tap) {
       const r2 = renderer.domElement.getBoundingClientRect();
       ray.setFromCamera(new THREE.Vector2(((ev.clientX - r2.left) / r2.width) * 2 - 1, -((ev.clientY - r2.top) / r2.height) * 2 + 1), camera);
+      let taken = false;
       for (const hit2 of ray.intersectObjects(scene.children, true)) {
         const sel2 = resolveSelection(computePick(hit2, ev));
-        if (sel2) { cam.setLastFocus(sel2); travelFor(sel2); break; }
+        if (sel2) { cam.setLastFocus(sel2); travelFor(sel2); trace('tap', `claimed tap → ${sel2}`); taken = true; break; }
       }
+      if (!taken) trace('tap', `claimed tap @${Math.round(ev.clientX)},${Math.round(ev.clientY)} — no selection`); // I-259
     }
     let consumed = false;
     const prev = releasing; // S-1c (K7-S MINOR-5): save/restore — a nested synthetic
@@ -278,11 +281,13 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   // a plain click in read mode is THE EXIT STEP, consumed here before any re-anchor.
   if (!wasDrag && cam.getMode() === 'read' && !cam.readIsZone()) { cam.exitReadStep(); return; } // I-227: only a CHILD's read exits on click — at the ZONE read (the resting state) clicks SELECT
   // the drag/read guard stays BETWEEN Phase 0 and the raycast
-  if (wasDrag || (cam.getMode() === 'read' && !cam.readIsZone())) return; // I-227: the ZONE read passes clicks through to selection; child reads and drags never refocus
+  if (wasDrag || (cam.getMode() === 'read' && !cam.readIsZone())) { if (!wasDrag) trace('guard', 'the child-read guard ate the click'); return; } // I-227: the ZONE read passes clicks through to selection; child reads and drags never refocus · I-259: the guard testifies
   // Phase 2: raycast nearest→far; onPick in registry order, first true stops
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);
-  for (const hit of ray.intersectObjects(scene.children, true)) {
+  const hitsP2 = ray.intersectObjects(scene.children, true);
+  if (hitsP2.length === 0) trace('click', `NO HITS @${Math.round(ev.clientX)},${Math.round(ev.clientY)}`); // I-259: the void testifies too
+  for (const hit of hitsP2) {
     const pick = computePick(hit, ev);
     // I-236 — THE ONE SELECTION RESOLVER (superseding ten scattered anchor-writers,
     // per the review): selection happens HERE, once, before any action; the component
