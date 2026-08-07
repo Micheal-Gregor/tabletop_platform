@@ -138,6 +138,25 @@ function buildScene(): void {
   const active = v.seats[v.turn.seatIdx]!.id;
   document.getElementById('hdr')!.textContent =
     `Maple Hollow · ${SEASONS[(v.turn.round - 1) % 4]} · round ${v.turn.round} / ${BOTY_PACK6.maxRounds} · ▶ ${active}'s turn · viewing as ${viewSeat}`;
+  // I-248 — THE ORPHAN ORACLE (the phantom card's tripwire): after a rebuild, EVERY
+  // card instance claimed by a renderer lives inside a component subtree; a card
+  // instance still sitting as a DIRECT scene child (and not the live draw theater's
+  // mesh) belongs to NO membership — the conservation law's render gap. It is TRACED
+  // BY NAME with its position, never silently parked (refusal-not-repair: evidence,
+  // not cover-up). strayCards() on the gate face lists them live.
+  for (const s of strayCards()) trace('orphan', `${s.id} stranded at (${s.x}, ${s.z}) tags[${s.tags}]`);
+}
+/** direct-scene-child card instances outside every renderer (the live theater excluded). */
+function strayCards(): { id: string; x: number; z: number; y: number; tags: string }[] {
+  const out: { id: string; x: number; z: number; y: number; tags: string }[] = [];
+  for (const o of scene.children) {
+    if (!o.userData?.['card3d'] || o.userData?.['drawGrabMesh']) continue;
+    out.push({
+      id: String(o.userData['cardId'] ?? '?'), x: Math.round(o.position.x), z: Math.round(o.position.z), y: Math.round(o.position.y),
+      tags: Object.keys(o.userData).filter((k) => o.userData[k] === true || typeof o.userData[k] === 'string').slice(0, 6).join(','),
+    });
+  }
+  return out;
 }
 buildScene();
 
@@ -396,6 +415,7 @@ const gate: Record<string, unknown> = {
   gridInfo: () => ({ spacing: gridSpacing(), seatRing: ringSnap(ringRadius(RING_N)), anchorsInTableDisc: anchorsWithinRadius(570).length }), // G-A: the grid's public face
   uiTrace, uiTraceText, // I-238: the interaction trace — 'copy(__GAME3D__.uiTraceText())' in the console hands me the whole session
   handOnionOpen, closeHandOnion, // H-4 (I-241): the hand browser's gate face
+  strayCards, // I-248: the orphan oracle — the phantom card names itself
   seatReadEquality: () => seatReadEquality(6), // F-8 (I-167): dist + framed bbox per seat
   spawnJob: () => { const ok2 = submitVerb('spawn-venture', { spec: botyJob() }); if (ok2) buildScene(); return ok2; }, // I-215: the drill door (the chrome button is gone)
   uiObjectsInfo: () => ({ count: UI_OBJECTS.length, ids: UI_OBJECTS.map((o) => o.id), chain: chainIntegrity(), kingdoms: kingdomIntegrity() }), // G-C (I-168): the ontology's public face
