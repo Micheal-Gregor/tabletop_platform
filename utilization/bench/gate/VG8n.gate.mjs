@@ -105,7 +105,7 @@ export async function run(h) {
   // K7-V M-1: (a) EXACT-POSE — posErr/quatErr ≡ 0 (a deleted settle-snap leaves ~3e-6
   // and fails; the lean pin alone could not see it); (b) the heading is checked against
   // an INDEPENDENT yaw source (seatYawData(0)), closing the spreadYaw self-reference.
-  const indYaw = await page.evaluate(() => window.__GAME3D__.seatYawData()[0]);
+  const indYaw = await page.evaluate(() => window.__GAME3D__.seatYawData(0)); // I-254: the oracle takes the INDEX — seatYawData()[0] indexed null and crashed the whole runner (dormant since the K7-V M-1 closure)
   const wantHead = ((indYaw + Math.PI) * 180) / Math.PI; // I-229: a FLAT page's top edge points TOWARD the player (yaw+180) — the independent source, adjusted with the law
   const headsOk = !!upr && ['pnl', 'balance'].every((k) => {
     const d = Math.abs(((upr[k].heading - wantHead + 540) % 360) - 180);

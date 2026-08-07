@@ -149,8 +149,12 @@ function finalizePins(derived) {
 const h = { page, check, GATE_PORT, sha, gotoStage, waitRest, glide, hashes, info, domVsLaw, screenshot, finalizePins, discharge: DISCHARGE };
 
 // ── run the selected groups in registry order ──
+// I-254: a crashing group costs ITSELF, never the report — the VG8n seatYawData()[0]
+// crash ate every earlier group's results; a throw now lands as a named failure and
+// the battery finishes.
 for (const group of selected) {
-  await group.fn(h);
+  try { await group.fn(h); }
+  catch (e) { check(`${group.id}/GROUP-CRASH`, false, String(e && e.message ? e.message : e).slice(0, 300)); }
 }
 
 await browser.close();
