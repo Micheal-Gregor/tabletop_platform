@@ -20,6 +20,7 @@ import { emit, project } from '@tabletop/presentation';
 import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob, CARD_SET_6 } from '../../../packs/boty/src/index.js';
 import { createCardWorld, cardWorldInfo } from './card-world.js'; // C-1a (I-149): the permanence world
 import { gridSpacing, ringSnap, anchorsWithinRadius } from './anchor-grid.js'; // G-A (I-158/I-159)
+import { trace, uiTrace, uiTraceText } from './ui-trace.js'; // I-238: the owner's interaction listener
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS, RING_N } from './stage.js';
 import { ringRadius, stationLook, stationPos } from './playarea.js'; // PA-1/PA-2 (I-141/I-142)
 import { seatReadEquality } from './camera.js'; // F-8 (I-167)
@@ -236,6 +237,7 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
     // per the review): selection happens HERE, once, before any action; the component
     // actions then run and may consume the click, but they no longer write the anchor.
     const sel = resolveSelection(pick);
+    trace('click', `hit=[${Object.keys(pick.tags).slice(0, 6).join(',')}] region=${pick.region ?? '-'} focus=${pick.focus ?? '-'} → ${sel ?? 'NO SELECTION'}`);
     if (sel) { cam.setLastFocus(sel); status(`selected: ${sel.startsWith('obj:') ? 'the object under the cursor' : sel} — wheel to zoom`); }
     for (const c of COMPONENTS) if (c.onPick?.(ctx, pick)) return;
     if (sel) return;
@@ -334,6 +336,7 @@ const gate: Record<string, unknown> = {
   // C-1a (I-149): the CONSERVATION oracle — instances constant, recreates 0, forever.
   cardWorldInfo,
   gridInfo: () => ({ spacing: gridSpacing(), seatRing: ringSnap(ringRadius(RING_N)), anchorsInTableDisc: anchorsWithinRadius(570).length }), // G-A: the grid's public face
+  uiTrace, uiTraceText, // I-238: the interaction trace — 'copy(__GAME3D__.uiTraceText())' in the console hands me the whole session
   seatReadEquality: () => seatReadEquality(6), // F-8 (I-167): dist + framed bbox per seat
   spawnJob: () => { const ok2 = submitVerb('spawn-venture', { spec: botyJob() }); if (ok2) buildScene(); return ok2; }, // I-215: the drill door (the chrome button is gone)
   uiObjectsInfo: () => ({ count: UI_OBJECTS.length, ids: UI_OBJECTS.map((o) => o.id), chain: chainIntegrity(), kingdoms: kingdomIntegrity() }), // G-C (I-168): the ontology's public face

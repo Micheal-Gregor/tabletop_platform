@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { camera, scene, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N } from './stage.js'; // I-216: the SCENE itself — the dynamic lookups had walked up from an UNPARENTED camera (null) since I-149
 import { stationLook } from './playarea.js'; // PA-1 (I-141)
 import { surfaceSize } from './seat-grid.js'; // I-223: the surface's LAW-true size (the AABB lied at every yawed seat)
+import { trace } from './ui-trace.js'; // I-238
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
 // SIDE-AWARE (I-65b): a SEAT preset is approached from that seat's own side of the
@@ -259,6 +260,7 @@ export function scenicView(focus: string): void {
   mode = 'scene';
   currentName = `${focus}:scenic`;
   lastFocus = focus;
+  trace('view', `SCENIC ${focus}`);
   status(`scenic: ${focus} — maximized in the foreground, the sight line runs 35° down to 0,0,0`);
 }
 
@@ -269,6 +271,7 @@ export function readView(focus?: string, reanchor = true): void {
   camera.up.copy(m.up);
   target = { pos: m.pos, look: m.look };
   mode = 'read';
+  trace('view', `READ ${readFocus}`);
   panned = false; // fit is the pure rest state — re-toggle RESETS pan (I-63c)
   currentName = `${readFocus}:read`;
   document.getElementById('mode-btn')!.textContent = '🎲 scene view';
@@ -389,6 +392,7 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
   const zoomIn = ev.deltaY < 0;
+  trace('wheel', `${zoomIn ? 'in' : 'out'} mode=${mode} anchor=${lastFocus} read=${mode === 'read' ? readFocus : '-'}`);
   // ── I-226 — THE SCROLL RULES, the owner's final form ──
   // The ZONE READ is both the MIN and MAX of a zone when nothing is selected: the
   // wheel rests. SELECT an object (click) and the wheel serves it: in FILLS the
@@ -476,7 +480,7 @@ export function tickGlide(): void {
 
 // ── read-accessors + setters the interaction and the __GAME3D__ gate surface consume ──
 export const getMode = (): 'scene' | 'read' => mode;
-export const setLastFocus = (f: string): void => { lastFocus = f; };
+export const setLastFocus = (f: string): void => { if (f !== lastFocus) trace('anchor', `${lastFocus} → ${f}`); lastFocus = f; };
 export const cameraPos = () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z });
 export const presetData = (k: string) => (presets[k] ? { cx: presets[k].cx, cy: presets[k].cy, zoom: presets[k].zoom } : null);
 export const camName = () => currentName;
