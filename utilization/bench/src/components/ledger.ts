@@ -276,7 +276,7 @@ export const ledgerComponent: Component = {
         const o = p ? ctx.theater.focusObject(p.id) : null;
         if (!o) return null;
         const b = new THREE.Box3().setFromObject(o);
-        return { w: b.max.x - b.min.x, h: b.max.y - b.min.y };
+        return { w: b.max.x - b.min.x, h: b.max.y - b.min.y, d: b.max.z - b.min.z }; // I-255: the flat era measures the FOOTPRINT — depth joins the oracle
       },
       /** a report page's centre projected to canvas pixels (the REAL-click helper for the
        *  anchor-per-report checks — the gate clicks the actual page, no synthetic call). */

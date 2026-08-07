@@ -201,9 +201,16 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   const up = Math.abs(n.y) > 0.85
     ? (Math.hypot(c.x, c.z) > 20 ? new THREE.Vector3(-c.x, 0, -c.z).normalize() : new THREE.Vector3(0, 0, -1))
     : new THREE.Vector3(0, 1, 0);
-  // I-225: the face-on fit measures the bounding SPHERE — rotation-safe (the AABB's
-  // third lie: seat-0's yawed board read pulled too far while seat-1's was perfect).
-  const sp2 = box.getBoundingSphere(new THREE.Sphere());
+  // I-225: the face-on fit measures the bounding SPHERE — rotation-safe. I-255 (the
+  // battery's VG8g7 verdict — read distances varied ±6% per seat): Box3's sphere is the
+  // WORLD AABB's, which still inflates with yaw (the I-223 class, fourth appearance);
+  // the radius is now measured IN THE BOARD'S OWN FRAME — identical for every seat.
+  const q0m = (obj as THREE.Object3D).quaternion.clone();
+  (obj as THREE.Object3D).quaternion.set(0, 0, 0, 1);
+  (obj as THREE.Object3D).updateWorldMatrix(true, true);
+  const sp2 = new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
+  (obj as THREE.Object3D).quaternion.copy(q0m);
+  (obj as THREE.Object3D).updateWorldMatrix(true, true);
   const fovV3 = (camera.fov * Math.PI) / 180;
   let dSphere = (Math.max(30, sp2.radius) / Math.sin((fovV3 / 2) * 0.9)) * factor;
   if (focus.startsWith('seat-') && !focus.startsWith('seat-area-')) dSphere *= 0.5; // I-228 (owner-tuned): the SEAT board reads at HALF the distance — seats only; areas are right

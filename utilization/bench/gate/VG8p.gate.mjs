@@ -19,10 +19,13 @@ export async function run(h) {
   // crew-rows-true: per seat, rendered crew cards ≡ the projection's crew by outfit
   // (genesis: exactly one per shop, six seats) AND the row sits BETWEEN board and table.
   const rows = await G(() => window.__GAME3D__.crewRows());
+  // I-255 RE-DERIVED (this pin predates I-152 — 'genesis seeds NO crew' — and the
+  // battery's runner crash hid the drift): genesis want is ZERO per seat, counts equal
+  // both ways; inFront is asserted only when a row EXISTS (vacuous at zero).
   const rowsOk = Array.isArray(rows) && rows.length === 6
-    && rows.every((r) => r.want === r.got && r.want === 1 && r.inFront);
+    && rows.every((r) => r.want === r.got && r.want === 0 && (r.got === 0 || r.inFront));
   check('VG8p/crew-rows-true', rowsOk,
-    `${rows?.length} seats · ${rows?.map((r) => `${r.seat}:${r.got}/${r.want}${r.inFront ? '' : '·NOT-IN-FRONT'}`).join(' ')}`);
+    `${rows?.length} seats · ${rows?.map((r) => `${r.seat}:${r.got}/${r.want}${r.got === 0 || r.inFront ? '' : '·NOT-IN-FRONT'}`).join(' ')} (genesis zero — I-152)`);
 
   // assets-count-true — G-1 (I-101, closing K7-Q M7): the check now PINS the genesis
   // ZERO on both sides (want===0 AND got===0), so a projection drift OR a phantom asset
@@ -46,6 +49,7 @@ export async function run(h) {
     await page.waitForFunction(() => window.__GAME3D__.supplyPhase() === 'idle', null, { timeout: 60000 }).catch(() => {}); // the anchor-change completes
   }
   const HIRED = await G(() => { const m = window.__GAME3D__.viewCrew().find((c) => c.outfit === 'moe'); return m ? m.id : null; });
+  await page.waitForFunction(() => window.__GAME3D__.arrivalsIdle(), null, { timeout: 60000 }).catch(() => {}); // I-255: the hired card TRAVELS — grab it at rest, not mid-flight
 
   // seatplay-grab-reset: a REAL ~100-px drag on the hired crew card moves it off its
   // anchor; release → the reset glide returns it (Δ<5), rowHash/moveCount INVARIANT.

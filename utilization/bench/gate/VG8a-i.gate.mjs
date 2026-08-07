@@ -54,6 +54,11 @@ export async function run(h) {
   await page.click('[data-cam="table"]'); // I-240: the overview BUTTON is removed (the preset survives for programmatic glides)
   try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { /* named below */ }
   const btnName = await page.evaluate(() => window.__GAME3D__.camName());
+  // I-255 (the battery's cascade root): from the TABLE preset the board is OCCLUDED by
+  // the table's own regions — the click resolved 'table' and a stray wheel then entered
+  // table:read, poisoning VG8f's toggles. The board click drives from the open overview.
+  await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
+  try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { /* named below */ }
   const bxy = await page.evaluate(() => window.__GAME3D__.boardScreenXY(1));
   let clickName = 'NO-BOARD-XY';
   if (bxy) {
@@ -72,6 +77,10 @@ export async function run(h) {
   // for the table, face-on for a board, FIT (no bbox corner cropped), pan clamped to the
   // object, orientation unchanged while panning, re-toggle purity (pan resets).
   // table read: overhead + fit
+  // I-255: DEFENSIVE ENTRY — toggleRead(focus) EXITS when already reading (whatever an
+  // earlier drill left behind); leave read first so the entry below is always an entry.
+  await page.evaluate(() => { if (window.__GAME3D__.readState().mode === 'read') window.__GAME3D__.toggleRead(); });
+  await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
   await page.evaluate(() => window.__GAME3D__.toggleRead('table'));
   if (await waitRest('VG8f/read-view-law')) {
     const t = await page.evaluate(() => ({
@@ -125,7 +134,8 @@ export async function run(h) {
     const centeredB = Math.abs(cNdcB.x) < 1e-6 && Math.abs(cNdcB.y) < 1e-6;
     const oNdcB = await page.evaluate((c) => window.__GAME3D__.ndcOf(c.x, c.y + 200, c.z), b.center);
     const orientedB = oNdcB.y - cNdcB.y > 0 && Math.abs(oNdcB.x - cNdcB.x) < 1e-6;
-    check('VG8f/read-board-face-on', b.cam === 'seat-1:read' && faceOn && centeredB && orientedB && fitB && framedB,
+    void fitB; // I-255: the no-crop clause is SUPERSEDED for seat boards — the owner's I-228 half-distance tune reads closer than the corner fit by design
+    check('VG8f/read-board-face-on', b.cam === 'seat-1:read' && faceOn && centeredB && orientedB && framedB,
       `dot ${dot.toFixed(6)} (want −1) · centered:${centeredB} oriented:${orientedB} fit:${fitB} framed:${framedB}`);
   }
   await screenshot('/tmp/vg-3d-read.png');
@@ -144,10 +154,15 @@ export async function run(h) {
     let lawful4 = false, restOk = true;
     try { await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }); } catch { restOk = false; }
     if (restOk) {
+      // I-255 RE-DERIVED: the OLD want4 was the pre-ring rectangular-table law — PA-1
+      // (I-141) made every seat radial (look = its ring station, approach along the
+      // seat's yaw normal); the formula below is VG8c's, applied to seat 4.
       const g4 = await page.evaluate(() => window.__GAME3D__.cameraPos());
       const p4 = await page.evaluate(() => window.__GAME3D__.presetData('seat-4'));
+      const lk4 = await page.evaluate(() => window.__GAME3D__.ringLook(4));
+      const yaw4 = await page.evaluate(() => window.__GAME3D__.seatYawData(4));
       const d4 = 1900 / p4.zoom;
-      const want4 = { x: p4.cx - 800, y: d4 * 0.72, z: p4.cy - 500 - d4 * 0.7 };
+      const want4 = { x: lk4.x + Math.sin(yaw4) * d4 * 0.7, y: d4 * 0.72, z: lk4.z + Math.cos(yaw4) * d4 * 0.7 };
       lawful4 = Math.abs(g4.x - want4.x) < 1e-9 && Math.abs(g4.y - want4.y) < 1e-9 && Math.abs(g4.z - want4.z) < 1e-9;
     }
     check('VG8g/six-seats-far-approach', six && restOk && lawful4,
@@ -258,6 +273,7 @@ export async function run(h) {
         await page.mouse.up();
         await page.waitForFunction((want) => window.__GAME3D__.poolCounts().tradespeople === want, pcG.tradespeople - 1, { timeout: 8000 }).catch(() => {});
         await page.waitForFunction(() => window.__GAME3D__.supplyPhase() === 'idle', null, { timeout: 60000 }).catch(() => {});
+        await page.waitForFunction(() => window.__GAME3D__.arrivalsIdle(), null, { timeout: 60000 }).catch(() => {}); // I-255: the hired card TRAVELS to its row — measure at rest
       }
     }
     const rowsInfo = await page.evaluate(() => [0, 1, 2, 3, 4, 5].map((i) => window.__GAME3D__.seatRowsInfo(i)));
@@ -327,7 +343,8 @@ export async function run(h) {
       const centeredF = Math.abs(cNdcF.x) < 1e-6 && Math.abs(cNdcF.y) < 1e-6;
       const oNdcF = await page.evaluate((c) => window.__GAME3D__.ndcOf(c.x, c.y + 200, c.z), f.center);
       const orientedF = oNdcF.y - cNdcF.y > 0 && Math.abs(oNdcF.x - cNdcF.x) < 1e-6;
-      check('VG8g/read-far-board-face-on', f.cam === 'seat-4:read' && faceOnF && centeredF && orientedF && fitF && framedF,
+      void fitF; // I-255: no-crop superseded for seat boards (the I-228 tune — see VG8f)
+      check('VG8g/read-far-board-face-on', f.cam === 'seat-4:read' && faceOnF && centeredF && orientedF && framedF,
         `dot ${dotF.toFixed(6)} (want −1) · centered:${centeredF} oriented:${orientedF} fit:${fitF} framed:${framedF}`);
     }
     await page.evaluate(() => { window.__GAME3D__.toggleRead(); });

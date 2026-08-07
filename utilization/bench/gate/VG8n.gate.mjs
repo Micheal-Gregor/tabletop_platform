@@ -82,16 +82,19 @@ export async function run(h) {
   const pPnl = pages.find((p) => p.kind === 'pnl');
   const pBal = pages.find((p) => p.kind === 'balance');
   const risen = typeof folderY === 'number' && pPnl && pBal && pPnl.worldY > folderY - 4 && pPnl.worldY < folderY + 30 && pBal.worldY > folderY - 4 && pBal.worldY < folderY + 30; // I-229 RE-PIN: the pages lie ATOP the folder (the risen-50 law superseded — the owner laid the books flat)
-  // PORTRAIT (P-2b/I-85): report-sized sheets — each standing page's bbox is taller than wide.
+  // PORTRAIT (P-2b/I-85; RE-DERIVED at I-255 for the FLAT era — the pages LIE on the
+  // felt since I-229, so 'taller than wide' in world x/y is meaningless): each page is
+  // FLAT (world-y extent thin) and REPORT-SIZED (its footprint diagonal in the paper
+  // class — yaw-tolerant; the AABB rotates with the seat frame).
   const portrait = await G(() => {
     const out = {};
     for (const k of ['pnl', 'balance']) {
       const o = window.__GAME3D__.ledgerPageBBox(k);
-      out[k] = o ? o.h > o.w : null;
+      out[k] = o ? { flat: o.h < 40, diag: Math.round(Math.hypot(o.w, o.d ?? 0)) } : null;
     }
     return out;
   });
-  const portraitOk = portrait.pnl === true && portrait.balance === true;
+  const portraitOk = ['pnl', 'balance'].every((k) => portrait[k] && portrait[k].flat && portrait[k].diag > 180 && portrait[k].diag < 360);
   const twoPage = pages.length === 2 && pPnl && pBal && pPnl.focusable && pBal.focusable
     && pPnl.id === 'ledger-pnl' && pBal.id === 'ledger-balance' && risen && portraitOk; // I-229: the worldX ordering retired (yaw-dependent); the FLAT-atop law below carries the geometry
   check('VG8n/ledger-two-page-risen', !!twoPage,
@@ -205,9 +208,12 @@ export async function run(h) {
   }
   const idsEnd = await G(() => window.__GAME3D__.ledgerSheetIds()); // closed again: parent 'folder'
   const modeEnd = await G(() => window.__GAME3D__.readState().mode);
-  const closedForm = !!form0 && form0.frontW < form0.backW - 10 && form0.sheetPeekX > 5
+  // I-255 RE-DERIVED THRESHOLDS (the flat-era folder is the owner-approved form): the
+  // peek narrowed with the I-229 geometry (>1 asserts it EXISTS) and the cover's swing
+  // offset shrank with DISPLAY_SCALE 1 (<-60 asserts it swings LEFT).
+  const closedForm = !!form0 && form0.frontW < form0.backW - 10 && form0.sheetPeekX > 1
     && ids0.length === 2 && ids0.every((s) => s.parent === 'folder');
-  const swungLeft = !!formOpen && formOpen.frontOffsetX < -100;
+  const swungLeft = !!formOpen && formOpen.frontOffsetX < -60;
   const sequenced = typeof startCover === 'number' && startCover >= 0.999;
   check('VG8n/ledger-flip-open-state',
     closed0 === false && cover0 === 0 && opened === true && closedAfter && coverClosed && modeEnd !== 'read' && closedForm && swungLeft && sequenced,

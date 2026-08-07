@@ -21,6 +21,7 @@ import { BOTY_PACK6, BOTY6_REF, botyGenesis6, wireBoty, genesisDrawFor, botyJob,
 import { createCardWorld, cardWorldInfo } from './card-world.js'; // C-1a (I-149): the permanence world
 import { gridSpacing, ringSnap, anchorsWithinRadius } from './anchor-grid.js'; // G-A (I-158/I-159)
 import { trace, uiTrace, uiTraceText } from './ui-trace.js'; // I-238: the owner's interaction listener
+import { arrivalsInfo } from './arrivals.js'; // I-255: the gates wait for journeys to land
 import { scene, camera, renderer, focusGroups, presets, SEATS, status, SEAT_YAWS, RING_N } from './stage.js';
 import { ringRadius, stationLook, stationPos } from './playarea.js'; // PA-1/PA-2 (I-141/I-142)
 import { seatReadEquality } from './camera.js'; // F-8 (I-167)
@@ -420,6 +421,7 @@ const gate: Record<string, unknown> = {
   // rendered pile's ids (bottom→top by idx); VG8s pins them identical after a
   // bottom-return, the drill the genesis reconstruction fails by name.
   poolOrdersView: () => projectNow().poolOrders,
+  arrivalsIdle: () => arrivalsInfo().active === 0, // I-255: the drills' rest signal — cards TRAVEL now (I-201); clicking mid-journey was the battery's biggest killer
   renderedPoolIds: (rid: string) => {
     const grp = cam.focusObject(`table:${rid}`);
     const ids: string[] = [];

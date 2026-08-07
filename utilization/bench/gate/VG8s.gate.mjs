@@ -61,6 +61,7 @@ export async function run(h) {
 
   // 3 · SELECT: a plain click on the viewer's own crew card lifts it (state + geometry).
   // KILL: cut the click routing → selected stays null → fails (and 3 has no path).
+  await page.waitForFunction(() => window.__GAME3D__.arrivalsIdle(), null, { timeout: 60000 }).catch(() => {}); // I-255: click the card AT REST — mid-journey clicks missed (the '-41u lift')
   const cxy = await page.evaluate((id) => window.__GAME3D__.seatPlayCardXY(`crew:${id}`), HIRED);
   let selected = false;
   if (cxy) {
@@ -99,6 +100,7 @@ export async function run(h) {
 
   // 4 · WORK: click the (now busy) crew card → the work verb submits → the fresh card
   // BOUNCES (post-state theater). KILL: cut the work branch → moves hold → fails.
+  await page.waitForFunction(() => window.__GAME3D__.arrivalsIdle(), null, { timeout: 60000 }).catch(() => {}); // I-255: at rest
   const cxy2 = await page.evaluate((id) => window.__GAME3D__.seatPlayCardXY(`crew:${id}`), HIRED);
   let bounced = false;
   if (cxy2 && assigned) {
@@ -153,6 +155,7 @@ export async function run(h) {
   let orderDetail = `NO-SOLD-REF (${soldRef})`;
   if (soldRef) {
     await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
+    await page.waitForFunction(() => window.__GAME3D__.arrivalsIdle(), null, { timeout: 60000 }).catch(() => {}); // I-255: the bought card TRAVELS to the rack — sell it from rest
     const kxy = await page.evaluate((k) => window.__GAME3D__.seatPlayCardXY(k), `asset:${soldRef}:${a0.want}`);
     const pxy2 = await page.evaluate(() => window.__GAME3D__.regionScreenXY('equipment-pile'));
     if (kxy && pxy2) {
