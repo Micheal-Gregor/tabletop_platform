@@ -16,6 +16,7 @@ import * as onion from './onion.js';
 import { routeDestFor, findCardMesh, stackTop } from './draw-route.js'; // R-1a6 (I-115): the owed extraction
 import { cardInstance } from './card-world.js'; // C-1b2 (I-154): the permanence world's reveal
 import { startPath, stepPath, type PathRun } from './paths.js'; // I-202: the drawn card's route is a PATH (the owner's 'same tool' ruling)
+import { cancelArrival } from './arrivals.js'; // I-250: one hand on the card at a time
 
 // C-1b2 (I-154): a Card3D instance lies FACE DOWN at rotation.x = +π/2 (its face plane
 // is local +z); the legacy box lay face-down at −π/2 (its face was the −z slot). One
@@ -115,13 +116,16 @@ export function grabEnd(ctx: PlayAreaContext, ev: PointerEvent): boolean {
     theater.seeded = after.decks[active]?.discardTop ?? '(none)';
     theater.inst = beginFlourish('card-flip', theater.seeded, '♪ card flip');
     ctx.rebuild(); // geometry is the count — the deck is one shorter
+    cancelArrival(theater.mesh.uuid); // I-250: the rebuild's claim just started a journey on
+    // OUR mesh — the theater owns it alone until the route lands (two writers was the phantom)
     // Q-2c (I-92): the rebuilt DERIVED VIEW already renders the card at its destination
     // (global slot · session row · pile top) — hide that mesh; the traveler IS the card
-    // until it lands there.
+    // until it lands there. I-250: under PERMANENCE the 'destination double' is usually
+    // THE TRAVELER ITSELF (one instance per card) — never hide our own mesh.
     const dest = routeDestFor(theater.seeded);
     const target = findCardMesh(ctx, theater.seeded, dest);
-    if (target.mesh) target.mesh.visible = false;
-    theater.hiddenTop = target.mesh;
+    if (target.mesh && target.mesh !== theater.mesh) target.mesh.visible = false;
+    theater.hiddenTop = target.mesh !== theater.mesh ? target.mesh : null;
     theater.destPos = target.pos.clone();
     theater.dest = dest;
     theater.from = new THREE.Vector3(theater.mesh.position.x, theater.from.y, theater.mesh.position.z); // R-1a2: the flip happens WHERE RELEASED
@@ -167,6 +171,7 @@ export function abortGrab(): void {
 export function resetDraw(ctx: PlayAreaContext): void {
   if (!theater || phase === 'idle' || phase === 'grabbing' || phase === 'settling') return;
   if (phase === 'reading' && onion.onionState().open) onion.closeOnion();
+  if (theater.hiddenTop) theater.hiddenTop.visible = true; // I-250: the reveal was SKIPPED here — a rebuild mid-theater left the destination card invisible forever
   delete theater.mesh.userData['drawGrabMesh'];
   ctx.scene.remove(theater.mesh);
   if (theater.swappedFace) theater.swappedFace.dispose();
@@ -286,6 +291,10 @@ export function tickDraw(ctx: PlayAreaContext): void {
         targetX: theater.routeTo.x, targetY: theater.routeTo.y, targetZ: theater.routeTo.z,
       };
       finishTheater(ctx);
+      ctx.rebuild(); // I-250 (THE PHANTOM'S ROOT — the asymmetry with supply-draw): the route's
+      // end pose was captured at flick time and could be STALE (the claimed card then sat
+      // mispositioned inside its renderer, invisible to the orphan oracle). Truth renders NOW:
+      // the fresh claim re-poses every instance, and arrivals glide any drift home.
     }
   }
 }

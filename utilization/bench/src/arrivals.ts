@@ -54,3 +54,10 @@ export function tickArrivals(): void {
 }
 
 export const arrivalsInfo = () => ({ active: active.size, last: lastArrival });
+
+/** I-250: a THEATER takes sole ownership of an object — its claim journey stands down
+ *  (two writers on one mesh was the phantom's engine; one hand on the card at a time). */
+export function cancelArrival(uuid: string): void {
+  active.delete(uuid);
+  frameCounts.delete(uuid);
+}
