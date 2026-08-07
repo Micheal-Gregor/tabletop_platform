@@ -30,6 +30,7 @@ import type { PlayAreaContext, PickInfo } from './component.js';
 import { assignGate } from './component.js';
 import { COMPONENTS } from './components/registry.js';
 import { openRoundSequence } from './components/die.js';
+import { openHandOnion, closeHandOnion, handOnionOpen } from './hand-onion.js'; // H-4 (I-241): the hand browser
 import { manifestBackdrop } from './backdrop.js'; // S-1c (I-107): the verbatim size-gate extraction
 
 const SEASONS = ['Spring', 'Summer', 'Fall', 'Winter'] as const;
@@ -102,6 +103,10 @@ const ctx: PlayAreaContext = {
   moves: () => controller.row().moves,
   theater: { glideTo: cam.glideTo, setLastFocus: cam.setLastFocus, focusObject: cam.focusObject, toggleRead: cam.toggleRead, getMode: cam.getMode },
 };
+
+// H-4 (I-241): zooming close on the HAND opens the onion browser — the camera calls
+// this hook at the hand's wall instead of entering a read.
+cam.setHandZoomHook(() => openHandOnion(projectNow().ownHand));
 
 // ── buildScene(): a LOOP over the non-persistent components (I-67g: rebuilt from a fresh
 // projection on every state change) + the chrome header (I-51d) ──
@@ -350,6 +355,7 @@ const gate: Record<string, unknown> = {
   cardWorldInfo,
   gridInfo: () => ({ spacing: gridSpacing(), seatRing: ringSnap(ringRadius(RING_N)), anchorsInTableDisc: anchorsWithinRadius(570).length }), // G-A: the grid's public face
   uiTrace, uiTraceText, // I-238: the interaction trace — 'copy(__GAME3D__.uiTraceText())' in the console hands me the whole session
+  handOnionOpen, closeHandOnion, // H-4 (I-241): the hand browser's gate face
   seatReadEquality: () => seatReadEquality(6), // F-8 (I-167): dist + framed bbox per seat
   spawnJob: () => { const ok2 = submitVerb('spawn-venture', { spec: botyJob() }); if (ok2) buildScene(); return ok2; }, // I-215: the drill door (the chrome button is gone)
   uiObjectsInfo: () => ({ count: UI_OBJECTS.length, ids: UI_OBJECTS.map((o) => o.id), chain: chainIntegrity(), kingdoms: kingdomIntegrity() }), // G-C (I-168): the ontology's public face

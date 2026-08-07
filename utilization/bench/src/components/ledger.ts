@@ -100,7 +100,16 @@ export const ledgerComponent: Component = {
     // I-230: a DEPLOYED report grabs like a card — drag it anywhere in the play area.
     const pg = hit.tags['ledgerPage'] as ledger.PageKind | undefined;
     if (pg && ledger.ledgerState().open) {
-      sheetGrab = { page: pg, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -8), ray: new THREE.Raycaster(), moved: 0, obj: (hit.object.parent ?? hit.object) };
+      // I-241 (the owner's separation catch — 'something's happening to separate the
+      // report from the paper'): the grabbed object must be THE SHEET GROUP, resolved
+      // by walking up to the ledgerPage tag. `hit.object.parent` grabbed whatever the
+      // ray struck first — a region quad's parent is the stamped FACE group, so the
+      // drag tore the report's content off its paper back (and the corrupted local
+      // offset then bloated the sheet's bbox, wrecking its read fit).
+      let so: THREE.Object3D | null = hit.object;
+      while (so && !so.userData?.['ledgerPage']) so = so.parent;
+      if (!so) return false;
+      sheetGrab = { page: pg, plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -8), ray: new THREE.Raycaster(), moved: 0, obj: so };
       return true;
     }
     if (hit.tags['ledger'] !== true || !bookRoot || ledger.ledgerState().open) return false;

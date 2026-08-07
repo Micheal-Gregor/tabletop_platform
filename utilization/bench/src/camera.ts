@@ -375,6 +375,10 @@ function dollyTo(dist: number): void {
 // still submitted). Now the promise is true.
 let wheelGate: (() => boolean) | null = null;
 export function setWheelGate(f: () => boolean): void { wheelGate = f; }
+/** I-241 (H-4): the HAND-ZOOM hook — zooming close on the hand opens the onion browser
+ *  instead of a read (game3d registers it; camera stays ignorant of the overlay). */
+let handZoomHook: (() => void) | null = null;
+export function setHandZoomHook(f: () => void): void { handZoomHook = f; }
 document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
@@ -396,10 +400,48 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     return; // in: read is the innermost rung, for zones and children alike
   }
   const dist = camera.position.distanceTo(currentLook);
+  // ── I-241 — THE AXIS LAW (the owner: 'the area buttons define the camera view as at
+  // a set angle — it should zoom in and out from that angle'): when the anchor IS a
+  // zone, the wheel scales the BUTTON POSE about the zone's center — the camera rides
+  // the defined angle's ray, never scrolling up off it. Three ticks in from the button
+  // view crosses into the read; three ticks out reaches the edge. Children keep the
+  // free dolly + wall (the boards already work that way, owner-confirmed).
+  if (zone !== null && anchor === zone) {
+    const zp = scenicPose(anchor);
+    const zc = zoneCenterOf(anchor);
+    if (zp && zc) {
+      const baseD = Math.max(1, zp.pos.distanceTo(zc));
+      const s = camera.position.distanceTo(zc) / baseD;
+      const s2 = s * (zoomIn ? 0.88 : 1.14);
+      if (zoomIn && s2 < 0.70) { readView(anchor); return; } // past the third tick → the zone's read (the one entry)
+      if (!zoomIn && s2 > Math.pow(1.14, 3) + 1e-6) { status(`the ${anchor} zone's edge — click another zone to travel`); return; }
+      camera.up.set(0, 1, 0);
+      target = {
+        pos: zc.clone().addScaledVector(zp.pos.clone().sub(zc), s2),
+        look: zc.clone().addScaledVector(zp.look.clone().sub(zc), s2),
+      };
+      currentName = 'custom';
+      return;
+    }
+  }
   if (zoomIn) {
     const wall = fitDist(anchor, 0.8); // the ONE rule: the anchor's own wall, whoever it is
-    if (wall === null) { dollyTo(dist * 0.88); return; } // no resolvable anchor → a plain dolly, never a center landing (I-237)
-    if (dist * 0.88 <= wall) { readView(anchor); return; } // crossing the wall ENTERS the read — the one entry
+    if (wall === null) {
+      // I-241 (the owner: 'when objects aren't selected … there needs to be boundaries'):
+      // the free dolly has a FLOOR — never closer than reading range without a selection.
+      if (dist * 0.88 < 140) { status('close enough — click something to read it'); return; }
+      dollyTo(dist * 0.88);
+      return;
+    }
+    if (dist * 0.88 <= wall) {
+      // I-241 (H-4 arrives): closing on the HAND opens the ONION — the browse view,
+      // never a frozen read (exited by clicking outside the cards or wheeling out).
+      const oA = focusObject(anchor);
+      const spc = oA?.userData?.['seatPlayCard'];
+      if (handZoomHook && (anchor === 'hand-fan' || (typeof spc === 'string' && spc.startsWith('hand:')))) { handZoomHook(); return; }
+      readView(anchor);
+      return; // crossing the wall ENTERS the read — the one entry
+    }
     dollyTo(dist * 0.88);
     return;
   }
