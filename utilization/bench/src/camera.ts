@@ -188,10 +188,17 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   const fovV3 = (camera.fov * Math.PI) / 180;
   let dSphere = (Math.max(30, sp2.radius) / Math.sin((fovV3 / 2) * 0.9)) * factor;
   if (focus.startsWith('seat-') && !focus.startsWith('seat-area-')) dSphere *= 0.5; // I-228 (owner-tuned): the SEAT board reads at HALF the distance — seats only; areas are right
-  // I-246 (the owner: the page read was 'way too far away' — the sphere fit is
-  // conservative for flat paper): a REPORT PAGE reads at the CORNER-TRUE fit — the
-  // exact no-crop floor, edge-to-edge like his framing.
-  if ((obj as THREE.Object3D).userData?.['ledgerPage']) dSphere = fitAlong(box, c, n, up);
+  // I-246/I-247 (the owner twice: the page read 'way too far away'): a REPORT PAGE
+  // reads at the CORNER-TRUE fit measured against THE PAPER ITSELF — the page-stock
+  // mesh, never the group bbox (a polluted group box — the tear era's leftovers —
+  // inflated the fit; the paper cannot lie). Edge-to-edge, his framing.
+  if ((obj as THREE.Object3D).userData?.['ledgerPage']) {
+    let paper: THREE.Object3D | null = null;
+    (obj as THREE.Object3D).traverse((o2: THREE.Object3D) => { if (!paper && (o2 as THREE.Mesh).isMesh) paper = o2; });
+    const pb = paper ? new THREE.Box3().setFromObject(paper) : box;
+    const pc = pb.getCenter(new THREE.Vector3());
+    return { pos: pc.clone().add(n.clone().multiplyScalar(fitAlong(pb, pc, n, up))), look: pc, up };
+  }
   return { pos: c.clone().add(n.clone().multiplyScalar(dSphere)), look: c, up };
 }
 

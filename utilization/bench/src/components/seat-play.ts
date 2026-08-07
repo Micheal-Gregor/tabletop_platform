@@ -21,6 +21,7 @@ import { uiObject } from '../ui-object.js'; // G-C (I-169): the base-case librar
 import { poseOrArrive } from '../arrivals.js'; // PB-9b (I-201): claims travel, never teleport
 import { OBJECT_SCALE, STATION_BOX } from '../playarea.js'; // I-150/I-177: the scale control table + the reposition clamp
 import { seatPlayOracles } from './seat-play-oracles.js'; // O-2 (I-146): the size-gate oracle extraction
+import { ledgerState } from '../ledger.js'; // I-247: the hand–ledger layer law consults the fold
 
 let cx: PlayAreaContext | null = null;
 let root: THREE.Group | null = null; // purged each build (the K7-P D2 pattern)
@@ -98,7 +99,13 @@ export const seatPlay: Component = {
       // the transparent SURFACE — the child grid made lightly visible (I-162: readability
       // is the polish; no lighting theater). Its extent IS the law's (surfaceSize).
       const ss = surfaceSize();
-      const BASE = 60; // row 1's center, out from the board (toward the player)
+      const BASE = 115; // I-247 (the owner: 'the seat boards are too far forward … and
+      // sit over the cards in the first row'): row 1 steps OUT from under the tilted
+      // board's overhang. The I-180 lift was right that the board can't step inward
+      // (the rows derive from its frame and would follow); the ROWS stepping out is
+      // the alignment that holds. This also un-shadows the re-hired card's default
+      // cell (row 1 col 1 — the 'strangely placed card at the base of the seat board'
+      // was a lawful posting sitting under the overhang).
       const surf = new THREE.Mesh(
         new THREE.PlaneGeometry(ss.w, ss.d),
         new THREE.MeshBasicMaterial({ color: 0x8fa39a, transparent: true, opacity: 0.22, side: THREE.DoubleSide }), // I-222: the area READS as a place
@@ -411,6 +418,8 @@ export const seatPlay: Component = {
             grab = null;
             if (ctx.submit(verb, args)) {
               lastReturn = { id, pile: pileFor };
+              sticky.delete(id); // I-247: a released card's stuck anchor dies with it — a re-hire plans fresh
+              if (!key.startsWith('crew:')) sticky.delete(key.slice(6));
               ctx.rebuild(); // truth: the SAME instance re-claimed at the pile's BOTTOM
               ctx.status(`${id} returns to the bottom of the deck (the only move out — I-149)`);
               return true;
@@ -508,9 +517,31 @@ export const seatPlay: Component = {
     grab = null;
   },
 
-  tick() {
+  tick(ctx) {
     // A6 (I-136): the loop's theater — hop → assign-at-arrival · bounce · re-lift
     loop.tickCrewLoop((key) => cards.find((c) => c.key === key)?.mesh ?? null);
+    // I-247 — THE HAND–LEDGER LAYER LAW (owner-ruled: 'either the hand is on top of
+    // the entire closed ledger … or it's entirely under the folder if the folder is
+    // opened. We just can't have it mixed in the middle'): face-down hand cards
+    // overlapping the folder's footprint ease to the lawful side — ABOVE the whole
+    // closed book, UNDER the open one. Grabs are exempt (the drag owns the pose).
+    if (!handUp && !grab) {
+      const led = ctx.theater.focusObject('ledger');
+      if (led) {
+        const lb = new THREE.Box3().setFromObject(led).expandByScalar(8);
+        const open = ledgerState().open;
+        let seq = 0;
+        for (const c of cards) {
+          if (!c.key.startsWith('hand:')) continue;
+          const p = c.mesh.position;
+          if (p.x >= lb.min.x && p.x <= lb.max.x && p.z >= lb.min.z && p.z <= lb.max.z) {
+            const ty = open ? 1.2 + seq * 0.25 : lb.max.y + 2 + seq * 0.3;
+            p.y += (ty - p.y) * 0.25;
+          }
+          seq++;
+        }
+      }
+    }
     if (!resetting) return;
     resetting.t = Math.min(1, resetting.t + 0.07);
     const e = resetting.t * resetting.t * (3 - 2 * resetting.t);
