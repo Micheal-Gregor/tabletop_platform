@@ -456,7 +456,15 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     }
   }
   if (zoomIn) {
-    const wall = fitDist(anchor, 0.8); // the ONE rule: the anchor's own wall, whoever it is
+    // I-244 (owner-tuned against his two reference framings): the wall is PER-KIND —
+    // the HAND's onion opens at ~half-frame fill (0.45 — 'this is as close as I want
+    // the camera to get'), the DIE's read flips far out (0.15 — the photo's range;
+    // dice are read from the table, not nose-down), everything else at the 0.8 law.
+    const oW = focusObject(anchor);
+    const spcW = oW?.userData?.['seatPlayCard'];
+    const isHandW = anchor === 'hand-fan' || (typeof spcW === 'string' && spcW.startsWith('hand:'));
+    const isDieW = !!oW?.userData?.['die'];
+    const wall = fitDist(anchor, isDieW ? 0.15 : isHandW ? 0.45 : 0.8);
     if (wall === null) {
       // I-242 (the owner tightened I-241's bounds: 'the unbound camera range needs to
       // be about 1/2 max zoom out and zoom in'): the free dolly runs at HALF range.
@@ -467,9 +475,7 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     if (dist * 0.88 <= wall) {
       // I-241 (H-4 arrives): closing on the HAND opens the ONION — the browse view,
       // never a frozen read (exited by clicking outside the cards or wheeling out).
-      const oA = focusObject(anchor);
-      const spc = oA?.userData?.['seatPlayCard'];
-      if (handZoomHook && (anchor === 'hand-fan' || (typeof spc === 'string' && spc.startsWith('hand:')))) {
+      if (handZoomHook && isHandW) {
         if (handZoomHook()) return; // face UP → the onion; face down falls through — an ordinary card read (I-242)
       }
       readView(anchor);
