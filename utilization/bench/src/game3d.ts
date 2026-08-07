@@ -242,15 +242,25 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   }
 });
 
-/** I-236: the resolver's ordered law — object → region → surface → board → hand →
- *  nothing (empty space selects nothing; hold-drag there pans instead). */
+/** I-237 — THE HIERARCHY, RESTRUCTURED (the owner's forced mutation): selection
+ *  resolves to the DEEPEST node of the CONTAINMENT TREE, and a region belongs to
+ *  WHOEVER CONTAINS IT — the old rule mapped every region to the table, so clicking a
+ *  seat board's own panels anchored the TABLE'S zone and every zoom resolved at the
+ *  center (the bug that survived every patch). The tree:
+ *    WORLD (the sphere)
+ *    ├─ THE BOARD ZONE (the table) — its regions, its piles, the die
+ *    ├─ SEAT ZONE ×6 — the board (with ITS panels), the surface (with its cards),
+ *    │                  the folder (+sheets), the hand
+ *    └─ RING CITIZENS — the box, the dice home
+ *  Order: object → the seat's surface → the seat's BOARD (its panels included) →
+ *  a region ONLY when the table contains it → the hand → nothing. */
 function resolveSelection(pick: PickInfo): string | null {
   let m: THREE.Object3D | null = pick.object;
   while (m && !(m.userData?.['card3d'] || m.userData?.['card'] === true || m.userData?.['ledger'] === true || m.userData?.['die'] || m.userData?.['box'] || m.userData?.['ledgerPage'])) m = m.parent;
   if (m) return `obj:${m.uuid}`;
-  if (pick.region) return `table:${pick.region}`;
   if (typeof pick.tags['seatSurface'] === 'number') return `seat-area-${pick.tags['seatSurface']}`;
-  if (typeof pick.tags['seatIdx'] === 'number') return `seat-${pick.tags['seatIdx']}`;
+  if (typeof pick.tags['seatIdx'] === 'number') return `seat-${pick.tags['seatIdx']}`; // the BOARD owns its panels — a seat region is the board's, never the table's
+  if (pick.region && pick.focus === 'table') return `table:${pick.region}`; // ownership checked: only the table's own regions anchor table:
   if (pick.tags['handFan']) return 'hand-fan';
   return null;
 }

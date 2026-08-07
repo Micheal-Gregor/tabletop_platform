@@ -313,9 +313,12 @@ function fitDist(focus: string, fill = 0.8): number | null {
   const fovV = (camera.fov * Math.PI) / 180;
   return Math.max(30, sp.radius) / Math.sin((fovV / 2) * fill);
 }
-/** the anchor's ZONE anchor (the board zone is JUST a zone centered at 0,0,0 — I-220). */
-function zoneAnchorOf(f: string): string {
-  if (f === 'table' || f.startsWith('table:') || f === 'die' || f === 'box') return 'table';
+/** the anchor's ZONE (I-237 — THE NO-GO CENTER, owner-ruled 'period'): the table is A
+ *  zone like any other and NEVER the default — an anchor with no zone gets NULL, and
+ *  the wheel then dollies plainly without ever auto-landing at 0,0,0. */
+function zoneAnchorOf(f: string): string | null {
+  if (f === 'table' || f.startsWith('table:') || f === 'die') return 'table';
+  if (f === 'box') return null; // a ring citizen — its own space, no zone landing
   if (f.startsWith('seat-area-')) return f;
   if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`;
   if (f.startsWith('ledger') || f === 'hand-fan') return 'seat-area-0';
@@ -323,9 +326,10 @@ function zoneAnchorOf(f: string): string {
     const o = focusObject(f);
     const z = o?.userData?.['focus'];
     if (typeof z === 'string' && z.startsWith('seat-')) return `seat-area-${z.slice(5)}`;
-    return 'table';
+    if (typeof z === 'string' && z === 'table') return 'table';
+    return null; // unknown containment: NO zone — the center is no-go as a default
   }
-  return 'table';
+  return null; // presets/custom/overview: the wheel dollies, it never defaults to the center
 }
 /** I-220: read exits ONE STEP — back to the anchor at its 80% (click or wheel-out). */
 /** I-227: is the current read the ZONE's own (the resting state)? Zone reads accept
@@ -349,7 +353,7 @@ export function panScene(dxPx: number, dyPx: number): void {
 export function exitReadStep(): void {
   if (mode !== 'read') return;
   const zone = zoneAnchorOf(readFocus);
-  if (readFocus !== zone && readFocus !== 'table') { readView(zone === 'table' ? 'table' : zone); return; } // I-226: a child's read backs out to the ZONE read
+  if (zone !== null && readFocus !== zone && readFocus !== 'table') { readView(zone); return; } // I-226: a child's read backs out to the ZONE read
   mode = 'scene';
   scenicView(readFocus); // a zone read exits to the zone's scenic
 }
@@ -391,9 +395,9 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   // screen with the object, one more notch = its READ; out backs to the ZONE read.
   const anchor = lastFocus;
   const zone = zoneAnchorOf(anchor);
-  const isChild = anchor !== zone && anchor !== 'table';
+  const isChild = zone !== null && anchor !== zone && anchor !== 'table';
   if (mode === 'read') {
-    const readIsZone = readFocus === zone || readFocus === 'table' || readFocus.startsWith('seat-area-');
+    const readIsZone = (zone !== null && readFocus === zone) || readFocus === 'table' || readFocus.startsWith('seat-area-');
     if (readIsZone) {
       // I-228 (the owner's catch — 'I still can't zoom in on a card'): the zone read
       // rests ONLY when nothing is selected; with a CHILD selected, wheel-in LEAVES the
@@ -416,12 +420,13 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
       status('the zone read — select an object to zoom to it');
       return; // min ≡ max only when nothing is selected
     }
-    if (!zoomIn) { readView(zoneAnchorOf(readFocus)); return; } // a child's read backs out to the zone read
+    if (!zoomIn) { const zr = zoneAnchorOf(readFocus); if (zr) readView(zr); else exitReadStep(); return; } // a child's read backs out to its zone (or just steps out, if it has none)
     return; // in: a child's read is the innermost rung
   }
   const dist = camera.position.distanceTo(currentLook);
   if (zoomIn) {
     if (!isChild) {
+      if (zone === null) { dollyTo(dist * 0.88); return; } // I-237: no zone → a plain dolly, never a center landing
       const zWall = fitDist(zone, 0.8);
       if (zWall !== null && dist * 0.88 <= zWall) { readView(zone); return; } // the zone scenic tops out INTO the zone read
       dollyTo(dist * 0.88);
@@ -434,6 +439,7 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     return;
   }
   // out: back toward (and into) the ZONE read
+  if (zone === null) { dollyTo(dist * 1.14); return; } // I-237: out with no zone dollies — the center never claims the view
   const zWall2 = fitDist(zone, 0.8);
   if (zWall2 !== null && dist * 1.14 >= zWall2) { lastFocus = zone; readView(zone); return; }
   dollyTo(dist * 1.14);
