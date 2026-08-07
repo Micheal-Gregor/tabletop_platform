@@ -41,6 +41,14 @@ export interface SeatView {
   // A16 pools (I-137): COUNTS ONLY — the piles are face down (redaction); `?? empty`
   // tolerates pool-less v1 states (the frozen SVG bench projects unchanged).
   readonly pools: { readonly tradespeople: number; readonly equipment: number; readonly bbb: number; readonly networking: number };
+  /** I-252 (superseding A16's counts-only FOR POOLS, on the record): the pools'
+   *  REMAINING ORDER — ids top→bottom ([0] = the next popped). The piles are SHARED
+   *  objects the bench renders identity-true (C-1c); its genesis-seed reconstruction
+   *  broke the moment a card returned to the BOTTOM (GX-33 plays, releases) — hand
+   *  cards rendered into the pile while the returned card was claimed by NOBODY (the
+   *  stranded-ghost class). The counts-only redaction was nominal: the seed is public.
+   *  Counts stay for chrome. */
+  readonly poolOrders: { readonly tradespeople: readonly string[]; readonly equipment: readonly string[]; readonly bbb: readonly string[]; readonly networking: readonly string[] };
   readonly debts: readonly { readonly debtor: string; readonly creditor: string; readonly amount: number; readonly due: number }[];
   readonly receivables: readonly { readonly holder: string; readonly amount: number; readonly source: string }[];
   readonly results: unknown;
@@ -95,6 +103,11 @@ export function project(state: State, seat: string): SeatView {
     pools: (() => { // A16 (I-137): counts only — face-down piles
       const p = state['pools'] as { tradespeople?: readonly unknown[]; equipment?: readonly unknown[]; bbb?: readonly unknown[]; networking?: readonly unknown[] } | undefined;
       return { tradespeople: p?.tradespeople?.length ?? 0, equipment: p?.equipment?.length ?? 0, bbb: p?.bbb?.length ?? 0, networking: p?.networking?.length ?? 0 };
+    })(),
+    poolOrders: (() => { // I-252: THE STATE'S order, never a reconstruction
+      const p = state['pools'] as Record<string, readonly unknown[] | undefined> | undefined;
+      const ids = (a?: readonly unknown[]): string[] => (a ?? []).map((e) => String((e as { id?: unknown })?.id ?? e));
+      return { tradespeople: ids(p?.['tradespeople']), equipment: ids(p?.['equipment']), bbb: ids(p?.['bbb']), networking: ids(p?.['networking']) };
     })(),
   };
   return freezeDeep(structuredClone(view) as never) as unknown as SeatView;

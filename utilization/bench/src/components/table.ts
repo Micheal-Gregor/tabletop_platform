@@ -18,7 +18,7 @@ import * as draw from '../table-draw.js'; // Q-2b (I-91): the flick-to-flip draw
 import * as dplay from '../discard-play.js'; // Q-6 (I-94): the live discard pile
 import * as supply from '../supply-draw.js'; // C-1c (I-156): the flick-move door on the supply piles
 import * as oracles from './table-oracles.js'; // S-1 (I-103): the size-gate oracle extraction
-import { CARD_FAMILY, genesisDrawFor, genesisPoolOrders } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92) · I-154/I-156: remaining orders
+import { CARD_FAMILY, genesisDrawFor } from '../../../../packs/boty/src/index.js'; // Q-2c (I-92) · I-252: the pool reconstruction retired — the state's order projects
 const SESSION_SEED = 'maple-hollow'; // the bench session (game3d's host seed — single-source debt on I-154)
 import { getTableMode, setTableMode, OBJECT_SCALE, TABLE_SCALE } from '../playarea.js'; // I-145/I-150/I-183
 import { handlePileClick } from '../pile-actions.js'; // the size-gate extraction (I-146)
@@ -117,12 +117,18 @@ export const table: Component = {
     // count PARKS (redaction by absence; permanence holds — parked ≠ destroyed).
     // C-1c (I-156): each pool stack carries the engine's REMAINING order (genesis order
     // minus what was popped from the top) — the flicked top IS the next popped card.
-    const po = genesisPoolOrders(SESSION_SEED);
+    // I-252 (THE SLICK-LAWYER PHANTOM'S ROOT, superseding the I-156 reconstruction):
+    // the order comes from THE ENGINE'S STATE (v.poolOrders), never the genesis-seed
+    // suffix — that model was only true while pools popped from the top. A BOTTOM
+    // RETURN (a played hand card, a released crew) broke it: hand cards rendered into
+    // the pile while the returned card was claimed by NOBODY and stranded wherever it
+    // last stood, until a count change happened to re-cover it.
+    const po = v.poolOrders;
     pendingPools = [
-      { rid: 'tradespeople-pile', cls: 'tradesperson', count: v.pools.tradespeople, excl: new Set(v.crew.map((m) => m.id)), order: po.tradespeople.slice(po.tradespeople.length - v.pools.tradespeople) },
-      { rid: 'equipment-pile', cls: 'equipment', count: v.pools.equipment, excl: new Set(v.seats.flatMap((s2) => s2.assets.map((a) => a.ref))), order: po.equipment.slice(po.equipment.length - v.pools.equipment) },
-      { rid: 'bbb-pile', cls: 'bbb', count: v.pools.bbb, excl: new Set(v.ownDiscard), order: po.bbb.slice(po.bbb.length - v.pools.bbb) },
-      { rid: 'networking-pile', cls: 'networking', count: v.pools.networking, excl: new Set(v.ownDiscard), order: po.networking.slice(po.networking.length - v.pools.networking) },
+      { rid: 'tradespeople-pile', cls: 'tradesperson', count: v.pools.tradespeople, excl: new Set(v.crew.map((m) => m.id)), order: po.tradespeople },
+      { rid: 'equipment-pile', cls: 'equipment', count: v.pools.equipment, excl: new Set(v.seats.flatMap((s2) => s2.assets.map((a) => a.ref))), order: po.equipment },
+      { rid: 'bbb-pile', cls: 'bbb', count: v.pools.bbb, excl: new Set(v.ownDiscard), order: po.bbb },
+      { rid: 'networking-pile', cls: 'networking', count: v.pools.networking, excl: new Set(v.ownDiscard), order: po.networking },
     ];
     // O-5 (I-146): THICKNESS — the table is a SLAB on the counter stratum (the A2b
     // thin-box lesson at scale): a 16-unit body under the face, diffuse, NO region tag
