@@ -142,7 +142,9 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   // 1.7× keeps the object ≈ 60% of frame (the framed wall ≥ 0.5 holds).
   const sz = box.getSize(new THREE.Vector3());
   const small = Math.max(sz.x, sz.y, sz.z) < 200;
-  const factor = small ? 1.7 : 1.0;
+  // I-245 (owner's framing: the P&L/Balance read fills the frame): a REPORT PAGE reads
+  // at the bare sphere fit — the page edge-to-edge — never the small-object pull-back.
+  const factor = (obj as THREE.Object3D).userData?.['ledgerPage'] ? 1.0 : small ? 1.7 : 1.0;
   if ((obj as THREE.Object3D).userData?.['die']) {
     // I-242 (the owner: 'we shouldn't zoom in tight on the dice'): the die reads
     // OVERHEAD at a generous pull-back — never face-on along its post-roll +z (an
@@ -464,7 +466,8 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     const spcW = oW?.userData?.['seatPlayCard'];
     const isHandW = anchor === 'hand-fan' || (typeof spcW === 'string' && spcW.startsWith('hand:'));
     const isDieW = !!oW?.userData?.['die'];
-    const wall = fitDist(anchor, isDieW ? 0.15 : isHandW ? 0.45 : 0.8);
+    const isBooksW = !!(oW?.userData?.['ledgerPage'] || oW?.userData?.['ledger']); // I-245: the books flip to read at his open-spread framing
+    const wall = fitDist(anchor, isDieW ? 0.15 : isHandW || isBooksW ? 0.45 : 0.8);
     if (wall === null) {
       // I-242 (the owner tightened I-241's bounds: 'the unbound camera range needs to
       // be about 1/2 max zoom out and zoom in'): the free dolly runs at HALF range.
