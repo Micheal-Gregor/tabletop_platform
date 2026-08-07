@@ -215,9 +215,8 @@ export const seatPlay: Component = {
   onPick(ctx, hit: PickInfo) {
     const idx = hit.tags['seatSurface'];
     if (typeof idx !== 'number') return false;
-    ctx.theater.setLastFocus(`seat-area-${idx}`);
-    ctx.status(`anchored: your play area — reading mode now reads it straight down`);
-    return true;
+    ctx.status('your play area — wheel in to read it straight down');
+    return true; // I-236: the resolver set the anchor
   },
 
   // GRAB (contract v2): any seat-play card — drag on the ground plane, reset on release.
@@ -353,7 +352,6 @@ export const seatPlay: Component = {
       const card = grab.card;
       grab = null;
       card.mesh.position.copy(card.anchor);
-      ctx.theater.setLastFocus(`obj:${card.mesh.uuid}`); // I-226: gear too — selection before its action resolves
       if (ctx.submit('detach-gear', { crew: crewId })) {
         ctx.rebuild();
         ctx.status(`detached — the equipment returns to your rack`);
@@ -368,7 +366,6 @@ export const seatPlay: Component = {
         const card = grab.card;
         grab = null;
         card.mesh.position.copy(card.anchor); // the un-moved click leaves no offset behind
-        ctx.theater.setLastFocus(`obj:${card.mesh.uuid}`); // I-226: an in-play card IS selectable — the click anchors it for the wheel (the loop action rides along)
         loop.crewClick(ctx, crewId, card.mesh, member.assignedTo !== undefined);
         return true;
       }
@@ -477,7 +474,6 @@ export const seatPlay: Component = {
       const cardR = grab.card;
       grab = null;
       cardR.mesh.position.copy(cardR.anchor);
-      ctx.theater.setLastFocus(`obj:${cardR.mesh.uuid}`);
       ctx.status(`anchored: ${cardR.key} — wheel in for its read view`);
       return true;
     }

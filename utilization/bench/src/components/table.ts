@@ -218,7 +218,7 @@ export const table: Component = {
     // glideTo('table') RETIRED: a click SELECTS, it never travels; travel is the
     // wheel's and the buttons' alone (the I-226 grammar).
     const region = hit.region;
-    if (region) { ctx.theater.setLastFocus(`table:${region}`); ctx.status(`anchored: ${region} — zoom in for its read view`); }
+    // I-236: the anchor has ONE author (the resolver) — this pick keeps only its actions
     if (region === 'deck') {
       const v = ctx.projection();
       // Q-2b (I-91): a plain CLICK no longer draws — the flick gesture is the draw. The

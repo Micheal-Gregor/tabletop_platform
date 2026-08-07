@@ -60,7 +60,7 @@ export const box: Component = {
   // Phase 2: the game box is SELECTABLE via the ladder — a click ANCHORS it (the ladder then
   // reads it), and does NOTHING else: no fidget, no verb, no state change (I-75/I-80).
   onPick(ctx, hit: PickInfo) {
-    if (hit.tags['box']) { ctx.theater.setLastFocus('box'); ctx.status('anchored: the game box — zoom in to read it (A15)'); return true; }
+    if (hit.tags['box']) { ctx.status('the game box — wheel in to read it (A15)'); return true; } // I-236: the resolver owns the anchor
     return false;
   },
 

@@ -334,6 +334,18 @@ export function readIsZone(): boolean {
   if (mode !== 'read') return false;
   return readFocus === 'table' || readFocus.startsWith('seat-area-');
 }
+/** I-236 (the owner's input scheme): HOLD-DRAG ON EMPTY pans the camera in the view
+ *  plane — pos and look together, speed scaled by distance (near = fine, far = fast). */
+export function panScene(dxPx: number, dyPx: number): void {
+  const fwd = new THREE.Vector3().subVectors(currentLook, camera.position);
+  const dist = fwd.length();
+  const fwdH = new THREE.Vector3(fwd.x, 0, fwd.z).normalize();
+  const right = new THREE.Vector3(fwdH.z, 0, -fwdH.x);
+  const k = dist * 0.0014;
+  const delta = right.multiplyScalar(-dxPx * k).add(fwdH.multiplyScalar(dyPx * k));
+  target = { pos: (target?.pos ?? camera.position).clone().add(delta), look: currentLook.clone().add(delta) };
+  currentName = 'custom';
+}
 export function exitReadStep(): void {
   if (mode !== 'read') return;
   const zone = zoneAnchorOf(readFocus);

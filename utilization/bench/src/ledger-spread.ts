@@ -166,7 +166,7 @@ export function retractSheets(): void {
   sheetClaims = {}; // I-230: the claims LAPSE — the return-before-close lands the default stack, always
   if (getMode() === 'read' && readState().focus.startsWith('ledger-')) sceneView();
   phase = 'returning';
-  setLastFocus('table');
+  // I-236: the retract no longer STEALS the selection (it used to set 'table')
 }
 
 /** a sheet's DISPLAY pose target — I-229 (owner-redesigned, superseding the upright

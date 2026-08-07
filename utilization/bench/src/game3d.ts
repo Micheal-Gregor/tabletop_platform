@@ -183,7 +183,11 @@ renderer.domElement.addEventListener('pointermove', (ev) => {
   if (!dragFrom) return;
   const dx = ev.clientX - dragFrom.x, dy = ev.clientY - dragFrom.y;
   if (Math.abs(dx) + Math.abs(dy) > 4) dragMoved = true;
-  if (cam.getMode() === 'read' && dragMoved) { cam.panBy(dx, dy); dragFrom = { x: ev.clientX, y: ev.clientY }; }
+  if (dragMoved) {
+    if (cam.getMode() === 'read') cam.panBy(dx, dy);
+    else cam.panScene(dx, dy); // I-236: hold-drag on empty PANS the scene (the owner's scheme; snooping and fine adjustment — the buttons stay the express lanes)
+    dragFrom = { x: ev.clientX, y: ev.clientY };
+  }
 });
 // CONTRACT v3 (S-1, I-103): touch cancels CONSTANTLY — a cancelled claim ABORTS
 // gracefully (the component settles its gesture home) and always releases.
@@ -228,23 +232,28 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
   ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);
   for (const hit of ray.intersectObjects(scene.children, true)) {
     const pick = computePick(hit, ev);
+    // I-236 — THE ONE SELECTION RESOLVER (superseding ten scattered anchor-writers,
+    // per the review): selection happens HERE, once, before any action; the component
+    // actions then run and may consume the click, but they no longer write the anchor.
+    const sel = resolveSelection(pick);
+    if (sel) { cam.setLastFocus(sel); status(`selected: ${sel.startsWith('obj:') ? 'the object under the cursor' : sel} — wheel to zoom`); }
     for (const c of COMPONENTS) if (c.onPick?.(ctx, pick)) return;
-    // I-229 (the owner's selection hole, root-caused at last): CARDS AND FIXTURES had
-    // NO onPick — selection lived only in the grab paths, which never run in read
-    // mode; at the ZONE READ (the resting state) clicking a card reached this chain
-    // and died unclaimed. THE UNIVERSAL SELECT: any unclaimed hit that IS an object
-    // (a card instance, the folder, a sheet) anchors it for the wheel.
-    if (pick.tags['card3d'] || pick.tags['card'] === true || pick.tags['ledger'] === true || pick.tags['ledgerPage']) {
-      let m: THREE.Object3D | null = pick.object;
-      while (m && !(m.userData?.['card3d'] || m.userData?.['card'] === true || m.userData?.['ledger'] === true)) m = m.parent;
-      if (m) {
-        cam.setLastFocus(`obj:${m.uuid}`);
-        status(`selected — wheel in to zoom to it`);
-        return;
-      }
-    }
+    if (sel) return;
   }
 });
+
+/** I-236: the resolver's ordered law — object → region → surface → board → hand →
+ *  nothing (empty space selects nothing; hold-drag there pans instead). */
+function resolveSelection(pick: PickInfo): string | null {
+  let m: THREE.Object3D | null = pick.object;
+  while (m && !(m.userData?.['card3d'] || m.userData?.['card'] === true || m.userData?.['ledger'] === true || m.userData?.['die'] || m.userData?.['box'] || m.userData?.['ledgerPage'])) m = m.parent;
+  if (m) return `obj:${m.uuid}`;
+  if (pick.region) return `table:${pick.region}`;
+  if (typeof pick.tags['seatSurface'] === 'number') return `seat-area-${pick.tags['seatSurface']}`;
+  if (typeof pick.tags['seatIdx'] === 'number') return `seat-${pick.tags['seatIdx']}`;
+  if (pick.tags['handFan']) return 'hand-fan';
+  return null;
+}
 
 // PickInfo, precomputed ONCE per intersection: the merged userData up the ancestor chain
 // (NEAREST WINS) + the nearest region/focus — reproducing today's while(o) walk exactly.
