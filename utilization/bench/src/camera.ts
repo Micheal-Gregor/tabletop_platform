@@ -13,6 +13,7 @@ import { camera, scene, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N }
 import { stationLook } from './playarea.js'; // PA-1 (I-141)
 import { surfaceSize } from './seat-grid.js'; // I-223: the surface's LAW-true size (the AABB lied at every yawed seat)
 import { trace } from './ui-trace.js'; // I-238
+import { arrivalTarget } from './arrivals.js'; // I-251: the camera aims at destinations, not takeoffs
 import { zoneOf } from './zones.js'; // I-239: the ZONE parent class — scrolling solved once, inherited everywhere
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
@@ -31,8 +32,19 @@ const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } =>
     // center, over the viewer's shoulder (the seat-0 yaw), near enough to read backs.
     let fan: THREE.Object3D | null = null;
     scene.traverse((o: THREE.Object3D) => { if (!fan && o.userData?.['handFan']) fan = o; });
-    if (fan) {
-      const c = (fan as THREE.Object3D).getWorldPosition(new THREE.Vector3());
+    if (fan && (fan as THREE.Object3D).children.length) {
+      // I-251 (the owner: the flick 'propels the camera massively forward'): the fan
+      // GROUP sits at the identity origin — getWorldPosition aimed the camera at
+      // 0,0,0 (the table piles; the I-249 crash had hidden this line for weeks). Aim
+      // at THE CARDS — and at their arrival TARGETS, since the flick's rebuild has
+      // them mid-flight to the upright pose when this glide is computed.
+      const box = new THREE.Box3();
+      for (const ch of (fan as THREE.Object3D).children) {
+        const t = arrivalTarget(ch.uuid);
+        if (t) box.expandByPoint(new THREE.Vector3(t.x, t.y, t.z));
+        else box.expandByObject(ch);
+      }
+      const c = box.getCenter(new THREE.Vector3());
       const yaw = SEAT_YAWS[0] ?? 0;
       return { pos: new THREE.Vector3(c.x + Math.sin(yaw) * 260, c.y + 150, c.z + Math.cos(yaw) * 260), look: c };
     }

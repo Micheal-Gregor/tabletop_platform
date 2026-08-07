@@ -61,3 +61,9 @@ export function cancelArrival(uuid: string): void {
   active.delete(uuid);
   frameCounts.delete(uuid);
 }
+
+/** I-251: where is this object GOING? (the camera aims at destinations, not takeoffs). */
+export function arrivalTarget(uuid: string): { x: number; y: number; z: number } | null {
+  const a = active.get(uuid);
+  return a ? { x: a.toPos.x, y: a.toPos.y, z: a.toPos.z } : null;
+}
