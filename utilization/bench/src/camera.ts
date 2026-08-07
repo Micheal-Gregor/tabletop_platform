@@ -13,6 +13,7 @@ import { camera, scene, focusGroups, presets, WORLD, status, SEAT_YAWS, RING_N }
 import { stationLook } from './playarea.js'; // PA-1 (I-141)
 import { surfaceSize } from './seat-grid.js'; // I-223: the surface's LAW-true size (the AABB lied at every yawed seat)
 import { trace } from './ui-trace.js'; // I-238
+import { zoneOf } from './zones.js'; // I-239: the ZONE parent class — scrolling solved once, inherited everywhere
 
 // ── THE GLIDING CAMERA (I-62c): the SAME preset mapping, animated; purity at rest ──
 // SIDE-AWARE (I-65b): a SEAT preset is approached from that seat's own side of the
@@ -316,23 +317,10 @@ function fitDist(focus: string, fill = 0.8): number | null {
   const fovV = (camera.fov * Math.PI) / 180;
   return Math.max(30, sp.radius) / Math.sin((fovV / 2) * fill);
 }
-/** the anchor's ZONE (I-237 — THE NO-GO CENTER, owner-ruled 'period'): the table is A
- *  zone like any other and NEVER the default — an anchor with no zone gets NULL, and
- *  the wheel then dollies plainly without ever auto-landing at 0,0,0. */
+/** I-239: the zone question is THE CLASS'S — one lookup, inherited containment (the
+ *  I-237 ownership + no-go laws live in the Zone children now, not in a string map). */
 function zoneAnchorOf(f: string): string | null {
-  if (f === 'table' || f.startsWith('table:') || f === 'die') return 'table';
-  if (f === 'box') return null; // a ring citizen — its own space, no zone landing
-  if (f.startsWith('seat-area-')) return f;
-  if (f.startsWith('seat-')) return `seat-area-${f.slice(5)}`;
-  if (f.startsWith('ledger') || f === 'hand-fan') return 'seat-area-0';
-  if (f.startsWith('obj:')) {
-    const o = focusObject(f);
-    const z = o?.userData?.['focus'];
-    if (typeof z === 'string' && z.startsWith('seat-')) return `seat-area-${z.slice(5)}`;
-    if (typeof z === 'string' && z === 'table') return 'table';
-    return null; // unknown containment: NO zone — the center is no-go as a default
-  }
-  return null; // presets/custom/overview: the wheel dollies, it never defaults to the center
+  return zoneOf(f)?.focusOf() ?? null;
 }
 /** I-220: read exits ONE STEP — back to the anchor at its 80% (click or wheel-out). */
 /** I-227: is the current read the ZONE's own (the resting state)? Zone reads accept
@@ -421,8 +409,9 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
           return;
         }
       }
+      if (!zoomIn) { exitReadStep(); return; } // I-239 (the owner amended his own rule): OUT re-enters the SCENE at the zone's scenic — the zone read rests, it never TRAPS
       status('the zone read — select an object to zoom to it');
-      return; // min ≡ max only when nothing is selected
+      return; // in with nothing selected: the rest
     }
     if (!zoomIn) { const zr = zoneAnchorOf(readFocus); if (zr) readView(zr); else exitReadStep(); return; } // a child's read backs out to its zone (or just steps out, if it has none)
     return; // in: a child's read is the innermost rung
