@@ -173,6 +173,14 @@ export const seatPlay: Component = {
         const base = sf.c.clone().addScaledVector(sf.lat, handOffset?.lat ?? a1.lat).addScaledVector(sf.n, handOffset?.out ?? (BASE + a1.out)); // I-208: the claim RULES the base (the I-204 edit had silently no-opped — grep-caught)
         const nH = v.ownHand.length;
         const step = (SPREAD_DEG[handSpread]! * Math.PI) / 180;
+        // I-243 (the owner: 'I can REALLY zoom in on the upright hand and the onion
+        // view doesn't appear' — the I-208 class AGAIN, grep-confirmed): the handFan
+        // tag had THREE readers (the camera preset, focusObject, the resolver) and
+        // ZERO writers — the fan anchor never resolved, so the wheel had no wall to
+        // cross and the onion hook (which lives past the wall) could never fire. The
+        // UPRIGHT fan now renders inside a tagged group — the anchor is real.
+        const fanGrp = handUp ? new THREE.Group() : null;
+        if (fanGrp) { fanGrp.userData['handFan'] = true; g.add(fanGrp); }
         v.ownHand.forEach((hid, hIdx) => {
           const hi = cardInstance(hid);
           if (!hi) return;
@@ -200,7 +208,7 @@ export const seatPlay: Component = {
           poseOrArrive(hi.group, hp, hq, hi.group.parent !== null); // PB-9b: arrivals serve the fan
           hi.group.userData = { ...hi.group.userData, seatPlayCard: `hand:${hid}`, focus: `seat-${i}` };
           cards.push({ key: `hand:${hid}`, mesh: hi.group, anchor: hp.clone() });
-          g.add(hi.group);
+          (fanGrp ?? g).add(hi.group); // I-243: the upright cards live IN the tagged fan (both parents identity — world poses unchanged)
         });
       }
     }
