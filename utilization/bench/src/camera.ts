@@ -188,6 +188,10 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   const fovV3 = (camera.fov * Math.PI) / 180;
   let dSphere = (Math.max(30, sp2.radius) / Math.sin((fovV3 / 2) * 0.9)) * factor;
   if (focus.startsWith('seat-') && !focus.startsWith('seat-area-')) dSphere *= 0.5; // I-228 (owner-tuned): the SEAT board reads at HALF the distance — seats only; areas are right
+  // I-246 (the owner: the page read was 'way too far away' — the sphere fit is
+  // conservative for flat paper): a REPORT PAGE reads at the CORNER-TRUE fit — the
+  // exact no-crop floor, edge-to-edge like his framing.
+  if ((obj as THREE.Object3D).userData?.['ledgerPage']) dSphere = fitAlong(box, c, n, up);
   return { pos: c.clone().add(n.clone().multiplyScalar(dSphere)), look: c, up };
 }
 
@@ -395,10 +399,21 @@ const ovPose = mapPreset('overview');
 const OVERVIEW_DIST = ovPose.pos.distanceTo(ovPose.look);
 function dollyTo(dist: number): void {
   const dir = new THREE.Vector3().subVectors(camera.position, currentLook).normalize().multiplyScalar(dist);
-  camera.position.copy(currentLook.clone().add(dir));
+  const p = currentLook.clone().add(dir);
+  // I-246 (owner-ruled: 'Custom Dolly should not be allowed to get close to y=0 —
+  // maybe half the height of the seat board'): THE FLOOR — the free dolly never dives
+  // under the table.
+  if (p.y < dollyFloorY()) { status('the floor holds — the camera stays above the table'); return; }
+  camera.position.copy(p);
   target = { pos: camera.position.clone(), look: currentLook.clone() };
   currentName = 'custom';
   status('camera → custom (dolly)');
+}
+/** half the seat board's live height — the dolly's floor (fallback 120). */
+function dollyFloorY(): number {
+  const b = focusObject('seat-0');
+  if (!b) return 120;
+  return Math.max(60, new THREE.Box3().setFromObject(b).getSize(new THREE.Vector3()).y / 2);
 }
 // S-1 (I-103): the wheel gates on the harness's live-claim predicate — I-91 promised
 // "the camera is suppressed until release" while this listener never consulted the
@@ -468,14 +483,22 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
     const isDieW = !!oW?.userData?.['die'];
     const isBooksW = !!(oW?.userData?.['ledgerPage'] || oW?.userData?.['ledger']); // I-245: the books flip to read at his open-spread framing
     const wall = fitDist(anchor, isDieW ? 0.15 : isHandW || isBooksW ? 0.45 : 0.8);
-    if (wall === null) {
+    if (wall === null || !oW) {
       // I-242 (the owner tightened I-241's bounds: 'the unbound camera range needs to
       // be about 1/2 max zoom out and zoom in'): the free dolly runs at HALF range.
       if (dist * 0.88 < 280) { status('close enough — click something to read it'); return; }
       dollyTo(dist * 0.88);
       return;
     }
-    if (dist * 0.88 <= wall) {
+    // I-246 (the owner's zoom-past-the-hand, root-caused BY THE TRACE — 'camera →
+    // custom (dolly)' while an anchor was live): the wall compared the camera's
+    // distance TO THE LOOK POINT against the anchor's wall — with the look beyond the
+    // hand, the camera sailed straight through it and the wall never tripped. An
+    // anchored zoom-in now AIMS at the anchor and CONVERGES on it; the distance that
+    // meets the wall is the distance to the THING, not to wherever we happened to look.
+    const cA = new THREE.Box3().setFromObject(oW).getBoundingSphere(new THREE.Sphere()).center;
+    const dA = camera.position.distanceTo(cA);
+    if (dA * 0.88 <= wall) {
       // I-241 (H-4 arrives): closing on the HAND opens the ONION — the browse view,
       // never a frozen read (exited by clicking outside the cards or wheeling out).
       if (handZoomHook && isHandW) {
@@ -484,7 +507,9 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
       readView(anchor);
       return; // crossing the wall ENTERS the read — the one entry
     }
-    dollyTo(dist * 0.88);
+    target = { pos: camera.position.clone().add(cA.clone().sub(camera.position).multiplyScalar(0.12)), look: cA };
+    currentName = 'custom';
+    status(`closing on the selection — ${Math.round(dA)} out, the wall at ${Math.round(wall)}`);
     return;
   }
   // out: a plain dolly back, clamped at the zone's edge — read never sits on this path.
