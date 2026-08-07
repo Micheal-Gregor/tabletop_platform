@@ -50,7 +50,7 @@ export const ledgerComponent: Component = {
       const n = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
       n.y = 0; n.normalize(); // toward the player, horizontal
       const lat = new THREE.Vector3(n.z, 0, -n.x); // the board's side axis
-      book.position.copy(c).addScaledVector(lat, bookOffset?.lat ?? -190).addScaledVector(n, bookOffset?.out ?? 168).setY(6); // I-230: the HIERARCHY — area, then cards, then the FOLDER above them // G-B3 (I-165) default = the LEDGER SPAN's center · PB-3 (I-177): the OWNER may drag it — the offset is presentation state, like a card's stick
+      book.position.copy(c).addScaledVector(lat, bookOffset?.lat ?? -190).addScaledVector(n, bookOffset?.out ?? 223).setY(6); // I-230: the HIERARCHY — area, then cards, then the FOLDER above them // G-B3 (I-165) default = the LEDGER SPAN's center · PB-3 (I-177): the OWNER may drag it // I-257 (the battery's occlusion verdict): out 168→223 — the folder STEPS OUT WITH THE ROWS (I-247 moved row 1 into the old spot; the folder, lawfully above cards, was eating row 1's clicks — the whole VG8s crew cluster and VG8p's stolen grab)
       // I-133 (the owner's screenshot catch — 'the folder rotated 45° instead of staying
       // flat'): the world-yaw PREMULTIPLIES the built pose. Setting rotation.y MUTATED
       // the folder's Euler (its flatness lives in rotation.x = −π/2; a .y write
