@@ -181,37 +181,18 @@ function mapRead(focus: string): { pos: THREE.Vector3; look: THREE.Vector3; up: 
   return { pos: c.clone().add(n.clone().multiplyScalar(dSphere)), look: c, up };
 }
 
-/** The anchor's scene preset: a region anchor's scene is the TABLE (I-66b). */
-
-const anchorPreset = (f: string): string => {
-  // I-207 (the owner's zoom-out conflict: 'it always switches to the overview instead
-  // of object anchor, player area overview…'): the ladder lands in the anchor's OWN
-  // ZONE — a table region backs out to the table; a seat-area/hand/report/object
-  // anchor backs out to ITS seat; only a true unknown falls to overview.
-  if (presets[f]) return f;
-  if (f.startsWith('table:')) return 'table';
-  if (f === 'box') return 'overview'; // I-210: the box's scene is the ring itself
-  if (f.startsWith('seat-area-')) { const k = `seat-${f.slice('seat-area-'.length)}`; return presets[k] ? k : 'overview'; }
-  if (f.startsWith('ledger') || f === 'hand-fan') return presets['seat-0'] ? 'seat-0' : 'overview';
-  if (f.startsWith('obj:')) {
-    const o = focusObject(f);
-    const z = o?.userData?.['focus'];
-    if (typeof z === 'string' && presets[z]) return z;
-    return 'table';
-  }
-  return 'overview';
-};
-
 /** I-215 (the owner's corrections, superseding the I-214 law the same day): THE
  *  SCENIC LAW v2 — (a) the fit is the object's BOUNDING SPHERE, never the box (the
  *  play space is a sphere; box corners gave the camera 'fake square corners' to
  *  choke in); (b) EVERY scenic looks 35° DOWN AT 0,0,0 — the camera sits on the ray
  *  from the center THROUGH the object, beyond it, so the object stands maximized in
  *  the foreground and the sight line runs past it to the world's anchor. One law,
- *  every object, both promises at once. */
-export function scenicView(focus: string): void {
+ *  every object, both promises at once.
+ *  I-240: the POSE is pure (scenicPose) — the max-out clamp measures it without
+ *  moving the camera; scenicView applies it. */
+function scenicPose(focus: string): { pos: THREE.Vector3; look: THREE.Vector3 } | null {
   const obj = focusObject(focus) ?? focusGroups[focus] ?? null;
-  if (!obj) { status(`scenic refused: unknown focus "${focus}"`); return; }
+  if (!obj) return null;
   const sphere = new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
   const c = sphere.center, R = Math.max(20, sphere.radius);
   const rHoriz = Math.hypot(c.x, c.z);
@@ -248,21 +229,34 @@ export function scenicView(focus: string): void {
     const pitch = Math.max(0.12, Math.atan2(h, b2) - fovV / 2); // the near edge rides the frame's exact bottom (floor: never near-level)
     const pos2 = new THREE.Vector3(dirOut.x * camHoriz, h, dirOut.z * camHoriz);
     const fwd = new THREE.Vector3(-dirOut.x * Math.cos(pitch), -Math.sin(pitch), -dirOut.z * Math.cos(pitch)); // I-222: the axis as a DIRECTION — no tan singularity to shoot the gaze level
-    camera.up.set(0, 1, 0);
-    target = { pos: pos2, look: pos2.clone().add(fwd.multiplyScalar(1200)) };
-    mode = 'scene';
-    currentName = `${focus}:scenic`;
-    lastFocus = focus;
-    status(`scenic: ${focus} — the near edge fills the bottom of the frame`);
-    return;
+    return { pos: pos2, look: pos2.clone().add(fwd.multiplyScalar(1200)) };
   }
+  return { pos: new THREE.Vector3(dirOut.x * horiz, h, dirOut.z * horiz), look: new THREE.Vector3(0, 0, 0) };
+}
+export function scenicView(focus: string): void {
+  const p = scenicPose(focus);
+  if (!p) { status(`scenic refused: unknown focus "${focus}"`); return; }
   camera.up.set(0, 1, 0);
-  target = { pos: new THREE.Vector3(dirOut.x * horiz, h, dirOut.z * horiz), look: new THREE.Vector3(0, 0, 0) };
+  target = p;
   mode = 'scene';
   currentName = `${focus}:scenic`;
   lastFocus = focus;
   trace('view', `SCENIC ${focus}`);
-  status(`scenic: ${focus} — maximized in the foreground, the sight line runs 35° down to 0,0,0`);
+  status(`scenic: ${focus} — maximized in the foreground, the sight line runs 35° down toward the center`);
+}
+/** I-240 (the owner's travel law): the zone's EDGE — the scenic camera range from the
+ *  zone's center, plus THREE wheel ticks out. Scene dolly-out clamps here; the read
+ *  view never sits on the way out. */
+function zoneCenterOf(zoneFocus: string): THREE.Vector3 | null {
+  const obj = focusObject(zoneFocus) ?? focusGroups[zoneFocus] ?? null;
+  if (!obj) return null;
+  return new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere()).center;
+}
+function maxOutDist(zoneFocus: string): number | null {
+  const p = scenicPose(zoneFocus);
+  const zc = zoneCenterOf(zoneFocus);
+  if (!p || !zc) return null;
+  return p.pos.distanceTo(zc) * Math.pow(1.14, 3); // three ticks past the scenic — then the zone ends
 }
 
 export function readView(focus?: string, reanchor = true): void {
@@ -276,12 +270,11 @@ export function readView(focus?: string, reanchor = true): void {
   panned = false; // fit is the pure rest state — re-toggle RESETS pan (I-63c)
   currentName = `${readFocus}:read`;
   document.getElementById('mode-btn')!.textContent = '🎲 scene view';
-  status(`read view: ${readFocus === 'table' || readFocus.startsWith('table:') ? 'flat overhead' : `face-on to ${readFocus}`} — drag to scroll, ${readFocus === 'table' ? 'wheel in for overview' : 'wheel out for scene view'}`);
+  status(`read view: ${readFocus === 'table' || readFocus.startsWith('table:') ? 'flat overhead' : `face-on to ${readFocus}`} — drag to scroll, wheel out to leave`);
 }
 export function sceneView(): void {
-  mode = 'scene';
-  camera.up.set(0, 1, 0);
-  glideTo(anchorPreset(readFocus), false); // a ladder move — the anchor survives (I-66a)
+  exitReadStep(); // I-240: ONE exit law — read leaves to the zone's scenic (the mode
+  // button and the wheel-out share it; the old anchorPreset ladder is superseded)
 }
 
 // pan-scroll (I-63c): drag in read mode translates in the view plane; the LOOK stays
@@ -303,10 +296,10 @@ export function panBy(dx: number, dy: number): void {
   panned = true;
 }
 
-// ── THE ZOOM LADDER (I-66b; the owner's exact walk is the law): one wheel axis,
-// four rungs — anchor-READ ↔ anchor-SCENE ↔ OVERVIEW ↔ TABLE-READ. In read view
-// zoom-in is DISABLED (I-66c: read = fit pose + pan only) and zoom-out steps to the
-// anchor's scene. The anchor survives every ladder move; only clicks re-anchor.
+// ── THE ZOOM PATH (I-240, superseding the I-66b four-rung ladder): per zone —
+// READ (in through the anchor's wall) ↔ SCENE (dolly) ↔ the zone's EDGE (scenic + 3
+// ticks). Read enters ONLY by zooming in and exits ONLY by zooming out; travel
+// between zones is by click. The anchor survives ladder moves; only clicks re-anchor.
 const readFitDist = (focus: string): number => { const m = mapRead(focus); return m.pos.distanceTo(m.look); };
 /** I-220 (the owner's zoom law): the distance at which `focus` fills `fill` of the
  *  frame — SPHERE-fit, the one measure every rung uses. */
@@ -343,10 +336,16 @@ export function panScene(dxPx: number, dyPx: number): void {
 }
 export function exitReadStep(): void {
   if (mode !== 'read') return;
-  const zone = zoneAnchorOf(readFocus);
-  if (zone !== null && readFocus !== zone && readFocus !== 'table') { readView(zone); return; } // I-226: a child's read backs out to the ZONE read
+  // I-240 (the owner's amendment — 'only enter by zooming in and then exit by zooming
+  // out'): the ONE exit. Read leaves to the ZONE's scenic — never to another read (the
+  // out-to-zone-read rung is REMOVED entirely; it was the bounce's other half). The
+  // read subject stays selected (I-66a upheld): out then in returns to the page.
   mode = 'scene';
-  scenicView(readFocus); // a zone read exits to the zone's scenic
+  const keep = lastFocus; // the ANCHOR survives the exit — a card selected at the zone
+  // read stays selected, so out-then-in descends to it (only clicks re-anchor, I-66a)
+  const zone = zoneAnchorOf(readFocus);
+  scenicView(zone ?? (focusObject(readFocus) ? readFocus : 'table'));
+  lastFocus = keep;
 }
 /** F-8 (I-167, the owner: 'camera for seat zero … should be in same position as seats
  *  1-5'): the READ-EQUALITY oracle — every seat's read distance and framed bbox, so
@@ -381,60 +380,36 @@ document.getElementById('stage')!.addEventListener('wheel', (ev) => {
   if (wheelGate?.()) return; // a live grab suppresses the zoom ladder (S-1, I-103)
   const zoomIn = ev.deltaY < 0;
   trace('wheel', `${zoomIn ? 'in' : 'out'} mode=${mode} anchor=${lastFocus} read=${mode === 'read' ? readFocus : '-'}`);
-  // ── I-226 — THE SCROLL RULES, the owner's final form ──
-  // The ZONE READ is both the MIN and MAX of a zone when nothing is selected: the
-  // wheel rests. SELECT an object (click) and the wheel serves it: in FILLS the
-  // screen with the object, one more notch = its READ; out backs to the ZONE read.
+  // ── I-240 — THE SCROLL RULES, the owner's amendment (superseding I-226/I-239's
+  // zone-read rungs): READ IS ENTERED ONLY BY ZOOMING IN AND EXITED ONLY BY ZOOMING
+  // OUT. The bounce is dead by construction: wheel-in can never leave read (the
+  // descent branch is gone) and wheel-out can never land in one (the out-to-zone-read
+  // rung is gone). ONE wall rule for every anchor — zone or child, the wheel dollies
+  // toward THE SELECTED THING and crossing its 80% wall enters its read. Out dollies
+  // back and stops at the zone's edge (scenic + three ticks); travel between zones is
+  // by CLICK, never by scroll.
   const anchor = lastFocus;
   const zone = zoneAnchorOf(anchor);
-  const isChild = zone !== null && anchor !== zone && anchor !== 'table';
   if (mode === 'read') {
-    const readIsZone = (zone !== null && readFocus === zone) || readFocus === 'table' || readFocus.startsWith('seat-area-');
-    if (readIsZone) {
-      // I-228 (the owner's catch — 'I still can't zoom in on a card'): the zone read
-      // rests ONLY when nothing is selected; with a CHILD selected, wheel-in LEAVES the
-      // rest and descends toward it (the wall math had room all along — the early
-      // return was eating the selection, not the geometry).
-      if (zoomIn && isChild) {
-        const co = focusObject(anchor);
-        if (co) {
-          const cc = new THREE.Box3().setFromObject(co).getBoundingSphere(new THREE.Sphere()).center;
-          mode = 'scene';
-          // I-233: the descent keeps the ZONE's horizontal up (toward center) — the
-          // camera can drop onto a flat card without the roll ever going undefined.
-          if (Math.hypot(cc.x, cc.z) > 20) camera.up.set(-cc.x, 0, -cc.z).normalize();
-          const dir = cc.clone().sub(camera.position);
-          target = { pos: camera.position.clone().add(dir.multiplyScalar(0.12)), look: cc };
-          status(`descending to ${anchor} — keep wheeling; one notch past full fills its page`);
-          return;
-        }
-      }
-      if (!zoomIn) { exitReadStep(); return; } // I-239 (the owner amended his own rule): OUT re-enters the SCENE at the zone's scenic — the zone read rests, it never TRAPS
-      status('the zone read — select an object to zoom to it');
-      return; // in with nothing selected: the rest
-    }
-    if (!zoomIn) { const zr = zoneAnchorOf(readFocus); if (zr) readView(zr); else exitReadStep(); return; } // a child's read backs out to its zone (or just steps out, if it has none)
-    return; // in: a child's read is the innermost rung
+    if (!zoomIn) { exitReadStep(); return; } // the one exit — out to the zone's scenic
+    status('reading — wheel out to leave');
+    return; // in: read is the innermost rung, for zones and children alike
   }
   const dist = camera.position.distanceTo(currentLook);
   if (zoomIn) {
-    if (!isChild) {
-      if (zone === null) { dollyTo(dist * 0.88); return; } // I-237: no zone → a plain dolly, never a center landing
-      const zWall = fitDist(zone, 0.8);
-      if (zWall !== null && dist * 0.88 <= zWall) { readView(zone); return; } // the zone scenic tops out INTO the zone read
-      dollyTo(dist * 0.88);
-      return;
-    }
-    const wall = fitDist(anchor, 0.8);
-    if (wall === null) { status('nothing here to zoom to — click an object to select it'); return; }
-    if (dist * 0.88 <= wall) { readView(anchor); return; } // the object filled the screen → its READ
+    const wall = fitDist(anchor, 0.8); // the ONE rule: the anchor's own wall, whoever it is
+    if (wall === null) { dollyTo(dist * 0.88); return; } // no resolvable anchor → a plain dolly, never a center landing (I-237)
+    if (dist * 0.88 <= wall) { readView(anchor); return; } // crossing the wall ENTERS the read — the one entry
     dollyTo(dist * 0.88);
     return;
   }
-  // out: back toward (and into) the ZONE read
-  if (zone === null) { dollyTo(dist * 1.14); return; } // I-237: out with no zone dollies — the center never claims the view
-  const zWall2 = fitDist(zone, 0.8);
-  if (zWall2 !== null && dist * 1.14 >= zWall2) { lastFocus = zone; readView(zone); return; }
+  // out: a plain dolly back, clamped at the zone's edge — read never sits on this path
+  const max = maxOutDist(zone ?? 'table');
+  const zc = zoneCenterOf(zone ?? 'table');
+  if (max !== null && zc !== null && camera.position.distanceTo(zc) * 1.14 > max) {
+    status(`the ${zone ?? 'world'} zone's edge — click another zone to travel`);
+    return;
+  }
   dollyTo(dist * 1.14);
 }, { passive: false });
 

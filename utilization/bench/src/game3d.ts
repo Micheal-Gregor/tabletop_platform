@@ -238,7 +238,17 @@ renderer.domElement.addEventListener('pointerup', (ev) => {
     // actions then run and may consume the click, but they no longer write the anchor.
     const sel = resolveSelection(pick);
     trace('click', `hit=[${Object.keys(pick.tags).slice(0, 6).join(',')}] region=${pick.region ?? '-'} focus=${pick.focus ?? '-'} → ${sel ?? 'NO SELECTION'}`);
-    if (sel) { cam.setLastFocus(sel); status(`selected: ${sel.startsWith('obj:') ? 'the object under the cursor' : sel} — wheel to zoom`); }
+    if (sel) {
+      cam.setLastFocus(sel);
+      status(`selected: ${sel.startsWith('obj:') ? 'the object under the cursor' : sel} — wheel to zoom`);
+      // I-240 (the owner's travel law): clicking a ZONE moves the camera to the SAME
+      // default view its button gives — table region → the table preset (anchor keeps
+      // the region), seat board → its seat preset, play area → its area scenic. A
+      // CHILD object (obj:/hand) selects only; the wheel serves it from where you stand.
+      if (sel.startsWith('seat-area-')) cam.scenicView(sel);
+      else if (/^seat-\d+$/.test(sel)) cam.glideTo(sel);
+      else if (sel.startsWith('table:')) cam.glideTo('table', false);
+    }
     for (const c of COMPONENTS) if (c.onPick?.(ctx, pick)) return;
     if (sel) return;
   }
@@ -284,7 +294,11 @@ function computePick(hit: THREE.Intersection, ev: PointerEvent): PickInfo {
 
 // ── bar wiring (harness-level): presets + read-toggle + end-turn + the round sequence ──
 document.getElementById('bar')!.innerHTML =
-  Object.keys(presets).map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
+  // I-240 (owner-ordered): the OVERVIEW button is DEPRECATED AND REMOVED — it predates
+  // the zones (it moved the camera to the center; the center is a no-go). The camera
+  // stays in its current zone until something in another zone is selected. The PRESET
+  // survives for the initial pose and the gates' programmatic glideTo.
+  Object.keys(presets).filter((k) => k !== 'overview').map((k) => `<button data-cam="${k}">${k}</button>`).join('') +
   // I-217 (owner-ordered, explicit): SIX dedicated PLAY-AREA buttons — one per seat,
   // each its own chrome ('buttons for each PLAY AREA for each seat'); the seat-N
   // buttons return to the boards; the 'board' button removed as ordered.
@@ -298,7 +312,6 @@ document.getElementById('bar')!.onclick = (ev) => {
   const t = ev.target as HTMLElement;
   if (t.dataset['cam']) { cam.glideTo(t.dataset['cam']!); return; }
   if (t.dataset['scenic']) { cam.scenicView(t.dataset['scenic']); return; } // I-214/I-215
-  if (t.dataset['cam'] === 'table') { cam.scenicView('table'); return; } // I-215: the fixed center by the same law
   if (t.id === 'mode-btn') { cam.getMode() === 'read' ? cam.sceneView() : cam.readView(); return; }
   if (t.id === 'end-btn') endTurn();
   // A6 (I-136): the SPAWN DOOR — the SVG bench's exhibit chrome (#spawn-job) in 3D; a
