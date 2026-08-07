@@ -39,6 +39,7 @@ let handSpread = 0; // I-203: the fan's spread state — 0 tight · 1 loose · 2
 let handOffset: { lat: number; out: number } | null = null; // I-204: the hand's OWN place — the owner moves it where he wants (the I-177 claim restored)
 const SPREAD_DEG = [5, 10, 16] as const; // per-card splay at each state — 'held at the base'
 let lastHandPlay: { id: string; target?: string | null } | null = null; // I-204: the pay pairing rides the record
+export const ROW_BASE = 115; // I-256 (the VG8g4 verdict: the oracle carried its own stale 60): ONE row-base law — the render and the oracles share this number
 export const handUpState = () => handUp;
 export const handSpreadState = () => handSpread; // I-203
 export const handPlaceState = () => handOffset; // I-208: the placement claim, law-visible
@@ -99,7 +100,7 @@ export const seatPlay: Component = {
       // the transparent SURFACE — the child grid made lightly visible (I-162: readability
       // is the polish; no lighting theater). Its extent IS the law's (surfaceSize).
       const ss = surfaceSize();
-      const BASE = 115; // I-247 (the owner: 'the seat boards are too far forward … and
+      const BASE = ROW_BASE; // I-247 (the owner: 'the seat boards are too far forward … and
       // sit over the cards in the first row'): row 1 steps OUT from under the tilted
       // board's overhang. The I-180 lift was right that the board can't step inward
       // (the rows derive from its frame and would follow); the ROWS stepping out is

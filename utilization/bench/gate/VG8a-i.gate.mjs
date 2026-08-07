@@ -71,7 +71,9 @@ export async function run(h) {
   await page.mouse.wheel(0, -240);
   const wheelName = await page.evaluate(() => window.__GAME3D__.camName());
   const refused = await page.evaluate(() => { try { window.__GAME3D__.glideTo('nope'); return 'NO-THROW'; } catch (e) { return /unknown preset/.test(String(e)) ? 'refused-named' : 'wrong-error'; } });
-  check('VG8e/3d-real-input-paths', btnName === 'table' && clickName === 'seat-1' && wheelName === 'custom' && refused === 'refused-named',
+  // I-256: the wheel's outcome is EITHER lawful — a dolly ('custom') or, when the tick
+  // crosses the anchor's wall from the preset range, the anchor's read (I-240's entry).
+  check('VG8e/3d-real-input-paths', btnName === 'table' && clickName === 'seat-1' && (wheelName === 'custom' || wheelName === 'seat-1:read') && refused === 'refused-named',
     `button→${btnName} · board-click→${clickName} · wheel→${wheelName} · unknown-preset→${refused}`);
   // VG8f — READ VIEW (I-63, the owner's A1 playtest ruling; kill-first): flat overhead
   // for the table, face-on for a board, FIT (no bbox corner cropped), pan clamped to the

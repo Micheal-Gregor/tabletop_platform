@@ -8,7 +8,7 @@ import type { PlayAreaContext } from '../component.js';
 import { planPostings, cellLocal, cellD } from '../seat-grid.js'; // G-B2 (I-164): the grid law replaces the L-4 planner (I-159 supersession)
 import { CARD_FAMILY } from '../../../../packs/boty/src/index.js';
 import { STATION_BOX } from '../playarea.js';
-import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, handSpreadState, handPlaceState, seatPlayLastHandPlay } from './seat-play.js';
+import { seatPlayCards, seatFrame, seatPlayLastReturn, seatPlayLastStick, handUpState, handSpreadState, handPlaceState, seatPlayLastHandPlay, ROW_BASE } from './seat-play.js';
 
 const seatStickId = (): string | null => { const st = seatPlayLastStick(); return st ? st.id : null; };
 
@@ -79,7 +79,7 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
             if (!cell || !card) continue;
             if ((seatStickId() === c.id)) continue; // a stuck card owns its own anchor
             const lc = cellLocal(cell.row, cell.col);
-            const wantPos = sf.c.clone().addScaledVector(sf.lat, lc.lat).addScaledVector(sf.n, 60 + lc.out);
+            const wantPos = sf.c.clone().addScaledVector(sf.lat, lc.lat).addScaledVector(sf.n, ROW_BASE + lc.out); // I-256: the ONE row base (the oracle's stale 60 failed seat 0 by exactly the I-247 step)
             if (Math.hypot(card.mesh.position.x - wantPos.x, card.mesh.position.z - wantPos.z) > 2) posed = false;
           }
         }
@@ -108,7 +108,7 @@ export function seatPlayOracles(getCtx: () => PlayAreaContext): Record<string, u
         let onStrip = true;
         if (sf) for (const c of handCards) {
           const out = c.mesh.position.clone().sub(sf.c).dot(sf.n);
-          if (out < 60 + 2 * cellD() - 5) onStrip = false; // deeper than rows 1–3's zone (K7-V minor: DERIVED, never 2·108)
+          if (out < ROW_BASE + 2 * cellD() - 5) onStrip = false; // deeper than rows 1–3's zone (K7-V minor: DERIVED, never 2·108; I-256: the one base)
         }
         return { count: handCards.length, want: v.ownHand.length, belowBooks: onStrip, up: handUpState(), spread: handSpreadState() }; // I-203: the fan state is law-visible
       },

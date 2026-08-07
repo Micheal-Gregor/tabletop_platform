@@ -423,7 +423,14 @@ export function seatReadEquality(n: number): { i: number; dist: number; maxDim: 
   for (let i = 0; i < n; i++) {
     const o = focusObject(`seat-${i}`);
     if (!o) continue;
+    // I-256: the oracle measures IN THE BOARD'S OWN FRAME (the I-255 read fix's twin) —
+    // the world AABB's size varied ±3% per yaw and failed the equality it was built to prove.
+    const qE = o.quaternion.clone();
+    o.quaternion.set(0, 0, 0, 1);
+    o.updateWorldMatrix(true, true);
     const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
+    o.quaternion.copy(qE);
+    o.updateWorldMatrix(true, true);
     out.push({ i, dist: readFitDist(`seat-${i}`), maxDim: Math.max(sz.x, sz.y, sz.z) });
   }
   return out;

@@ -59,11 +59,14 @@ export async function run(h) {
   if (xy) {
     await page.mouse.move(xy.x, xy.y);
     await page.mouse.down();
-    // G-B2 (I-164): the drag aims AT THE DECK — releasing over the seat surface would
-    // STICK (the owner's drag-down law); the reset law is drilled OFF the surface.
+    // G-B2 (I-164): the drag must release OFF the surface or it STICKS (the owner's
+    // drag-down law). I-256 RE-DERIVED: the deck-ward drag stopped leaving the surface
+    // when the rows stepped out (I-247 deepened the felt along that line) — the drill
+    // now drags LATERALLY, perpendicular to the deck line, far past the station's edge.
     const dk = await G(() => window.__GAME3D__.regionScreenXY('deck'));
     const dvx = (dk.x - xy.x), dvy = (dk.y - xy.y), dn = Math.hypot(dvx, dvy) || 1;
-    for (let i = 1; i <= 5; i++) await page.mouse.move(xy.x + (dvx / dn) * i * 24, xy.y + (dvy / dn) * i * 24);
+    const px = -dvy / dn, py = dvx / dn; // the perpendicular — off the surface's side
+    for (let i = 1; i <= 8; i++) await page.mouse.move(xy.x + px * i * 45, xy.y + py * i * 45);
     await page.mouse.up();
     await page.waitForFunction(() => { const s = window.__GAME3D__.seatPlayGrabState(); return !s.grabbing && !s.resetting; }, null, { timeout: 60000 }).catch(() => {});
     const st = await G(() => window.__GAME3D__.seatPlayGrabState());
