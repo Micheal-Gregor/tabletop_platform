@@ -251,7 +251,9 @@ export function diceView(): void {
   const dp = (die as THREE.Object3D).getWorldPosition(new THREE.Vector3());
   const rH = Math.max(60, Math.hypot(dp.x, dp.z));
   const dir = new THREE.Vector3(dp.x / rH, 0, dp.z / rH);
-  const rCam = rH + 130; // a step beyond the die — the die sits under the sight line
+  const rCam = rH + 600; // I-242 owner-tuned: 130 put the die UNDER the camera, below the
+  // frame (at 30° the sight line dropped ~70° to reach it); 600 back keeps the die in
+  // the lower third of the view on the way to the center
   const h = Math.tan(Math.PI / 6) * rCam; // 30° down at 0,0,0
   camera.up.set(0, 1, 0);
   target = { pos: new THREE.Vector3(dir.x * rCam, h, dir.z * rCam), look: new THREE.Vector3(0, 0, 0) };
