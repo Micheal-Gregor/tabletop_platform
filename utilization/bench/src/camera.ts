@@ -20,12 +20,12 @@ import { zoneOf } from './zones.js'; // I-239: the ZONE parent class — scrolli
 // table (far row: −z); non-seat presets keep the canonical near-side approach — the
 // certified A1 law is the near-side special case, not superseded.
 const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } => {
-  const p = presets[name]!;
-  const d = 1900 / p.zoom;
-  // PA-1 (I-141, superseding the I-133 mapping ON THE RECORD): a seat preset LOOKS at
-  // its ring station's table-side apron and approaches along the seat's yaw normal
-  // (over the player's shoulder) — both from the SAME template expressions the boards
-  // use (stationLook/SEAT_YAWS). Non-seat presets keep the row look + +z approach.
+  // I-249 (the owner's console catch — an UNCAUGHT TypeError on every flick since
+  // I-205): 'hand-fan' has NO presets row, but the old order computed 1900/p.zoom
+  // from the (undefined) preset BEFORE reaching this branch — every flick's camera
+  // glide crashed, rethrown out of onGrabEnd, and the hand rose with the camera left
+  // behind. The fan branch now runs FIRST; with no lifted fan in the scene, the
+  // viewer's own seat preset stands in.
   if (name === 'hand-fan') {
     // I-205: the LIFTED HAND's scenic zoom — the camera closes on the fan's live
     // center, over the viewer's shoulder (the seat-0 yaw), near enough to read backs.
@@ -36,7 +36,14 @@ const mapPreset = (name: string): { pos: THREE.Vector3; look: THREE.Vector3 } =>
       const yaw = SEAT_YAWS[0] ?? 0;
       return { pos: new THREE.Vector3(c.x + Math.sin(yaw) * 260, c.y + 150, c.z + Math.cos(yaw) * 260), look: c };
     }
+    name = 'seat-0';
   }
+  const p = presets[name]!;
+  const d = 1900 / p.zoom;
+  // PA-1 (I-141, superseding the I-133 mapping ON THE RECORD): a seat preset LOOKS at
+  // its ring station's table-side apron and approaches along the seat's yaw normal
+  // (over the player's shoulder) — both from the SAME template expressions the boards
+  // use (stationLook/SEAT_YAWS). Non-seat presets keep the row look + +z approach.
   if (name.startsWith('seat-')) {
     const i = Number(name.slice(5));
     const yaw = SEAT_YAWS[i] ?? 0;
