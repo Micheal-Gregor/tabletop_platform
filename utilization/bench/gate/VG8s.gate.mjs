@@ -70,8 +70,12 @@ export async function run(h) {
     try { await page.waitForFunction((id) => window.__GAME3D__.crewLoopState().selected === id, HIRED, { timeout: 8000 }); selected = true; } catch { /* named below */ }
     const y1 = (await page.evaluate((id) => window.__GAME3D__.seatPlayCardPos(`crew:${id}`), HIRED)).y;
     const hmSel = await hashes();
-    check('VG8s/crew-select-lifts', selected && y1 > y0 + 10 && hmSel.m === hm1.m && hmSel.h === hm1.h,
-      `selected:${selected} · lifted:${(y1 - y0).toFixed(0)}u (want >10 — pure theater) · state-invariant:${hmSel.m === hm1.m}`);
+    // I-258: (a) the invariant BASELINE re-derived — hm6 (post-hire), not hm1 (pre-hire;
+    // stale since the hire moved ahead of select, false by construction); (b) on failure
+    // the UI TRACE testifies — the click's own resolution names what ate it.
+    const trSel = await page.evaluate(() => window.__GAME3D__.uiTraceText().split('\n').slice(-5).join(' | '));
+    check('VG8s/crew-select-lifts', selected && y1 > y0 + 10 && hmSel.m === hm6.m && hmSel.h === hm6.h,
+      `selected:${selected} · lifted:${(y1 - y0).toFixed(0)}u (want >10 — pure theater) · state-invariant:${hmSel.m === hm6.m} · trace[${trSel}]`);
   } else {
     check('VG8s/crew-select-lifts', false, `NO CARD XY for the hired ${HIRED}`);
   }
@@ -95,8 +99,8 @@ export async function run(h) {
   const st3 = await page.evaluate(() => window.__GAME3D__.crewLoopState());
   const hm3 = await hashes();
   const hopReal = !!st3.lastHop && st3.lastHop.frames >= 2 && st3.lastHop.dist > 30;
-  check('VG8s/crew-assign-hops-and-binds', assigned && hopReal && hm3.m === hm1.m + 1 && hm3.h !== hm1.h,
-    `assignedTo-in-projection:${assigned} · hop:${hopReal ? `${st3.lastHop.frames} frames over ${st3.lastHop.dist.toFixed(0)}u` : 'NONE/SNAP'} · moves ${hm1.m}→${hm3.m} (want +1)`);
+  check('VG8s/crew-assign-hops-and-binds', assigned && hopReal && hm3.m === hm6.m + 1 && hm3.h !== hm6.h, // I-258: the baseline is hm6 (post-hire) — hm1 predates the hire's move
+    `assignedTo-in-projection:${assigned} · hop:${hopReal ? `${st3.lastHop.frames} frames over ${st3.lastHop.dist.toFixed(0)}u` : 'NONE/SNAP'} · moves ${hm6.m}→${hm3.m} (want +1)`);
 
   // 4 · WORK: click the (now busy) crew card → the work verb submits → the fresh card
   // BOUNCES (post-state theater). KILL: cut the work branch → moves hold → fails.
@@ -176,7 +180,8 @@ export async function run(h) {
       orderDetail = `sold:${soldRef} · sell-landed:${sellOk} · rendered(${rendered.length}) ≡ poolOrders(${law.length}):${orderOk} · sold-at-bottom:${bottomOk}`;
     } else orderDetail = `NO-XY (card:${JSON.stringify(kxy)} pile:${JSON.stringify(pxy2)})`;
   }
-  check('VG8s/pool-order-law', sellOk && orderOk && bottomOk, orderDetail);
+  const trSell = await page.evaluate(() => window.__GAME3D__.uiTraceText().split('\n').slice(-5).join(' | '));
+  check('VG8s/pool-order-law', sellOk && orderOk && bottomOk, `${orderDetail} · trace[${trSell}]`); // I-258: the trace testifies
 
   // 7 · O-6 (I-146) · board-actions-end-turn: the actions strip on YOUR board, YOUR
   // turn → the END-TURN verb (the SVG's board-foot law). KILL: cut the actions branch →
@@ -190,8 +195,9 @@ export async function run(h) {
   }
   const hmE1 = await hashes();
   const vE = await page.evaluate(() => window.__GAME3D__.viewData());
+  const trEnd = await page.evaluate(() => window.__GAME3D__.uiTraceText().split('\n').slice(-5).join(' | '));
   check('VG8s/board-actions-end-turn', ended && vE.active === 'pete' && hmE1.m === hmE.m + 1,
-    `actions-click → active ${vE.active} (want pete) · moves ${hmE.m}→${hmE1.m} (want +1 — the board-foot end turn, O-6/I-146)`);
+    `actions-click → active ${vE.active} (want pete) · moves ${hmE.m}→${hmE1.m} (want +1 — the board-foot end turn, O-6/I-146) · trace[${trEnd}]`); // I-258: the trace testifies
 
   await page.evaluate(() => window.__GAME3D__.glideTo('overview'));
   await page.waitForFunction(() => !window.__GAME3D__.gliding(), null, { timeout: 60000 }).catch(() => {});
