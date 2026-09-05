@@ -1,9 +1,10 @@
 # BRIEF — spinner (the foundry's PILOT piece)
 
-*Stage A of the RECIPE — DRAFT, awaiting owner approval. The pilot's job is double:
-build the generic spinner AND find what the RECIPE gets wrong before it runs ten more
-times. Nothing below is built until the owner approves this brief; the concept images
-(Stage B) are the owner's pick, committed here as `concept-*.png` BEFORE the loops.*
+*Stage A: **APPROVED by the owner, 2026-09-05** — rulings: **N=6 · spike page first ·
+pointer spins over a fixed base** (the three open questions, closed on the record).
+The pilot's job is double: build the generic spinner AND find what the RECIPE gets
+wrong before it runs ten more times. Stage B (the owner's 1–3 `concept-*.png` picks,
+committed here) gates the Stage-E visual GRIND; the procedural exhibit build proceeds.*
 
 ## The object
 
@@ -92,12 +93,9 @@ Four oracles green · adapter + one registry line in · HK-11 twin test passing 
 VG-spinner layout group self-seeding · this BRIEF + owner-picked concepts + the visual
 loop's round log committed.
 
-## Open questions for the owner (answer at Stage-A approval)
+## Stage-A rulings (owner, 2026-09-05)
 
-1. Default N for the generic archetype's showcase: 6?
-2. Does the pilot spinner join the LIVE game3d scene (a real board region) or a
-   showcase/spike page first? (The die pattern suggests the live scene; a spike page
-   is lower-risk for the pilot's Stage E.)
-3. Pointer spins on the base, or the whole disc spins under a fixed pointer? (Classic
-   board games do both; the BRIEF above assumes pointer-spins. Flip it if your games
-   need the other.)
+1. **N = 6** for the generic showcase.
+2. **Spike page first** (`bench/spinner3d.html`, gate surface `__SPINNER3D__`);
+   graduation to the live game3d scene is a later slice.
+3. **Pointer spins** over a fixed base.

@@ -5,11 +5,12 @@
 // (when the loop converges) is the VG layout gate's job, not this tool's.
 //
 //   node utilization/foundry/harness/shot.mjs --piece=die [--poses=overview,seat-0]
-//     [--page=game3d.html] [--no-build] [--settle-ms=900] [--out=DIR]
+//     [--page=game3d.html] [--gate=__GAME3D__] [--no-build] [--settle-ms=900] [--out=DIR]
 //
-// Poses are __GAME3D__ camera presets, driven through the gate surface the bench
-// already exposes (glideTo/gliding — I-62d): no bench code is touched. Output:
-// utilization/foundry/shots/<piece>/<pose>.png (gitignored).
+// Poses are camera presets driven through the page's gate surface (glideTo/gliding —
+// the I-62d shape): no bench code is touched. --gate names the window global (default
+// __GAME3D__; a spike page exposes its own, e.g. __SPINNER3D__ — the spinner pilot's
+// harness find). Output: utilization/foundry/shots/<piece>/<pose>.png (gitignored).
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { extname, join, dirname } from 'node:path';
@@ -28,6 +29,7 @@ const PIECE = opt('piece', null);
 if (!PIECE) { console.error('usage: node shot.mjs --piece=<name> [--poses=overview,seat-0] [--page=game3d.html] [--no-build] [--settle-ms=900] [--out=DIR]'); process.exit(2); }
 const POSES = opt('poses', 'overview').split(',').map((s) => s.trim()).filter(Boolean);
 const PAGE = opt('page', 'game3d.html');
+const GATE = opt('gate', '__GAME3D__');
 const SETTLE_MS = Number(opt('settle-ms', '900'));
 const OUT = opt('out', join(dirname(HERE), 'shots', PIECE));
 const PORT = Number(process.env.SHOT_PORT) || 4175;
@@ -59,19 +61,19 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbo
 const page = await browser.newPage({ viewport: { width: 1400, height: 950 } });
 page.on('pageerror', (e) => console.error(`  page error: ${e.message}`));
 await page.goto(`http://localhost:${PORT}/${PAGE}`);
-await page.waitForFunction(() => window.__GAME3D__?.ready?.() === true, null, { timeout: 30_000 });
+await page.waitForFunction((g) => window[g]?.ready?.() === true, GATE, { timeout: 30_000 });
 await page.waitForTimeout(SETTLE_MS); // first paint + arrivals
 
 mkdirSync(OUT, { recursive: true });
 const shots = [];
 for (const pose of POSES) {
-  const known = await page.evaluate((n) => {
-    const g = window.__GAME3D__;
-    if (!g?.glideTo) return false;
-    try { g.glideTo(n); return true; } catch { return false; }
-  }, pose);
+  const known = await page.evaluate(({ g, n }) => {
+    const s = window[g];
+    if (!s?.glideTo) return false;
+    try { s.glideTo(n); return true; } catch { return false; }
+  }, { g: GATE, n: pose });
   if (!known) { console.error(`✗ pose "${pose}" — glideTo refused it (unknown preset?)`); continue; }
-  await page.waitForFunction(() => window.__GAME3D__.gliding?.() === false, null, { timeout: 15_000 }).catch(() => {});
+  await page.waitForFunction((g) => window[g].gliding?.() === false, GATE, { timeout: 15_000 }).catch(() => {});
   await page.waitForTimeout(250); // rest at the pose
   const file = join(OUT, `${pose}.png`);
   await page.screenshot({ path: file });
