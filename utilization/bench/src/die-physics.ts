@@ -123,6 +123,16 @@ const asleep = (b: RAPIER.RigidBody): boolean => {
   const v = b.linvel(), w = b.angvel();
   return Math.hypot(v.x, v.y, v.z) < 0.02 && Math.hypot(w.x, w.y, w.z) < 0.02;
 };
+/** F-1 (the foundry's apex-freeze finding): asleep() sampled ONCE per step can catch a
+ *  slow tip-over at its APEX, where both velocity norms pass through ~zero — the toss
+ *  then "settles" visibly tilted (13/1000 seeds at the foundry battery; u=421461979
+ *  rested at up=0.907, u=290332200's class aside — that one is a REAL cocked-against-
+ *  the-rail rest, F-2, untouched here). The reconcile offset is a cube symmetry: it
+ *  maps face to face but PRESERVES tilt, so the bench die rested cocked on those rolls.
+ *  Rest is therefore SUSTAINED: the criterion must hold SLEEP_STREAK consecutive steps
+ *  on every FREE-TUMBLE path (toss + flick flight). The planar slide keeps its single
+ *  sample — yaw-locked, no tip-over apex exists, friction decel is monotone. */
+const SLEEP_STREAK = 10;
 const record = (b: RAPIER.RigidBody): SimFrame => {
   const t = b.translation(), q = b.rotation();
   return { px: t.x, py: t.y, pz: t.z, qx: q.x, qy: q.y, qz: q.z, qw: q.w };
@@ -140,11 +150,12 @@ export function simulateToss(r: TableRect, startWorld: { x: number; z: number },
   body.setLinvel({ x: Math.cos(th) * sp, y: vy, z: Math.sin(th) * sp }, true);
   body.setAngvel({ x: (mix32(u + 11) * 2 - 1) * 16, y: (mix32(u + 23) * 2 - 1) * 9, z: (mix32(u + 37) * 2 - 1) * 16 }, true);
   const frames: SimFrame[] = [record(body)];
-  let steps = 0;
+  let steps = 0, still = 0;
   for (; steps < 900; steps++) {
     world.step();
     frames.push(record(body));
-    if (asleep(body)) break;
+    if (asleep(body)) { if (++still >= SLEEP_STREAK) break; } // F-1: sustained, not sampled
+    else still = 0;
   }
   const settleFace = topFaceOf(body.rotation());
   world.free();
@@ -206,7 +217,7 @@ export function feltFrameToWorld(r: TableRect, fr: SimFrame): { x: number; y: nu
 }
 
 // ── THE LIVE DRAG SESSION (the shaker's kinematic drag → flick) — grab-flick fidget ──
-let live: { world: RAPIER.World; body: RAPIER.RigidBody; rect: TableRect; flying: boolean } | null = null;
+let live: { world: RAPIER.World; body: RAPIER.RigidBody; rect: TableRect; flying: boolean; still: number } | null = null; // still: F-1's sustained-rest counter
 let flightTrace: { maxAbsX: number; maxAbsZ: number; escaped: boolean; rawSpeed: number; effSpeed: number } | null = null; // R-1a2 + I-115/M5: speeds recorded — the cap kill is deterministic
 export const liveFlightTrace = () => flightTrace;
 export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): boolean {
@@ -215,7 +226,7 @@ export function dragBegin(r: TableRect, atWorld: { x: number; z: number }): bool
   const s = worldToFelt(r, atWorld.x, atWorld.z);
   body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
   body.setTranslation({ x: s.px, y: 0.04, z: s.pz }, true);
-  live = { world, body, rect: r, flying: false };
+  live = { world, body, rect: r, flying: false, still: 0 };
   flightTrace = { maxAbsX: 0, maxAbsZ: 0, escaped: false, rawSpeed: 0, effSpeed: 0 };
   return true;
 }
@@ -256,6 +267,7 @@ export function dragEnd(velWorldX: number, velWorldZ: number): void {
   live.body.setAngvel({ x: -vz * 200, y: (sp * 40) * 0.5, z: vx * 200 }, true);
   live.body.wakeUp();
   live.flying = true;
+  live.still = 0; // F-1: each flight settles on its own sustained rest
 }
 /** one live step; null = still going, a frame = the settle frame (the session closes).
  *  R-1a2 (I-110): the ESCAPE GUARD — a body outside the felt (+grace) or below the
@@ -271,7 +283,8 @@ export function dragStep(): { frame: SimFrame; settled: boolean; escaped?: boole
   const t = live.body.translation();
   const escaped = t.y < -0.05 || Math.abs(t.x) > f.hx + 0.05 || Math.abs(t.z) > f.hz + 0.05;
   if (flightTrace) { flightTrace.maxAbsX = Math.max(flightTrace.maxAbsX, Math.abs(t.x)); flightTrace.maxAbsZ = Math.max(flightTrace.maxAbsZ, Math.abs(t.z)); if (escaped) flightTrace.escaped = true; }
-  if (asleep(live.body) || escaped) { live.world.free(); live = null; return { frame: fr, settled: true, escaped }; }
+  live.still = asleep(live.body) ? live.still + 1 : 0; // F-1: sustained, not sampled
+  if (live.still >= SLEEP_STREAK || escaped) { live.world.free(); live = null; return { frame: fr, settled: true, escaped }; }
   return { frame: fr, settled: false };
 }
 export const dragActive = (): boolean => live !== null;
