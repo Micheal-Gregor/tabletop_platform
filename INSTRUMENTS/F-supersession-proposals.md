@@ -71,3 +71,8 @@ reworded in meaning. Not carried, because Phase 2 never minted them: `OBJ` ids (
 unchecked), and the `Decides`/`Binding` columns (noted by emission-check, not invented here). **Status: owner-approved
 2026-11-08 ("Approve 30M", RESOLUTION_RECORD); anchored by `tools/anchor-s3.py --revision` as `governance/S3/v1.3/`,
 tag `s3-anchor-v1.3`.**
+
+## Discharged by s3-anchor-v1.3 · 2026-11-08
+
+SP-7: the Phase 3 revision that supersedes them is anchored in `governance/S3/v1.3/` (tools/anchor-s3.py --revision).
+The proposals above stand as written.

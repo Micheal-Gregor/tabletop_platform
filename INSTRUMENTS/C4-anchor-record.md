@@ -108,3 +108,12 @@ Phase 4 roster and Object Writing Standard), then:
 - **A builder sub-agent:** each builder's first call is its brief's probe, verified by `brief.py verify --nonce`; the
   first builder's line is cited in the completion ledger and below when it runs.
 - **No worktree** is used in R1: builders and the lead work in this folder.
+
+## Revision v1.3 · 2026-11-08 (tools/anchor-s3.py --revision)
+
+- **Supersedes** `governance/S3/CLAUDE_TABLETOP_Phase3.md`, anchored at `s3-anchor-v1.2`. Every file anchored before stays as it was.
+- **Discharges** SP-7 (`INSTRUMENTS/F-supersession-proposals.md`).
+- **Placed** in `governance/S3/v1.3/` and tagged `s3-anchor-v1.3`:
+  - `CLAUDE_TABLETOP_Phase3.md` sha256 `9b10495ba53a391d6c0201328f3a8e728a92a9859aad48acf18f1e4dc85485f4`
+  - `TABLETOP_Phase3_Specification.md` sha256 `ff4cecd2842faaacfc22c197952e81dddb7e6e97158ea9277f137e67ff773822`
+- **s3_document** is now `governance/S3/v1.3/CLAUDE_TABLETOP_Phase3.md`: briefs, K7 and the seal read the revision from this commit on.
