@@ -186,9 +186,9 @@ THIS file + the Specification sheet; ODG-4 is the anchor's first recorded decisi
 - **Phase 5 in this repo.** Bindings live in `utilization/`, never in the core; the concern
   inventory, discharge record, and K8 readiness run per the Phase 5 roster. The drift ledger
   does not close at deployment.
-- **The 3D program (owner-ruled 2026-08-02, I-61):** `governance/3D-ROADMAP.md` governs
-  the object-by-object 3D work and SURVIVES SESSION COMPRESSION — a resuming session
-  reads it after this file and the instruments, then continues at the first open row.
+- **The 3D program (owner-ruled 2026-08-02, I-61) is STOPPED, not sealed (owner-ruled
+  2026-11-08, I-260).** `governance/3D-ROADMAP.md` is now a record — never resume its open
+  rows. A resuming session reads `docs/reentry-2026-11-08.md` for the rulings and next runs.
 - **Touch boundaries (owner-requested 2026-08-02):** `governance/ARCHITECTURE.md` maps
   the repo and each increment's LANE — read it before editing anything; out-of-lane
   changes without a register row are defects for K7.

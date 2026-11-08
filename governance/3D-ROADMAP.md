@@ -1,5 +1,9 @@
 # 3D ROADMAP — the object-by-object program (owner-ruled 2026-08-02, I-61)
 
+> **STOPPED, NOT SEALED — owner-ruled 2026-11-08 (RESOLUTION_RECORD; I-260).** This file is now a RECORD, not a
+> worklist: do not resume at its first open row. Physics now decides for the die and the spinner, through an extension
+> run on the sealed library. The next runs are in `docs/reentry-2026-11-08.md`. The resume ritual below is historical.
+
 > **THIS DOCUMENT SURVIVES SESSION COMPRESSION.** The owner's standing instruction:
 > the conversation will compress multiple times before the 3-D forms perform for
 > players in a polished way — so THE REPO carries the program. A fresh or compressed
@@ -163,3 +167,4 @@ each object ("really perform for the players" is the owner's acceptance bar).
 | D-1 the dice ring | 🔄 D-1a+D-1b DONE (I-174/I-188: DICE_RING config object — radius/offset/rails) — D-1c: the turn-change home GLIDE + rotation drill · original I-175(1) note: the throw area is its OWN object (independent of the tabletop; radius = table corner radius AS CONFIG; centered 0,0,0); the home anchor +10° past the seat center; the object-to-object grouping relationship (dynamic/fixed) joins the ontology; toss rails re-derive; turn glide; drill |
 | PB (I-175 playtest batch) | ⬜ NEXT, in order | PB-1 seat-0 read hijacked by the ledger anchor (diagnose with seatReadEquality; the fix is the anchor law, not the camera) · PB-2 play-area read = DIRECT OVERHEAD + cards movable in read (organize mode) · PB-3 ✅ I-177 · PB-4 ✅ I-179 · PB-5 ✅ I-180 (lifted) · PB-6 ✅ I-182 · PB-7 ✅ I-183 · PB-8 ✅ I-188 · PB-9 ✅ I-200/I-201 (paths as data + the ARRIVAL ANIMATOR at every claim site — the teleport is dead; table-draw/discard/crew-hop path migrations remain optional polish) · PB-10 the per-seat spherical circumference as data · PB-11 (I-181): the TWO-ZONE zoom (table ↔ seat area at full pullback) · direct-interaction-over-read-panning · THE LEGAL ANCHOR as UIObject data (hand cards return to the hand — their sole legal anchor) · the hand's 3-state fan cycle (tight → spread → tight) · the whole-hand flick → upright + the hand ONION (left-to-right, horizontal scroll) | the die's rotating home circle + the annulus toss boundary (RAPIER rails re-derive) | |
 | F-8 camera equality + report switching | ⬜ | seat-0 read ≡ seats 1-5 (equality oracle + gate); the in-read P&L ↔ Balance switch restored | |
+| **STOPPED (I-260, owner-ruled 2026-11-08)** | R0 | NOT SEALED: no K7 pass since `k7-pass-r1a`; K7-T, K7-U, K7-V returned; battery 79/103 at I-259 | "Yes, close it" · "Push them" — open rows stay open as history; see `docs/reentry-2026-11-08.md` |

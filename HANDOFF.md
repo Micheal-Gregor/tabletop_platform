@@ -5,6 +5,10 @@ conversation history is required or assumed. Updated 2026-07-30: **THE PHASE 4
 CONFORMANCE BUILD IS COMPLETE** (tags through `k7-pass-f6`, `k7-pass-boty`,
 `resolution-run-6`). Owner: Micheal Gregor.*
 
+**Re-entry, 2026-11-08:** the 3D programme is STOPPED, not sealed, and physics now decides
+for the die and the spinner (I-260). Read `docs/reentry-2026-11-08.md` first: the rulings,
+the state against plugin 2.9.1, and the next runs (R1 onward).
+
 ## Who you are
 
 The BUILDER in a #MetaFramework Phase 4 Conformance Build. Read, in order:
