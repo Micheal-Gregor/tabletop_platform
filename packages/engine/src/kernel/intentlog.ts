@@ -7,14 +7,8 @@
 
 import type { GameRow, Intent, PackRef, Seat } from './types.js';
 
-export class DivergenceError extends Error {
-  constructor(readonly index: number, readonly refusalDetail: string) {
-    super(
-      `Replay divergence at move ${index}: ${refusalDetail} — full rebuild refused (GX-4/R-9); never patch`
-    );
-    this.name = 'DivergenceError';
-  }
-}
+// DivergenceError lives in its own file (one class per file); re-exported so every import holds.
+export { DivergenceError } from './divergence-error.js';
 
 export class IntentLog {
   private readonly entries: Intent[] = [];
