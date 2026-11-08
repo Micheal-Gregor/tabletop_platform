@@ -1,5 +1,5 @@
 {
-  "_comment": "The gate machinery of the metaframework 2.9.1 repo template, digested by tools/gatecheck.py; phase4-checks.py gates compares a project's copy against it.",
+  "_comment": "The gate machinery of the metaframework 2.9.1-a repo template, digested by tools/gatecheck.py; phase4-checks.py gates compares a project's copy against it.",
   "tools/basis.py": "657492511c850cfc8500f66c3e532cc20471b0a1744d333a2478b14cfd5b89c3",
   "tools/brief.py": "6258dad233cdbf9407de39edcf78a77263b307258b3d314f33312e7cbede96cc",
   "tools/emission-check.py": "dfbfb0b36dc9a2e254f645be40995c208e118f6459809dcce78ea3c0f624295d",
@@ -19,7 +19,7 @@
   "tools/reopen.py": "4b50db39b0a30807aad02ccb7034f948ba05944c0ad0eb4b05f1f32fe313a165",
   "tools/run.py": "832189893e8f0905bc1b96299bd3332f615afbdadc0003d6d3f54aee602c50ed",
   "tools/seal.py": "6a495646d3b2df2365be67f8facf554cf8be5e57c77cedd753f49c82a9951d75",
-  "tools/source_scan.py": "3d404bb6fef69e2787e13abfd28c2817fb9aeec14091f033ff4f586e4c7fd296",
+  "tools/source_scan.py": "e444401b0f763b3bbbe23c6d117f95c7681aa73be01ad230858badfd7563b4f0",
   "tools/spend.py": "e348f5fb9141ccad19fe07a144ce27157a88e25c7d090044afd83d9d6b8fc2c3",
   "tools/state.py": "d545fa455e2c8c080e95c0cac09204595c07deb04397607947d189d9dd8b8041",
   "tools/structure-check.py": "63104be0557beb903c7db4df0c483c31c74d71dd111dd4f18ac03b7067f8f80b",

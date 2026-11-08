@@ -9,6 +9,9 @@ a set gave it first, which followed the hash seed.
 
 2.7.0: a JS/TS file's signatures cover every class in it, not the first only.
 
+2.9.1a: a TypeScript parameter is read by its name, whatever its modifiers, type, `?` or default, and a parameter list
+runs to its own closing parenthesis (Tabletop R1, 8 Nov 2026: every typed constructor read as taking nothing).
+
 Run: python -m unittest discover -s tools/tests
 """
 import importlib.util
@@ -256,6 +259,182 @@ class JsEveryClass(unittest.TestCase):
         self.assertEqual(P4._public_ops("src/kernel.ts", text), {"commit": ["batch"], "check": ["path"]},
                          "OS-12 reads the same operations as before")
         self.assertEqual(SCAN.signatures("src/kernel.ts", "const make = () => class extends Base {\n};\n"), {})
+
+
+# Tabletop's constructor heads as packages/*/src writes them (R1, 8 Nov 2026), each body cut to a line or two.
+TABLETOP = """export class HookViolation extends Error {
+  constructor(readonly hook: 'HK-1' | 'HK-2', detail: string) {
+    super(`${hook} violated: ${detail}`);
+  }
+}
+
+export class EngineCore {
+  private readonly appliers = new Map<string, Applier>();
+
+  constructor(
+    private readonly packRef: PackRef,
+    private readonly seats: readonly Seat[],
+    private readonly seed: string,
+    genesis: Genesis,
+    guard?: Guard
+  ) {
+    this.guard = guard ?? new Guard();
+  }
+
+  /** Registration surface for F2+ modules — guard spec and applier arrive together. */
+  registerIntent(
+    type: string,
+    spec: Parameters<Guard['register']>[1],
+    applier: Applier
+  ): void {
+    this.guard.register(type, spec);
+  }
+}
+
+export class RNGStreams {
+  private readonly streams = new Map<string, RNGStream>();
+
+  constructor(private readonly gameSeed: string) {}
+}
+
+export class PackLoadRefusal extends Error {
+  constructor(readonly defects: readonly string[]) {
+    super(`Pack refused [GX-10/R-2/HK-4] — defects: ${defects.join(' · ')}`);
+  }
+}
+
+export class VentureRefusal extends Error {
+  constructor(readonly venture: string, readonly rule: string, detail: string) {
+    super(`Venture refused [${rule}] "${venture}": ${detail}`);
+  }
+}
+
+export class LockstepController {
+  private readonly faults: { index: number; error: string }[] = [];
+
+  private constructor(
+    private readonly core: EngineCore,
+    private readonly seats: readonly Seat[]
+  ) {}
+
+  /** Host a fresh session (the live-game path). */
+  static host(
+    packRef: PackRef,
+    wire: (core: EngineCore) => void
+  ): LockstepController {
+    return new LockstepController(new EngineCore(packRef), []);
+  }
+}
+"""
+
+TABLETOP_CELL = ("HookViolation: hook, detail; EngineCore: packRef, seats, seed, genesis, guard; RNGStreams: gameSeed; "
+                 "PackLoadRefusal: defects; VentureRefusal: venture, rule, detail; LockstepController: core, seats")
+
+
+class TsParameters(unittest.TestCase):
+    """2.9.1a: a TypeScript parameter is read by its name. Until 2.9.1a a part of the list was kept only when it was a
+    bare name, so `detail: string` was dropped and every typed constructor read as taking nothing; and the list ended at
+    its first `)`, so a function-typed parameter hid the head (Tabletop R1: 20 false declarations findings)."""
+
+    def ctor(self, head: str) -> list[str]:
+        """The constructor parameters the reader finds in `head`, written into a class of its own."""
+        return SCAN.signatures("src/a.ts", f"export class A {{\n  {head}\n  }}\n}}\n")["A"]["constructor"]
+
+    def test_parameter_property_modifiers_are_not_names(self):
+        self.assertEqual(self.ctor("constructor(public a: A, private b: B, protected c: C, readonly d: D, "
+                                   "override e: E, private readonly f: F, public override readonly g: G) {"),
+                         ["a", "b", "c", "d", "e", "f", "g"])
+        self.assertEqual(self.ctor("constructor(readonly: boolean, public override: string) {"),
+                         ["readonly", "override"], "a modifier word used as a name is the name")
+
+    def test_optional_default_and_rest_parameters_are_read_by_name(self):
+        self.assertEqual(self.ctor("constructor(a?: A, private b?: B, c: number = 3, d = 'x, y', ...rest: V[]) {"),
+                         ["a", "b", "c", "d", "rest"])
+
+    def test_a_generic_s_commas_do_not_split_the_list(self):
+        self.assertEqual(self.ctor("constructor(index: Map<string, number>, "
+                                   "pairs: Array<[string, Record<string, number>]>, guard: Guard) {"),
+                         ["index", "pairs", "guard"])
+
+    def test_a_function_type_does_not_end_the_list(self):
+        self.assertEqual(self.ctor("constructor(cb: (a: number, b: string) => void, "
+                                   "wire: (core: EngineCore) => Promise<void>, next: () => number) {"),
+                         ["cb", "wire", "next"])
+        self.assertEqual(self.ctor("constructor(cb: () => void = noop, x: number) {"), ["cb", "x"],
+                         "the `=` of `=>` starts no default")
+
+    def test_a_string_type_s_commas_and_parentheses_are_text(self):
+        self.assertEqual(self.ctor("constructor(mode: 'a, b' | '(c', readonly hook: 'HK-1' | 'HK-2', "
+                                   "detail: string) {"), ["mode", "hook", "detail"])
+
+    def test_a_comparison_in_a_default_is_not_a_bracket(self):
+        self.assertEqual(self.ctor("constructor(a = b < c, d = e > f, g) {"), ["a", "d", "g"])
+
+    def test_a_destructured_parameter_gives_the_names_it_binds(self):
+        self.assertEqual(self.ctor("constructor({ clock, store }: Deps, [first, second]: Pair, extra: number) {"),
+                         ["clock", "store", "extra"], "an array pattern gives none, as before 2.9.1a")
+        self.assertEqual(self.ctor("constructor({ clock, store }: { clock: Clock; store: Store }) {"),
+                         ["clock", "store"])
+
+    def test_a_multi_line_list_with_comments_and_a_trailing_comma(self):
+        self.assertEqual(self.ctor("constructor(\n    private readonly core: EngineCore, // the core (one per game)\n"
+                                   "    /* the seats, in order */ readonly seats: readonly Seat[],\n"
+                                   "    guard?: Guard,\n  ) {"), ["core", "seats", "guard"])
+
+    def test_an_operation_s_typed_parameters_are_read_and_this_is_not_one(self):
+        text = ("export class A {\n  apply(event: Event, at: number) {\n  }\n\n"
+                "  bind(this: Window, x: number) {\n  }\n}\n")
+        self.assertEqual(SCAN.signatures("src/a.ts", text), {"A": {"apply": ["event", "at"], "bind": ["x"]}})
+        self.assertEqual(P4._public_ops("src/a.ts", text), {"apply": ["event", "at"], "bind": ["x"]})
+
+    def test_a_private_constructor_is_the_constructor_and_a_private_method_is_no_operation(self):
+        text = "export class A {\n  private constructor(core: EngineCore) {}\n\n  private reset(x: number) {\n  }\n}\n"
+        self.assertEqual(SCAN.signatures("src/a.ts", text), {"A": {"constructor": ["core"]}})
+
+    def test_tabletop_s_classes_read_with_their_real_parameter_names(self):
+        sig = SCAN.signatures("packages/engine/src/kernel/core.ts", TABLETOP)
+        self.assertEqual({cls: members.get("constructor") for cls, members in sig.items()}, {
+            "HookViolation": ["hook", "detail"],
+            "EngineCore": ["packRef", "seats", "seed", "genesis", "guard"],
+            "RNGStreams": ["gameSeed"],
+            "PackLoadRefusal": ["defects"],
+            "VentureRefusal": ["venture", "rule", "detail"],
+            "LockstepController": ["core", "seats"]})
+        self.assertEqual(sig["EngineCore"], {"constructor": ["packRef", "seats", "seed", "genesis", "guard"]},
+                         "a head with a return type (`): void {`) is still no operation: the 29 Oct backlog row")
+
+    def test_tabletop_s_true_cell_passes_the_declarations_check(self):
+        root = Path(tempfile.mkdtemp(prefix="mf-ts-"))
+        self.addCleanup(shutil.rmtree, root, True)
+        model = ("| Module | File | Traces to | Responsibility | Declared inputs (OS-1) | Decides | Status |\n"
+                 "|---|---|---|---|---|---|---|\n"
+                 f"| MOD-02 kernel core | packages/engine/src/kernel/core.ts | x | x | {TABLETOP_CELL} | — "
+                 "| built |\n")
+        for rel, text in (("packages/engine/src/kernel/core.ts", TABLETOP), ("ui/interface-contract.md", CONTRACT),
+                          ("INSTRUMENTS/object-model-and-parameters.md", model)):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text(text, encoding="utf-8")
+        self.assertEqual([p["detail"] for p in SEAL.check_declarations(root, {})], [])
+
+
+class JsUnchanged(unittest.TestCase):
+    """2.9.1a reads plain JavaScript as 2.9.1 did: each answer below is the one 2.9.1 gave."""
+
+    SHAPES = {
+        "class A {\n  constructor(path, clock) {\n  }\n\n  commit(batch) {\n  }\n}\n":
+            {"constructor": ["path", "clock"], "commit": ["batch"]},
+        "class A {\n  constructor({ clock, store }) {\n  }\n}\n": {"constructor": ["clock", "store"]},
+        "class A {\n  constructor(a = 1, ...rest) {\n  }\n}\n": {"constructor": ["a", "rest"]},
+        "class A {\n  constructor({ a: renamed, b = 2 }, [x, y]) {\n  }\n}\n": {"constructor": ["b"]},
+        "class A {\n  constructor(\n    path,\n    clock,\n  ) {\n  }\n}\n": {"constructor": ["path", "clock"]},
+        "class A {\n  async load(key) {\n  }\n\n  get size() {\n  }\n\n  static make(x) {\n  }\n}\n": {"load": ["key"]},
+    }
+
+    def test_each_shape_reads_as_it_did(self):
+        for text, want in self.SHAPES.items():
+            for rel in ("src/a.js", "src/a.mjs", "src/a.ts"):
+                with self.subTest(rel=rel, text=text):
+                    self.assertEqual(SCAN.signatures(rel, text), {"A": want})
 
 
 KERNEL = '''from dataclasses import dataclass, field

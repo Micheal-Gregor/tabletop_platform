@@ -224,7 +224,8 @@ def os1_findings(rel: str, text: str) -> list[tuple[str, int, str]]:
 
 # A JS/TS string literal, kept as it is, or a comment, blanked: read in one pass so a `//` inside a string is not a
 # comment. `#` is a private name in JS, never a comment.
-JS_LEXEME = re.compile(r"\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`|//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)")
+JS_STRING = r"\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`"
+JS_LEXEME = re.compile(JS_STRING + r"|//[^\n]*|/\*[\s\S]*?(?:\*/|\Z)")
 PY_NOT_A_WORD = {tokenize.NL, tokenize.COMMENT, tokenize.INDENT, tokenize.DEDENT}
 
 
@@ -408,32 +409,107 @@ def _py_signatures(rel: str, text: str, root: Path | None) -> dict:
     return {cls.name: _py_class_signature(cls, lookup) for cls in ast.walk(tree) if isinstance(cls, ast.ClassDef)}
 
 
+# A JS/TS parameter list read token by token (2.9.1a): a string whole; `=>`, `==`, `===`, `!=` and `!==` each as one
+# operator; each bracket, angle bracket, comma, colon and lone `=` on its own.
+JS_TOKEN = re.compile(JS_STRING + r"|=>|[=!]==?|[()\[\]{}<>,:=]")
+JS_OPENS, JS_CLOSES = frozenset("([{"), frozenset(")]}")
+JS_NAME = re.compile(r"[A-Za-z_$][\w$]*")
+# One part of the list (2.9.1a): its parameter-property modifiers and rest dots, its name, then its `?`, and its type,
+# its default or nothing.
+JS_PARAM = re.compile(r"(?:(?:public|private|protected|readonly|override)\s+)*(?:\.\.\.\s*)?([A-Za-z_$][\w$]*)"
+                      r"\s*\??\s*(?:[:=]|$)")
+
+
+def _js_close(code: str, start: int, end: int) -> int:
+    """Where the bracket opening at `start` closes, strings skipped; -1 when it does not close before `end`."""
+    depth = 0
+    for m in JS_TOKEN.finditer(code, start, end):
+        depth += (m.group(0) in JS_OPENS) - (m.group(0) in JS_CLOSES)
+        if depth == 0:
+            return m.start()
+    return -1
+
+
+def _js_cuts(params: str) -> list[int]:
+    """Where a parameter list's top-level commas stand (2.9.1a): outside brackets and strings and, in a type, outside
+    angle brackets, so `Map<string, number>` is one part. A part's type runs from its top-level `:` to its default's
+    `=`; in a default, `<` and `>` compare."""
+    cuts, depth, angle, phase = [], 0, 0, ""
+    for m in JS_TOKEN.finditer(params):
+        tok = m.group(0)
+        depth += (tok in JS_OPENS) - (tok in JS_CLOSES)
+        if depth:
+            continue
+        if phase == ":" and tok in ("<", ">"):
+            angle += 1 if tok == "<" else -1
+        elif angle:
+            continue
+        elif tok == ",":
+            cuts.append(m.start())
+            phase = ""
+        elif tok in (":", "=") and phase != "=":
+            phase = tok
+    return cuts
+
+
+def _js_pattern_names(part: str) -> list[str]:
+    """The names a destructured `{...}` part binds, read as before 2.9.1a: its braces dropped, each comma part a plain
+    name once its default and rest dots are dropped, so a renamed key (`a: b`) gives none. Its type is not read."""
+    pattern = part[:_js_close(part, 0, len(part)) + 1]
+    names = (p.strip().split("=")[0].strip().lstrip(".") for p in re.sub(r"[{}]", "", pattern).split(","))
+    return [n for n in names if JS_NAME.fullmatch(n)]
+
+
 def _js_param_names(params: str) -> list[str]:
-    """The plain names in a JS/TS parameter list: destructuring braces, defaults and rest dots dropped."""
-    names = []
-    for part in re.sub(r"[{}]", "", params).split(","):
-        part = part.strip().split("=")[0].strip().lstrip(".")
-        if re.match(r"^[A-Za-z_$][\w$]*$", part):
-            names.append(part)
+    """The names in a JS/TS parameter list, in order (2.9.1a): each top-level part's name, less its parameter-property
+    modifiers, rest dots, `?`, type and default; a destructured part's names; never `this`, TypeScript's receiver type.
+    An array pattern gives none. Until 2.9.1a a part was read only when it was a bare name, so every typed TypeScript
+    constructor (`readonly rule: string, detail: string`) read as taking nothing (Tabletop R1, 8 Nov 2026)."""
+    edges, names = [-1, *_js_cuts(params), len(params)], []
+    for part in (params[a + 1:b].strip() for a, b in zip(edges, edges[1:])):
+        if part.startswith("{"):
+            names += _js_pattern_names(part)
+            continue
+        m = JS_PARAM.match(part)
+        if m and m.group(1) != "this":
+            names.append(m.group(1))
     return names
 
 
 JS_CLASS = re.compile(r"\bclass\s+(?!extends\b)([A-Za-z_$][\w$]*)")
-JS_OP = re.compile(r"^\s{2,}(?:async\s+)?([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{", re.M)
+# A method head's start: its name at a line's start, then its `(`. The list runs to its own `)` and a brace follows
+# (2.9.1a); until 2.9.1a it ended at the first `)`, so a function-typed parameter (`wire: (core: EngineCore) => void`)
+# hid the head. An access modifier is read before `constructor` only: Tabletop's `private constructor(` is the
+# constructor, and a `private` method is no public operation.
+JS_OP = re.compile(r"^\s{2,}(?:(?:public|private|protected)\s+(?=constructor\b))?(?:async\s+)?([A-Za-z_$][\w$]*)\s*\(",
+                   re.M)
+JS_BODY = re.compile(r"\s*\{")
+JS_NOT_OPS = ("if", "for", "while", "switch", "catch")
+
+
+def _js_heads(code: str, start: int, end: int):
+    """(name, parameter text) for each method head in code[start:end], in order. A head's start inside an earlier
+    head is not read."""
+    after = start
+    for m in JS_OP.finditer(code, start, end):
+        close = _js_close(code, m.end() - 1, end) if m.start() >= after else -1
+        body = JS_BODY.match(code, close + 1, end) if close >= 0 else None
+        if body:
+            after = body.end()
+            yield m.group(1), code[m.end():close]
 
 
 def _js_signatures(text: str) -> dict:
     """{class: {op: params}} for every class in a JS/TS file, each reading the method heads from its own head to the
     next class's (2.7.0). Before 2.7.0 the file's first class took every head in the file, a later class's constructor
-    included. A class head is read with comments blanked, so "the class below" in a comment is not a class."""
-    heads = list(JS_CLASS.finditer(JS_LEXEME.sub(_blanked, text)))
+    included. Class and method heads are read with comments blanked, so "the class below" in a comment is not a class
+    and a comment inside a parameter list is not a parameter (2.9.1a)."""
+    code = JS_LEXEME.sub(_blanked, text)
+    heads = list(JS_CLASS.finditer(code))
     out = {}
     for cls, nxt in zip(heads, heads[1:] + [None]):
-        ops = {}
-        for m in JS_OP.finditer(text, cls.end(), nxt.start() if nxt else len(text)):
-            if m.group(1) not in ("if", "for", "while", "switch", "catch"):
-                ops[m.group(1)] = _js_param_names(m.group(2))
-        out[cls.group(1)] = ops
+        out[cls.group(1)] = {name: _js_param_names(params) for name, params
+                             in _js_heads(code, cls.end(), nxt.start() if nxt else len(code)) if name not in JS_NOT_OPS}
     return out
 
 
