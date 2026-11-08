@@ -12,72 +12,96 @@ import { placeComponent, addSurface, composeSurface } from './surfaces.js';
 import { onTurnRule as onTurn } from '../kernel/discipline.js';
 
 export function wireOntology(core: EngineCore): void {
-  core.registerIntent(
-    'relation:form',
-    {
-      args: (_s, i) =>
-        typeof i.args['type'] === 'string' && typeof i.args['from'] === 'string' && typeof i.args['to'] === 'string'
-          ? true
-          : 'type/from/to (strings) required',
-      rules: [onTurn],
-    },
-    (state, intent) =>
-      formRelation(state, {
-        type: intent.args['type'] as string,
-        from: intent.args['from'] as string,
-        to: intent.args['to'] as string,
-        ...(intent.args['sourcePath'] !== undefined ? { sourcePath: intent.args['sourcePath'] as string } : {}),
-        ...(intent.args['mode'] !== undefined ? { mode: intent.args['mode'] as string } : {}),
-      })
-  );
+  registerRelationForm(core);
+  registerRelationDissolve(core);
+  registerSurfaceAdd(core);
+  registerComponentPlace(core);
+  registerSurfaceCompose(core);
+}
 
-  core.registerIntent(
-    'relation:dissolve',
-    { args: (_s, i) => (typeof i.args['relation'] === 'string' ? true : 'relation id required'), rules: [onTurn] },
-    (state, intent) => dissolveRelation(state, intent.args['relation'] as string)
-  );
+function registerRelationForm(core: EngineCore): void {
+  core.registerIntent('relation:form', { args: relationFormArgs, rules: [onTurn] }, applyRelationForm);
+}
 
-  core.registerIntent(
-    'surface:add',
-    {
-      args: (_s, i) =>
-        typeof i.args['surface'] === 'string' && typeof i.args['topology'] === 'string'
-          ? true
-          : 'surface/topology required',
-      rules: [onTurn],
-    },
-    (state, intent) => addSurface(state, intent.args['surface'] as string, intent.args['topology'] as string)
-  );
+function relationFormArgs(_state: State, intent: Intent): true | string {
+  const args = intent.args;
+  return typeof args['type'] === 'string' && typeof args['from'] === 'string' && typeof args['to'] === 'string'
+    ? true
+    : 'type/from/to (strings) required';
+}
 
-  core.registerIntent(
-    'component:place',
-    {
-      args: (_s, i) =>
-        typeof i.args['component'] === 'string' && typeof i.args['surface'] === 'string' &&
-        typeof i.args['position'] === 'object' && i.args['position'] !== null
-          ? true
-          : 'component/surface/position required',
-      rules: [onTurn],
-    },
-    (state, intent) =>
-      placeComponent(state, intent.args['component'] as string, intent.args['surface'] as string, intent.args['position'] as JsonObject)
-  );
+function applyRelationForm(state: State, intent: Intent): JsonObject {
+  const args = intent.args;
+  return formRelation(state, {
+    type: args['type'] as string,
+    from: args['from'] as string,
+    to: args['to'] as string,
+    ...(args['sourcePath'] !== undefined ? { sourcePath: args['sourcePath'] as string } : {}),
+    ...(args['mode'] !== undefined ? { mode: args['mode'] as string } : {}),
+  });
+}
 
-  core.registerIntent(
-    'surface:compose',
-    {
-      args: (_s, i) =>
-        typeof i.args['surface'] === 'string' && Array.isArray(i.args['components']) && typeof i.args['topology'] === 'string'
-          ? true
-          : 'surface/components[]/topology required',
-      rules: [onTurn],
-    },
-    (state: State, intent: Intent) =>
-      composeSurface(
-        state,
-        intent.args['surface'] as string,
-        intent.args['components'] as string[],
-        intent.args['topology'] as string
-      ) as JsonObject
-  );
+function registerRelationDissolve(core: EngineCore): void {
+  core.registerIntent('relation:dissolve', { args: relationDissolveArgs, rules: [onTurn] }, applyRelationDissolve);
+}
+
+function relationDissolveArgs(_state: State, intent: Intent): true | string {
+  return typeof intent.args['relation'] === 'string' ? true : 'relation id required';
+}
+
+function applyRelationDissolve(state: State, intent: Intent): JsonObject {
+  return dissolveRelation(state, intent.args['relation'] as string);
+}
+
+function registerSurfaceAdd(core: EngineCore): void {
+  core.registerIntent('surface:add', { args: surfaceAddArgs, rules: [onTurn] }, applySurfaceAdd);
+}
+
+function surfaceAddArgs(_state: State, intent: Intent): true | string {
+  const args = intent.args;
+  return typeof args['surface'] === 'string' && typeof args['topology'] === 'string'
+    ? true
+    : 'surface/topology required';
+}
+
+function applySurfaceAdd(state: State, intent: Intent): JsonObject {
+  return addSurface(state, intent.args['surface'] as string, intent.args['topology'] as string);
+}
+
+function registerComponentPlace(core: EngineCore): void {
+  core.registerIntent('component:place', { args: componentPlaceArgs, rules: [onTurn] }, applyComponentPlace);
+}
+
+function componentPlaceArgs(_state: State, intent: Intent): true | string {
+  const args = intent.args;
+  return typeof args['component'] === 'string' && typeof args['surface'] === 'string' &&
+    typeof args['position'] === 'object' && args['position'] !== null
+    ? true
+    : 'component/surface/position required';
+}
+
+function applyComponentPlace(state: State, intent: Intent): JsonObject {
+  const args = intent.args;
+  return placeComponent(state, args['component'] as string, args['surface'] as string, args['position'] as JsonObject);
+}
+
+function registerSurfaceCompose(core: EngineCore): void {
+  core.registerIntent('surface:compose', { args: surfaceComposeArgs, rules: [onTurn] }, applySurfaceCompose);
+}
+
+function surfaceComposeArgs(_state: State, intent: Intent): true | string {
+  const args = intent.args;
+  return typeof args['surface'] === 'string' && Array.isArray(args['components']) && typeof args['topology'] === 'string'
+    ? true
+    : 'surface/components[]/topology required';
+}
+
+function applySurfaceCompose(state: State, intent: Intent): JsonObject {
+  const args = intent.args;
+  return composeSurface(
+    state,
+    args['surface'] as string,
+    args['components'] as string[],
+    args['topology'] as string
+  ) as JsonObject;
 }

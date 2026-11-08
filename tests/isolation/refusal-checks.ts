@@ -116,3 +116,22 @@ export function checkThrowsTyped<I extends object>(spec: RefusalSpec<I>): void {
   expect(caught).toBeInstanceOf(spec.type);
   expect(caught.name).toBe(spec.typeName);
 }
+
+/** One shared check, runnable against any refusal's spec. */
+export type RefusalCheck = <I extends object>(spec: RefusalSpec<I>) => void;
+
+/**
+ * Every check above, each with the sentence a test reports it under, in the order a refusal
+ * class is read. A refusal's isolation test runs this table with `it.each`, so no test body
+ * repeats another's list of calls.
+ */
+export const REFUSAL_CHECKS: [string, RefusalCheck][] = [
+  ['each variant differs from the base in its one input only', checkVariantsDifferInOneInput],
+  ['builds an Error of its own type with the message its inputs give', checkConstructed],
+  ['gives the same message and name for the same inputs twice', checkSameInputsSameAnswer],
+  ['every public field answers from its own declared input', checkFieldsRead],
+  ['name stays fixed whatever declared input it is built from', checkNameFixed],
+  ['message changes with each declared input', checkMessageFollowsEachInput],
+  ['stack carries the message, so each declared input changes it', checkStackFollowsEachInput],
+  ['is caught by its own type, not as a broken call', checkThrowsTyped],
+];
