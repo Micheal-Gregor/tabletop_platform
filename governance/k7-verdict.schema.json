@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metaframework.local/schemas/k7-verdict-1.0.json",
+  "title": "K7 Conformance Verdict",
+  "description": "The sole durable output of a K7 review. Written by the audit subprocess, never by the builder. Validated by the commit hook against HEAD before any commit is permitted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "concept",
+    "round",
+    "reviewed",
+    "reviewer",
+    "preflight",
+    "checks",
+    "drift_score",
+    "verdict",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+
+    "concept": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concept name, matching the S3 anchor."
+    },
+
+    "round": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Unbounded. The old RD-9 cap of 2 was a patch for a loop caused by in-session review; subprocess separation removes the cause. Termination is now handled by `progress` below: a round that changes nothing must HALT."
+    },
+
+    "progress": {
+      "type": ["object", "null"],
+      "description": "Null on round 1. Otherwise the runner computes this by diffing against the prior verdict. A mechanical verdict is a function of the tree, so an unchanged tree with an unchanged failing set means the loop is not converging.",
+      "additionalProperties": false,
+      "required": ["prior_round", "prior_tree_sha", "prior_failing_checks", "changed"],
+      "properties": {
+        "prior_round": { "type": "integer", "minimum": 1 },
+        "prior_tree_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "prior_failing_checks": { "type": "array", "items": { "type": "string" } },
+        "changed": {
+          "type": "boolean",
+          "description": "False when tree_sha and the failing-check set both match the prior round."
+        }
+      }
+    },
+
+    "reviewed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tree_sha", "commit_sha", "s3_anchor_tag", "modules"],
+      "properties": {
+        "tree_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "git rev-parse HEAD^{tree} at review time. The commit hook compares this to the current tree; a mismatch means the verdict is stale and the commit is denied."
+        },
+        "commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "s3_anchor_tag": {
+          "type": "string",
+          "description": "The frozen S3 tag this review was conducted against, e.g. s3-anchor-v1.0."
+        },
+        "modules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Modules in scope for this round."
+        },
+        "kind": {
+          "enum": ["round", "checkpoint", "final"],
+          "description": "RD-32 (2.7.0): the foundation checkpoint, the final review, or any other round (a re-check, an owner-ordered round). A verdict from before RD-32 has none."
+        },
+        "facets": {
+          "type": "array",
+          "description": "The final review's passes (RD-32): one per facet, each reviewing its modules in full, then one across the seams.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["facet", "modules", "verdict"],
+            "properties": {
+              "facet": { "type": "string" },
+              "modules": { "type": "array", "items": { "type": "string" } },
+              "verdict": { "enum": ["PASS", "RETURN", "HALT"] }
+            }
+          }
+        },
+        "scope": {
+          "type": "array",
+          "description": "Credited review (tools/manifests.py): each module's content fingerprint and the mode the runner gave it. Written by the runner; a verdict from before credited review has none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["module", "mode", "manifest", "base", "base_round", "credit_round", "unresolved", "deps", "importers"],
+            "properties": {
+              "module": { "type": "string", "pattern": "^MOD-[0-9]+$" },
+              "mode": { "enum": ["credited", "diff", "full", "checkpoint"], "description": "checkpoint (RD-32): reviewed whole for correctness only (CC-1, CC-2, CC-4); credits nothing and is no full review." },
+              "manifest": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256 of the module's canonical manifest." },
+              "base": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$", "description": "diff mode: the reviewed commit of the newest concluded round that had the module in scope." },
+              "base_round": { "type": ["integer", "null"] },
+              "credit_round": { "type": ["integer", "null"], "description": "credited mode: the concluded round whose scope held this fingerprint." },
+              "unresolved": { "type": "array", "items": { "type": "string" }, "description": "Internal imports the runner could not resolve; a module with any is never credited." },
+              "deps": { "type": "array", "items": { "type": "string" } },
+              "importers": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent", "invocation", "builder_transcript_seen", "started_at", "completed_at"],
+      "properties": {
+        "agent": { "const": "k7-reviewer" },
+        "invocation": {
+          "const": "subprocess",
+          "description": "Only a separate process may produce a verdict. An in-session subagent cannot satisfy this field honestly, which is the point."
+        },
+        "builder_transcript_seen": {
+          "const": false,
+          "description": "Asserted by the runner script, not by the reviewer. The runner controls the prompt and therefore knows."
+        },
+        "started_at": { "type": "string", "format": "date-time" },
+        "completed_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["structure_check", "worktree_clean_before", "worktree_clean_after"],
+      "properties": {
+        "structure_check": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "violations"],
+          "properties": {
+            "status": { "enum": ["pass", "fail"] },
+            "violations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["file", "rule", "detail"],
+                "properties": {
+                  "file": { "type": "string" },
+                  "rule": { "enum": ["resident_line_cap", "step_line_cap", "single_acceptance_test", "missing_acceptance_test", "unclassified_document"] },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "worktree_clean_before": { "const": true },
+        "worktree_clean_after": {
+          "const": true,
+          "description": "The reviewer must leave the tree byte-identical. A dirty exit invalidates the verdict."
+        }
+      }
+    },
+
+    "checks": {
+      "type": "object",
+      "description": "One entry per conformance check. Keys are check IDs (CC-1..CC-7 for K7).",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "mechanical"],
+        "properties": {
+          "status": { "enum": ["pass", "fail", "not_applicable"] },
+          "mechanical": {
+            "type": "boolean",
+            "description": "True only if the result came from a command exit code. Makes the prose/mechanical ratio countable, so policy can require a minimum."
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command", "exit_code"],
+            "properties": {
+              "command": { "type": "string" },
+              "exit_code": { "type": "integer" },
+              "output_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Required when mechanical is false. Prose judgment must be labelled as such."
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "mechanical": { "const": true } }, "required": ["mechanical"] },
+            "then": { "required": ["evidence"] }
+          },
+          {
+            "if": { "properties": { "mechanical": { "const": false } }, "required": ["mechanical"] },
+            "then": { "required": ["rationale"] }
+          }
+        ]
+      }
+    },
+
+    "drift_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "basis"],
+      "properties": {
+        "value": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "basis": {
+          "type": "array",
+          "minItems": 1,
+          "description": "A bare number is rejected. Each deduction must name a check and a specific finding, so the score is reconstructable rather than asserted.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["check_id", "finding", "deduction"],
+            "properties": {
+              "check_id": { "type": "string" },
+              "finding": { "type": "string", "minLength": 1 },
+              "deduction": { "type": "integer", "minimum": 0, "maximum": 9 }
+            }
+          }
+        }
+      }
+    },
+
+    "verdict": { "enum": ["PASS", "RETURN", "HALT"] },
+
+    "blocking": {
+      "type": "array",
+      "description": "Required non-empty when verdict is RETURN or HALT.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_id", "module", "required_change"],
+        "properties": {
+          "check_id": { "type": "string" },
+          "module": { "type": "string" },
+          "required_change": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "next_action": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Single imperative sentence. Copied verbatim into STATE.md by the runner."
+    },
+
+    "proposed_tests": {
+      "type": "array",
+      "description": "Amendment S-1 (the frozen test set). A further test for a guard element the frozen set already covers: a proposal, never a blocking item, which the runner appends to INSTRUMENTS/test-intake-log.md for the end-of-stretch dedupe. A guard element the frozen set does not cover is not a proposal: it is a CC-4 failure, and goes in blocking. Optional; a verdict from before the rule has none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["module", "guard_element", "test", "why"],
+        "properties": {
+          "module": { "type": "string", "pattern": "^MOD-[0-9]+$" },
+          "guard_element": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The guard element the test claims to cover in that module: the Outcome of S3 §5, or the invariant a row with no named outcome guards."
+          },
+          "test": { "type": "string", "minLength": 1, "description": "The forbidden input and the expected rejection." },
+          "why": { "type": "string", "minLength": 1, "description": "What the frozen set's row for that element misses." }
+        }
+      }
+    }
+  },
+
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "const": "RETURN" } }, "required": ["verdict"] },
+      "then": { "properties": { "blocking": { "minItems": 1 } }, "required": ["blocking"] },
+      "description": "A RETURN says fix these and come back, so it must name them."
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "HALT" } }, "required": ["verdict"] },
+      "then": { "properties": { "blocking": { "minItems": 1, "maxItems": 1 } }, "required": ["blocking"] },
+      "description": "A HALT carries exactly one entry: the halt-class constraint breached. Offering a fix list alongside a HALT converts it back into a defect queue, which is the failure the verdict exists to prevent — so the schema makes that unrepresentable."
+    },
+    {
+      "if": {
+        "properties": { "progress": { "type": "object", "properties": { "changed": { "const": false } }, "required": ["changed"] } },
+        "required": ["progress"]
+      },
+      "then": { "properties": { "verdict": { "const": "HALT" } } },
+      "description": "No-progress stop, replacing the old round cap. A round that changed neither the tree nor the failing set cannot report anything but HALT."
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "PASS" } }, "required": ["verdict"] },
+      "then": {
+        "properties": {
+          "preflight": { "properties": { "structure_check": { "properties": { "status": { "const": "pass" } } } } }
+        },
+        "description": "A PASS is impossible while structure violations stand."
+      }
+    }
+  ]
+}

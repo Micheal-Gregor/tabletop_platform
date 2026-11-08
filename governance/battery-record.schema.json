@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A builder battery's record (RD-10, RD-26, RD-28)",
+  "description": "Written by the builder's battery for one module's content and handed to battery_complete@1 as its reference: python tools/receipts.py battery --module MOD-NN --record <this file>. `manifest` is that content's digest (python tools/receipts.py manifest MOD-NN).",
+  "type": "object",
+  "required": ["module", "manifest", "mutations"],
+  "properties": {
+    "module": { "type": "string", "pattern": "^MOD-[0-9]+$" },
+    "manifest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "commit": { "type": "string", "description": "The committed tree the battery ran on (RD-10: commit first)." },
+    "mutations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim", "killed", "killed_by", "restore_verified"],
+        "properties": {
+          "id": { "type": "string" },
+          "claim": { "type": "string", "minLength": 1, "description": "The claim this mutation targets (RD-26): a base case, a refusal, or a test's stated claim; or a prior K7 finding's shape." },
+          "killed": { "type": "boolean" },
+          "killed_by": { "enum": ["test", "build"] },
+          "restore_verified": { "type": "boolean", "description": "The restore was verified against HEAD (git diff --quiet)." },
+          "replant": {
+            "type": "object",
+            "description": "For a kill at build only: the compiler-evading re-plant, which must die by TEST (RD-10).",
+            "required": ["killed", "killed_by"],
+            "properties": { "killed": { "type": "boolean" }, "killed_by": { "enum": ["test", "build"] } }
+          }
+        }
+      }
+    },
+    "no_new_claims": { "type": "string", "description": "An empty battery says why: the change adds or changes no claim (RD-26)." }
+  }
+}

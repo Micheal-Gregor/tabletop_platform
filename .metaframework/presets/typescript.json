@@ -1,0 +1,11 @@
+{
+  "_comment": "The project.json settings a TypeScript build needs (2.6.21). `python tools/preset.py typescript` writes each key below into .metaframework/project.json where the build has not set it; keys that start with _ are notes and are never written.",
+  "_notes": "Vitest, with globals on: new-object.py's isolation test, tests/<stem>.isolation.test.ts, calls describe, it and expect without importing them, and the built-in isolation_test_pattern finds it, so object_standard stays null. tools/isolation-run.py starts the isolation command with the environment cleared, on Windows as on POSIX (2.7.0). typecheck_command is Phase 5's to declare. rederive_invoke stays the build's own.",
+  "test_command": "npx vitest run",
+  "test_module": "npx vitest run tests/{module}",
+  "test_select": "npx vitest run -t {test_name}",
+  "source_glob": "src/**/*.ts",
+  "isolation_test_command": "python tools/isolation-run.py -- npx vitest run .isolation.",
+  "rederive_command": "python tools/rederive.py {vector_id}",
+  "rederive_all": "python tools/rederive.py --all"
+}

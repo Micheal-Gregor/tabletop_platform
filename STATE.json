@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "concept": "TABLETOP",
+  "phase": 4,
+  "branch": "main",
+  "head": "5806fd862ca0059d647621983c96581a2927720d",
+  "tree": "442fc766f65f19e7d786cebc2afd3f232682a01c",
+  "dirty": true,
+  "current_module": "",
+  "k7_round": 0,
+  "last_gate_tag": "k7-pass-r1a",
+  "seal_tag": "",
+  "reopened": "",
+  "next_action": "R1 build session, started fresh in this folder so the gates load (TE-3). First the live gate probe from each session shape, cited in INSTRUMENTS/C4-anchor-record.md. Then: map the 37 unclaimed source files to object-model rows; take the OS-2 scanner misread under SR-1 (7 function-local lets); fix the library's 41 code-gates findings (owner: fix, not baseline); move utilization/bench to ui/ and retire governance/Phase5_Utilization_Roster.md with the CLAUDE.md contract swap; port vectors to rederive; seal.py check, triage once, seal.py apply. Plan: docs/reentry-2026-11-08.md; rulings: RESOLUTION_RECORD, I-260, I-261",
+  "blocked_on": null,
+  "updated_at": "2026-11-08T21:13:45+00:00",
+  "updated_by": "manual"
+}

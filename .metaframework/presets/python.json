@@ -1,0 +1,14 @@
+{
+  "_comment": "The project.json settings a Python build needs (2.6.21). `python tools/preset.py python` writes each key below into .metaframework/project.json where the build has not set it; keys that start with _ are notes and are never written.",
+  "_notes": "Standard library only (unittest), as LedgerCore V2 and PipelineGate build. Tests import the library from the repo root (from src.ledger import Ledger). Isolation tests are tests/**/test_<stem>_isolation.py: unittest's pattern finds them, so the full suite runs them, and tools/isolation-run.py runs them again with the environment cleared (Windows has no env -i). rederive_invoke stays the build's own: the command that drives one module through one vector.",
+  "test_command": "python -m unittest discover -s tests -p \"test_*.py\"",
+  "test_module": "python -m unittest discover -s tests -p \"test_{module}*.py\"",
+  "test_select": "python -m unittest discover -s tests -p \"test_*.py\" -k {test_name}",
+  "source_glob": "src/**/*.py",
+  "isolation_test_command": "python tools/isolation-run.py",
+  "rederive_command": "python tools/rederive.py {vector_id}",
+  "rederive_all": "python tools/rederive.py --all",
+  "object_standard": {
+    "isolation_test_pattern": "tests/**/test_{stem}_isolation.py"
+  }
+}

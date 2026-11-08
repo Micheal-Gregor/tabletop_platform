@@ -2,5 +2,32 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Local agent/tooling scratch — machine-specific, never shared (I-97).
-.claude/
+# Local agent/tooling scratch — machine-specific, never shared (I-97). Narrowed at the 2.9.1 adoption (I-261): the
+# gate machinery's .claude/settings.json (its hooks block) and .claude/agents/ are committed so every clone is gated.
+.claude/*
+!.claude/settings.json
+!.claude/agents/
+
+# --- metaframework 2.9.1 template ---
+# Session churn, not reviewed content.
+INSTRUMENTS/state-log.jsonl
+__pycache__/
+*.pyc
+
+# The PipelineGate store (RD-28): its *.jsonl lines are committed with the repo; its lock files are not.
+.pipelinegate/**/*.lock
+
+# The K7 reviewer's throwaway worktree (RD-29): made and removed by tools/k7-run.py each round.
+.k7/
+
+# This machine's paths (tools/install-gates.py --code-gates): never the same on another machine.
+.metaframework/local.json
+# Sessions whose own hook ran the gate here (gate_reach.note_hook_session); the plugin's router reads it.
+.metaframework/hook-sessions.txt
+
+# STATE.json IS tracked: next_action and blocked_on are the handoff between sessions and belong in history.
+# This machine's plugin list (tools/install-gates.py, 2.7.0): the coordinator profile, never committed.
+.claude/settings.local.json
+# Long runs (tools/run.py, 2.8.0) and the sessions' turn ends (tools/state.py's Stop hooks).
+.metaframework/runs/
+.metaframework/session-events.jsonl

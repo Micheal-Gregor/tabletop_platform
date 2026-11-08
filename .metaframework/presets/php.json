@@ -1,0 +1,11 @@
+{
+  "_comment": "The project.json settings a PHP build needs (2.6.21), as governance/languages/php.md sets them. `python tools/preset.py php` writes each key below into .metaframework/project.json where the build has not set it; keys that start with _ are notes and are never written.",
+  "_notes": "PHPUnit. Declare the library's PSR-4 namespace in composer.json first (php.md, setup step 1). Isolation tests are tests/**/<Class>IsolationTest.php, the built-in pattern for .php files, so object_standard stays null. tools/isolation-run.py starts the isolation command with the environment cleared, on Windows as on POSIX (2.7.0). typecheck_command is optional for PHP: php.md's is vendor/bin/phpstan analyse --level max src, with PHPStan in require-dev. rederive_invoke stays the build's own.",
+  "test_command": "vendor/bin/phpunit",
+  "test_module": "vendor/bin/phpunit tests/{module}",
+  "test_select": "vendor/bin/phpunit --filter {test_name}",
+  "source_glob": "src/**/*.php",
+  "isolation_test_command": "python tools/isolation-run.py -- vendor/bin/phpunit --filter IsolationTest",
+  "rederive_command": "python tools/rederive.py {vector_id}",
+  "rederive_all": "python tools/rederive.py --all"
+}

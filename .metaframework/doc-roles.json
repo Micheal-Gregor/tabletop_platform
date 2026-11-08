@@ -1,0 +1,29 @@
+{
+  "resident": [
+    "**/CLAUDE.md"
+  ],
+  "step": [
+    "**/steps/**/*.md"
+  ],
+  "ledger": [
+    "**/INSTRUMENTS/*.md",
+    "ui/**/*.md",
+    ".metaframework/spend-ledger.md",
+    "HANDOFF.md",
+    "utilization/**/*.md"
+  ],
+  "frozen": [
+    "**/governance/**/*.md",
+    "**/facets/**/*.md",
+    "**/README.md",
+    "HARNESS.md",
+    ".metaframework/operating-rules.md",
+    "SETUP.md",
+    "IMPLEMENTATION_GUIDE.md",
+    "STATE.md",
+    "**/.claude/agents/*.md",
+    "AUDITOR_CHARTER.md",
+    "docs/**/*.md",
+    "packs/**/*.md"
+  ]
+}

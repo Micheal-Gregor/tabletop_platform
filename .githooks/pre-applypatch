@@ -1,0 +1,10 @@
+#!/bin/sh
+# MetaFramework pre-applypatch (2.6.21): a patch `git am` applies runs the same checks as any other commit.
+# git am writes the patch into the index before it runs this hook, and commits it only when the hook exits 0, so
+# tools/precommit.py checks the patch's own snapshot, as pre-commit checks a commit's. Fails closed.
+root=$(git rev-parse --show-toplevel) || exit 1
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "pre-applypatch: python3 is not on the PATH, so the commit checks cannot run; patch refused" >&2
+  exit 1
+fi
+exec python3 "$root/tools/precommit.py" --root "$root"

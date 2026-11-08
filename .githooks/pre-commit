@@ -1,0 +1,10 @@
+#!/bin/sh
+# MetaFramework pre-commit (2.6.17): every commit, from any session or any shell, runs tools/precommit.py.
+# tools/install-gates.py points git here (core.hooksPath = .githooks); phase4-checks.py gates checks it is.
+# Fails closed: a python3 that cannot start refuses the commit rather than skipping the checks.
+root=$(git rev-parse --show-toplevel) || exit 1
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "pre-commit: python3 is not on the PATH, so the commit checks cannot run; commit refused" >&2
+  exit 1
+fi
+exec python3 "$root/tools/precommit.py" --root "$root"

@@ -1,0 +1,9 @@
+{
+  "about": "tools/test-set.py's config (Amendment S-1, governance/test-set.md): the judgment calls the lead approves. Phase 3 writes it before its human gate; setup copies it over this empty one.",
+  "s1_case": {
+    "pattern": "\\bT-[0-9]+\\b",
+    "suite_groups": []
+  },
+  "shared_guards": [],
+  "misfiled_positives": []
+}

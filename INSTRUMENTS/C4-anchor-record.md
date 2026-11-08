@@ -71,3 +71,19 @@ owner; each is mutation-testable by construction. ✓
 
 **C4 verdict: PROCEED conditional on the five rulings above** — no halt-class defect; no
 building until the gate closes (Do-not: never build over an unrecorded resolution).
+
+## Gate install at the 2.9.1 adoption (H-1) — 2026-11-08, R1 install (I-261)
+
+The build predates the plugin template; the owner ruled "Adopt, fix findings". The template machinery was copied in as
+a set (tools/, .metaframework/, .claude/settings.json hooks + agents, governance contracts, rubrics, the current
+Phase 4 roster and Object Writing Standard), then:
+
+- `python3 tools/install-gates.py` → wrote `.githooks/pre-commit`, `pre-merge-commit`, `pre-applypatch`; set
+  `core.hooksPath`; `.claude/settings.local.json`: 56 plugins off, 2 on (metaframework, oop-standards); "complete".
+- `node <oop-standards>/code-gates/scripts/gates.cjs init` → `.code-gates.json` (default limits); `code_gates: true`;
+  `install-gates.py --code-gates <gates.cjs>` → "complete". code-gates resolves the repo's own TypeScript.
+- `python3 tools/phase4-checks.py gates` → **pass** (exit 0). `rosters` pass; `structure-check` pass.
+- Still open, for the R1 build session: `modules` (37 source files claimed by no object-model row), `objects` (7 OS-2
+  hits, all function-local `let`s: an SR-1 case), `scaffold`, the library's 41 code-gates findings, the bench's move
+  to `ui/`, and the live probe from each session shape — it needs a session started after this install, since Claude
+  Code reads hooks only at session start (TE-3).

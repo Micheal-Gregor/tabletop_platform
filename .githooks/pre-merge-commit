@@ -1,0 +1,10 @@
+#!/bin/sh
+# MetaFramework pre-merge-commit (2.6.18): a merge that makes a commit runs the same checks as any other commit.
+# git runs this for a merge it can commit by itself; a conflicted merge is finished with `git commit`, which runs
+# pre-commit. Same script, same tools/precommit.py, checking the merge's own snapshot. Fails closed.
+root=$(git rev-parse --show-toplevel) || exit 1
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "pre-merge-commit: python3 is not on the PATH, so the commit checks cannot run; merge refused" >&2
+  exit 1
+fi
+exec python3 "$root/tools/precommit.py" --root "$root"

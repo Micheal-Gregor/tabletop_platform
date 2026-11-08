@@ -1,0 +1,3 @@
+{"type":"queue-operation","sessionId":"2222bbbb","operation":"enqueue"}
+{"type":"user","isSidechain":false,"sessionId":"2222bbbb","uuid":"u-0001","message":{"role":"user","content":"A session that never reached the model."}}
+{"type":"system","isSidechain":false,"sessionId":"2222bbbb","uuid":"y-0001","subtype":"informational","content":"Interrupted."}
