@@ -8,7 +8,7 @@
 import type { JsonObject, JsonValue, State } from '../kernel/types.js';
 import { EffectEngine, EffectRefusal } from '../play/effects.js';
 import type { EffectContext } from '../play/effects.js';
-import type { Condition, RuleContribution } from './contributions.js';
+import type { Condition, RuleContribution, SlotWrite } from './contributions.js';
 import { validateContribution } from './contributions.js';
 import { freezeDeep } from '../kernel/statetree.js';
 import { writeSlot } from './slots.js';
@@ -57,6 +57,35 @@ function evalCondition(c: Condition, event: HookEvent, ownSlots: Readonly<Record
   }
 }
 
+type SlotBank = Record<string, Record<string, JsonValue>>;
+
+/** K7-F4 D5: hasOwn-guarded bank lookup — a reserved-ish id can never key the prototype chain. */
+function ownSlotsOf(state: State, contributionId: string): Readonly<Record<string, JsonValue>> {
+  const bank = (state['ruleSlots'] as SlotBank) ?? {};
+  return Object.hasOwn(bank, contributionId) ? bank[contributionId]! : {};
+}
+
+/** The value one slot write lands: a set, or an increment that never coerces (EXT3-B, refusal-not-repair). */
+function slotWriteValue(c: RuleContribution, w: SlotWrite, current: JsonValue | undefined): JsonValue {
+  if (w.increment === undefined) return w.set as JsonValue;
+  if (typeof w.increment !== 'number') {
+    // EXT3-B residual (3B): the increment VALUE itself must be a number.
+    throw new EffectRefusal(c.id, 'GX-22', `increment value ${JSON.stringify(w.increment)} is not a number — refused, not coerced`);
+  }
+  if (current !== undefined && typeof current !== 'number') {
+    // EXT3-B: refusal-not-repair — increment never coerces a non-numeric slot.
+    throw new EffectRefusal(c.id, 'GX-22', `increment on non-numeric slot "${w.slot}" (holds ${JSON.stringify(current)}) — refused, not coerced`);
+  }
+  return ((current as number) ?? 0) + w.increment;
+}
+
+/** One declared slot write against the state as it stands after the writes before it (R-18 enforced by writeSlot). */
+function applySlotWrite(state: JsonObject, c: RuleContribution, w: SlotWrite): JsonObject {
+  const own = ownSlotsOf(state, c.id);
+  const current = Object.hasOwn(own, w.slot) ? own[w.slot] : undefined;
+  return writeSlot(state, c.id, w.slot, slotWriteValue(c, w, current), c.declaredSlots);
+}
+
 export class RuleRegistry {
   /** bearer-entry-seq = registration order — THE total-order tiebreak (V-7's law). */
   private readonly entries: RuleContribution[] = [];
@@ -92,30 +121,15 @@ export class RuleRegistry {
     hookHk9BeforeRuleDispatch(hookName);
     const firing = this.entries.filter((c) => c.trigger === hookName); // per-firing SNAPSHOT
     let next: JsonObject = state as JsonObject;
-    for (const c of firing) {
-      if (!this.isActive(c, next)) continue;
-      // K7-F4 D5: hasOwn-guarded bank lookup — a reserved-ish id can never key the prototype chain
-      const bank = (next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {};
-      const ownSlots = Object.hasOwn(bank, c.id) ? bank[c.id]! : {};
-      if (!evalCondition(c.condition, event, ownSlots)) continue;
-      next = EffectEngine.applyAll(next, c.effects, ctx); // R-24: the ONLY effect path
-      for (const w of c.slotWrites ?? []) {
-        const bankNow = (next['ruleSlots'] as Record<string, Record<string, JsonValue>>) ?? {};
-        const own = Object.hasOwn(bankNow, c.id) ? bankNow[c.id]! : {};
-        const current = Object.hasOwn(own, w.slot) ? own[w.slot] : undefined;
-        if (w.increment !== undefined && typeof w.increment !== 'number') {
-          // EXT3-B residual (3B): the increment VALUE itself must be a number.
-          throw new EffectRefusal(c.id, 'GX-22', `increment value ${JSON.stringify(w.increment)} is not a number — refused, not coerced`);
-        }
-        if (w.increment !== undefined && current !== undefined && typeof current !== 'number') {
-          // EXT3-B: refusal-not-repair — increment never coerces a non-numeric slot.
-          throw new EffectRefusal(c.id, 'GX-22', `increment on non-numeric slot "${w.slot}" (holds ${JSON.stringify(current)}) — refused, not coerced`);
-        }
-        const value: JsonValue =
-          w.increment !== undefined ? ((current as number) ?? 0) + w.increment : (w.set as JsonValue);
-        next = writeSlot(next, c.id, w.slot, value, c.declaredSlots); // R-18 enforced
-      }
-    }
+    for (const c of firing) next = this.fire(c, next, event, ctx);
     return next;
+  }
+
+  /** One contribution's turn in a firing: active → condition → effects → slot writes; else the state unchanged. */
+  private fire(c: RuleContribution, state: JsonObject, event: HookEvent, ctx: EffectContext): JsonObject {
+    if (!this.isActive(c, state)) return state;
+    if (!evalCondition(c.condition, event, ownSlotsOf(state, c.id))) return state;
+    const applied = EffectEngine.applyAll(state, c.effects, ctx); // R-24: the ONLY effect path
+    return (c.slotWrites ?? []).reduce((next, w) => applySlotWrite(next, c, w), applied);
   }
 }
