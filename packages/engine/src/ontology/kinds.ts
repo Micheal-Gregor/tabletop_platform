@@ -30,41 +30,58 @@ export class KindRefusal extends Error {
  * by-rule. (Moved from admission.ts to avoid a module cycle; admission.ts re-exports.)
  */
 export function hookHk7BeforeKindAdmission(def: KindDef): void {
-  const defects: string[] = [];
-  if (!def.name || typeof def.name !== 'string') defects.push('(a) identity: missing kind name');
-  if (def.stateShape === undefined || typeof def.stateShape !== 'object' || def.stateShape === null) {
-    defects.push('(a) state shape: must be declared (an empty {} is a declaration; absence is not)');
-  } else {
-    for (const [field, ty] of Object.entries(def.stateShape)) {
-      if (!['number', 'string', 'boolean', 'json'].includes(ty)) {
-        defects.push(`(a) state shape: field "${field}" has unknown type "${ty}"`);
-      }
-    }
-  }
-  if (!Array.isArray(def.roles)) {
-    defects.push('(b) roles: must be an array (empty is a declaration)');
-  } else {
-    for (const role of def.roles) {
-      try {
-        bindingFor(role); // deferred is ADMISSIBLE (RD-e5) — unbindable is not
-      } catch (e) {
-        if (e instanceof RoleRefusal) defects.push(`(b) roles: "${role}" is unbindable (${e.message})`);
-        else throw e;
-      }
-    }
-  }
-  if (!Array.isArray(def.relationsGrantable)) {
-    defects.push('(c) relations: must be an array');
-  } else {
-    for (const rel of def.relationsGrantable) {
-      if (!RELATION_TYPES.includes(rel as (typeof RELATION_TYPES)[number])) {
-        defects.push(`(c) relations: "${rel}" is not one of the five`);
-      }
-    }
-  }
+  // Leg (a) identity and shape, leg (b) bindable roles, leg (c) relations within the five —
+  // each leg names its own defects, and they are gathered in that order.
+  const defects = [
+    ...identityDefects(def),
+    ...stateShapeDefects(def),
+    ...roleDefects(def),
+    ...relationDefects(def),
+  ];
   if (defects.length > 0) {
     throw new KindRefusal(String(def.name ?? '<unnamed>'), 'GX-13/EX-2/HK-7', defects.join(' · '));
   }
+}
+
+/** EX-2 leg (a), identity: the kind carries a name. */
+function identityDefects(def: KindDef): string[] {
+  if (!def.name || typeof def.name !== 'string') return ['(a) identity: missing kind name'];
+  return [];
+}
+
+/** EX-2 leg (a), shape: a state shape is declared and every field names a known type. */
+function stateShapeDefects(def: KindDef): string[] {
+  if (def.stateShape === undefined || typeof def.stateShape !== 'object' || def.stateShape === null) {
+    return ['(a) state shape: must be declared (an empty {} is a declaration; absence is not)'];
+  }
+  return Object.entries(def.stateShape)
+    .filter(([, ty]) => !['number', 'string', 'boolean', 'json'].includes(ty))
+    .map(([field, ty]) => `(a) state shape: field "${field}" has unknown type "${ty}"`);
+}
+
+/** EX-2 leg (b), roles: an array, and every role in it bindable. */
+function roleDefects(def: KindDef): string[] {
+  if (!Array.isArray(def.roles)) return ['(b) roles: must be an array (empty is a declaration)'];
+  return def.roles.flatMap(unbindableRoleDefect);
+}
+
+/** One role's defect: empty when it binds (deferred is ADMISSIBLE, RD-e5 — unbindable is not). */
+function unbindableRoleDefect(role: string): string[] {
+  try {
+    bindingFor(role);
+    return [];
+  } catch (e) {
+    if (e instanceof RoleRefusal) return [`(b) roles: "${role}" is unbindable (${e.message})`];
+    throw e;
+  }
+}
+
+/** EX-2 leg (c), relations: an array, and every grantable relation one of the five. */
+function relationDefects(def: KindDef): string[] {
+  if (!Array.isArray(def.relationsGrantable)) return ['(c) relations: must be an array'];
+  return def.relationsGrantable
+    .filter((rel) => !RELATION_TYPES.includes(rel as (typeof RELATION_TYPES)[number]))
+    .map((rel) => `(c) relations: "${rel}" is not one of the five`);
 }
 
 export class KindRegistry {
