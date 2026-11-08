@@ -6,13 +6,13 @@
   "head": "99478829173ee687659c84609022e5ef28d19785",
   "tree": "49073f6300a222707df26ed83cae29fd44105a0f",
   "dirty": false,
-  "current_module": "",
+  "current_module": "MOD-05",
   "k7_round": 0,
   "last_gate_tag": "k7-pass-r1a",
   "seal_tag": "",
   "reopened": "",
-  "next_action": "R1 repair run (this session): gate probes, then the S3 re-emission v1.3, the object-model mapping, the module repairs through brief.py, the interface contract, the final K7 and seal.py check",
+  "next_action": "R1 repair, MOD-05 TurnMachine: write the OS-12 isolation test for HookHk3Violation at tests/isolation/turn.isolation.test.ts (construct with its declared input only, read every public member, two constructions differing in 'detail' must differ; import describe/it/expect from vitest; keep every function under 60 lines). No library source changes; behaviour identical; the full suite stays green.",
   "blocked_on": null,
-  "updated_at": "2026-11-08T22:06:39+00:00",
+  "updated_at": "2026-11-08T22:21:05+00:00",
   "updated_by": "manual"
 }

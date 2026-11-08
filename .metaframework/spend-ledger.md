@@ -11,3 +11,5 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | Stage | Session | Model | Uncached in | Cache write | Cache read | Tokens out | Weighted | USD | Output | Date |
 |---|---|---|---|---|---|---|---|---|---|---|
 | R1 lead: setup and reading | f7fce8bb | opus | 102 | 235135 | 10195597 | 31513 | 1137717 | - | R1 budget 30M weighted (owner: Approve 30M, 2026-11-08); the install half's session is not in this ledger | 2026-11-08 |
+| module:MOD-05 build | f7fce8bb agent-a6cc7b04 | sonnet | 24 | 38979 | 447966 | 4558 | 116334 | - | - | 2026-11-08 |
+| module:MOD-05 lead | f7fce8bb | opus | 120 | 155347 | 21181527 | 105289 | 1896335 | - | - | 2026-11-08 |

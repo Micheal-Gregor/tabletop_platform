@@ -1,5 +1,8 @@
 # ARCHITECTURE.md — the repo map and TOUCH BOUNDARIES (owner-requested 2026-08-02)
 
+*R1 note (2026-11-08): the 3D programme STOPPED, not sealed (I-260); its lanes below are a record. The library's lane is
+now the MetaFramework module loop: one `MOD-nn` per brief (S3 v1.3, `governance/S3/v1.3/`).*
+
 > Read this BEFORE editing anything. It says where each kind of work lives, what an
 > increment MAY touch, and what is FROZEN. A change outside an increment's lane is a
 > defect for K7 to catch, not a preference. This file rides the compression-surviving
@@ -9,7 +12,7 @@
 
 | Area | What it is | Touch rule |
 |---|---|---|
-| `packages/engine/` | F1–F5+F7: kernel, guard, log, turn machine, decks, windows, effects, mechanics, transport | **FROZEN for the 3D program.** Zero commits since the program began (verified 6294d06..HEAD). Changes only via their own facet increment + K7, never as a side effect of presentation work |
+| `packages/engine/` | F1–F5+F7: kernel, guard, log, turn machine, decks, windows, effects, mechanics, transport | ~~FROZEN for the 3D program~~ — **LAPSED 2026-11-08** with the 3D programme's stop (I-260): R1 reopens the engine, presentation and patterns packages for repair to the OOP standards, behaviour identical (owner: "Adopt, fix findings", I-261). Changes go through the module's brief (`tools/brief.py MOD-nn`), never as a side effect of other work |
 | `packages/presentation/` | F6: projector (S-6 reads), emitter, layouts/parents, focusPresets, theater/flourishes, skin tokens | **LAW SURFACE — touch only with a register row.** The 3D program has touched exactly ONE function (focusPresets, I-65a, additive: n≤3 output byte-identical, F6 pin intact) |
 | `packs/boty/` | Content tier: the certified 3-seat slice + layouts + the 6-up exhibit variant | Content is DATA and adds no law. The certified slice (BOTY_PACK/botyGenesis) is frozen; the 6-up variant (BOTY_PACK6, I-65e) is the 3D bench's sandbox — additive edits only |
 | `utilization/bench/src/*.ts` | **THE 3D BENCH — where the whole Phase-A program builds.** Since I-71 split into `game3d.ts` (orchestration: buildScene, draw theater, interaction, tick, `__GAME3D__` gate surface) + `stage.ts` (shared primitives) + `surfaces.ts` · `stacks.ts` · `camera.ts` · `onion.ts` | A 3D increment touches its component MODULE(s) + a registration in `game3d.ts` buildScene + `visual-gate.mjs` + the records. `game.ts`/`spike3d.ts` stay FROZEN |

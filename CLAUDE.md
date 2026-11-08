@@ -9,7 +9,9 @@
 > they were approved together and may not drift apart.
 
 **Anchor chain:** S1-Phase1-TABLETOP-v2.0 → S2-TABLETOP-v2.0 → THIS partition (7 facets /
-9 seams, ODG-A resolved). **Spine:** four-tier law · closed governed vocabularies · rules
+9 seams, ODG-A resolved).
+**Operative S3 (R1, 2026-11-08): `governance/S3/v1.3/CLAUDE_TABLETOP_Phase3.md`** (`s3-anchor-v1.3`, SP-7) — this
+text re-emitted with IDs, content unchanged: R-n = REF-n, V-n = VEC-n, HK-n = HOOK-n, modules MOD-01..MOD-35. **Spine:** four-tier law · closed governed vocabularies · rules
 are data · scoped purity · log-as-truth · theater over truth · refusal-not-repair.
 
 ## 1 · Partition (fixed — the build's unit of work)
