@@ -35,3 +35,7 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | module:MOD-34 lead | f7fce8bb | opus | 6 | 12301 | 1699337 | 7597 | 147560 | - | - | 2026-11-08 |
 | module:MOD-35 build | f7fce8bb agent-aeba6b1f | sonnet | 18 | 41904 | 351928 | 4777 | 111476 | - | - | 2026-11-08 |
 | R1 lead: unblocked modules done, waiting on the owner | f7fce8bb | opus | 10 | 12837 | 2900753 | 10006 | 220752 | - | - | 2026-11-08 |
+| module:MOD-22 build | f7fce8bb agent-af957481 | sonnet | 38 | 76066 | 1232593 | 26297 | 349865 | - | - | 2026-11-08 |
+| module:MOD-22 lead | f7fce8bb | opus | 24 | 24225 | 6545422 | 20323 | 477360 | - | - | 2026-11-08 |
+| module:MOD-10 build | f7fce8bb agent-adcc3b07 | sonnet | 30 | 62457 | 774371 | 16992 | 240498 | - | - | 2026-11-08 |
+| R1 lead: rulings, MOD-22, MOD-10 | f7fce8bb | opus | 8 | 14713 | 2472436 | 9021 | 198161 | - | - | 2026-11-08 |

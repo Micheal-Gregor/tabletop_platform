@@ -11,8 +11,8 @@
   "last_gate_tag": "k7-pass-r1a",
   "seal_tag": "",
   "reopened": "",
-  "next_action": "R1 continues on the owner's ruling: the blocked modules MOD-02, 03, 04, 08, 09, 10, 13, 17, 22, 24, 27, 28, 30, 31, 33 (splits, 26 code-gates fixes, their isolation tests; MOD-09 also the effects.ts:48 comment), then the bench move, then the close: ui/interface-contract.md (drafted, uncommitted), k7-run.py --final through run.py, seal.py check. Done so far: docs/../INSTRUMENTS/completion-ledger.md 'R1 repair steps'.",
+  "next_action": "R1 resumes when the owner adopts plugin 2.9.2 (port it as a set per its README entry, install-gates.py, phase4-checks.py gates): then the 15 held modules in S3 \u00a710 order (MOD-02, 03, 04, 08, 09, 13, 17, 24, 27, 28, 30, 31, 33, plus MOD-10's KindRefusal split and MOD-22's ventures.ts fixes): 7 one-class-per-file splits, 26 code-gates fixes, their isolation tests, the effects.ts:48 comment; then the close: refresh ui/interface-contract.md, k7-run.py --final through run.py, seal.py check.",
   "blocked_on": "owner: adopting metaframework plugin 2.9.2 (the TypeScript parameter fix, session plugin-ts-params); the 20 class files of MOD-02, 03, 04, 08, 09, 10, 13, 17, 22, 24, 27, 28, 30, 31, 33 wait for it (I-264)",
-  "updated_at": "2026-11-08T23:00:54+00:00",
+  "updated_at": "2026-11-08T23:11:36+00:00",
   "updated_by": "manual"
 }

@@ -557,3 +557,5 @@ Each step closed on the gates (the hard gate, the commit checks, `brief.py verif
 | MOD-32 | OS-12 isolation test, SkinRefusal | `47f362357d3707ba` | `bd5fcd8` | exit 0 |
 | MOD-34 | OS-12 isolation test, TheaterRefusal | `e48816835cef0fe1` | `776d96e` | exit 0 |
 | MOD-35 | OS-12 isolation test, Timeline | `12178b847174fbb3` | `fe2d4ac` | exit 0 |
+| MOD-22 | code-gates in library/wire.ts: checkSpecShape, checkDebtsShape, checkTfxShape, wireLibrary (7); OS-12 isolation test, VentureRefusal (ventures.ts held for 2.9.2, I-264) | `746aaa1723b1d026` | `34470e4` | exit 0 |
+| MOD-10 | code-gates: hookHk7BeforeKindAdmission G2+G3 (2); OS-12 isolation tests, KindRegistry and KindRefusal (the split held for 2.9.2, I-264) | `57d91ad69239b9ad` | `c358b94` | exit 0 |
