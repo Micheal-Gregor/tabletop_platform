@@ -38,7 +38,7 @@
       ]
     }
   },
-  "isolation_test_command": null,
+  "isolation_test_command": "python tools/isolation-run.py -- npx vitest run .isolation.",
   "pipelinegate_command": null,
   "rubric_versions": null,
   "_rubric_versions_notes": "rubric_versions: the versions tools/receipts.py uses, e.g. {\"k7_verdict\": 2, \"owner_triage\": 2}. null means version 1 of each, as setup admits them. Declare it only when the owner has admitted newer versions: a store whose judged rubrics were admitted from the Markdown specs (plugin 2.6.9 or earlier) is refused every judged act by the seal-4 engine until the owner runs the lines `python tools/receipts.py migrate --signer <principal>` prints, which end with the value to declare here.",

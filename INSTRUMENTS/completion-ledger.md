@@ -537,3 +537,23 @@ drift — now 1e-9, the +0.15 mutant dies. STANDING A2 OBLIGATIONS inherited by 
 round: re-check VG8b/VG8d after a draw + re-run the hardcode kills; consume rowHash/
 moveCount on the gate. Final: suite 279/279 · VISUAL GATE 20/20 ×3 · BATTERY 21/21 ·
 DRILLS 11/11 · vectors 10/10. The k7 tag for A1 RIDES THE OWNER'S PLAYTEST VERDICT.
+
+## R1 repair steps (2026-11-08, I-261; S3 v1.3 ids; each builder briefed by `tools/brief.py`, accepted on `brief.py verify`)
+
+Each step closed on the gates (the hard gate, the commit checks, `brief.py verify`) and the full suite through
+`tools/run.py`, behaviour identical; no K7 round per step (RD-32). The modules' certified status is unchanged.
+
+| Module | R1 repair | Nonce (verified) | Commit | Full suite |
+|---|---|---|---|---|
+| MOD-05 | OS-12 isolation test, HookHk3Violation | `7dc5a818430d8a93` | `cc06454` | exit 0 |
+| MOD-07 | OS-12 isolation test, HookHk5Violation | `36ab0edd2d36ad53` | `c41bf97` | exit 0 |
+| MOD-11 | OS-12 isolation test, RoleRefusal; the shared refusal checks | `14f4899446bf3c30` | `2ea87b4` | exit 0 |
+| MOD-12 | code-gates: wireOntology G1+G3 (2); OS-12 isolation test, RelationRefusal | `174758210a5500d7` | `1894ae2` | exit 0 |
+| MOD-14 | OS-12 isolation test, AdmissibilityGate (decide invariant to the registry, in the contract) | `09f9ae607fb7666b` | `6851137` | exit 0 |
+| MOD-15 | code-gates: RuleRegistry.dispatch G2+G3 (2); OS-12 isolation test, RuleRegistry | `9d50c9101811b105` | `32f94b8` | exit 0 |
+| MOD-19 | OS-12 isolation test, ExtensionContract | `83008bc33bee5198` | `31e1175` | exit 0 |
+| MOD-25 | code-gates: attachTimedFx G2, tickTimedEffects G3 (2) | `618c1799d2d0b75c` | `98e004d` | exit 0 |
+| MOD-26 | OS-12 isolation test, ClosingRefusal | `2aa8781f619ab64a` | `645d6af` | exit 0 |
+| MOD-32 | OS-12 isolation test, SkinRefusal | `47f362357d3707ba` | `bd5fcd8` | exit 0 |
+| MOD-34 | OS-12 isolation test, TheaterRefusal | `e48816835cef0fe1` | `776d96e` | exit 0 |
+| MOD-35 | OS-12 isolation test, Timeline | `12178b847174fbb3` | `fe2d4ac` | exit 0 |
