@@ -13,7 +13,31 @@
   "ui_render_command": null,
   "typecheck_command": null,
   "_typecheck_notes": "typecheck_command: a TypeScript project's type check over the library AND ui/, e.g. 'npx tsc --noEmit -p tsconfig.ui.json' with a tsconfig whose include covers src/ and ui/ (and the DOM lib where views run in a browser). Phase 5 runs it with seal.py verify at the end of each Build batch, because Vite and esbuild strip types without checking them. null in a TypeScript project is a dead gate; Phase 5 asks once and records it. Not used for other languages.",
-  "object_standard": null,
+  "object_standard": {
+    "allow": {
+      "packages/engine/src/kernel/rng.ts": [
+        "OS-2"
+      ],
+      "packages/engine/src/kernel/statetree.ts": [
+        "OS-2"
+      ],
+      "packages/engine/src/library/ledger.ts": [
+        "OS-2"
+      ],
+      "packages/engine/src/ontology/relations.ts": [
+        "OS-2"
+      ],
+      "packages/engine/src/play/effects.ts": [
+        "OS-2"
+      ],
+      "packages/engine/src/play/turn.ts": [
+        "OS-2"
+      ],
+      "packages/engine/src/rules/hookbus.ts": [
+        "OS-2"
+      ]
+    }
+  },
   "isolation_test_command": null,
   "pipelinegate_command": null,
   "rubric_versions": null,
@@ -29,8 +53,18 @@
   "project_hooks": [],
   "code_gates": true,
   "_gates_notes": "2.6.17. project_hooks: every hooks/*.py this project writes (S3 §7's code-level hooks), each run by tools/precommit.py on every commit with the staged paths as arguments; a non-zero exit refuses the commit. phase4-checks.py gates fails while a hooks/*.py is unlisted. code_gates: true once the oop-standards bundle's code-gates is adopted (C4: node <gates.cjs> init, without --git-hook, after the template commit), and exactly when .code-gates.json exists; tools/install-gates.py --code-gates <gates.cjs> records where gates.cjs is on this machine, in .metaframework/local.json (not committed).",
-  "scaffold_exempt": null,
+  "scaffold_exempt": [
+    ".metaframework/",
+    "tools/",
+    "governance/S2-S3-emission-contract.md",
+    "governance/Phase4_Conformance_Build_Roster.md",
+    "IMPLEMENTATION_GUIDE.md",
+    "SETUP.md",
+    "HARNESS.md",
+    "governance/S3/README.md",
+    "docs/reentry-2026-11-08.md"
+  ],
   "scaffold_markers": null,
   "_scaffold_notes": "null on either key uses the built-in set — the defaults live in tools/phase4-checks.py so there is one place to change them. Setting an array here REPLACES the default rather than adding to it, so if you override scaffold_exempt, carry over .metaframework/, tools/, and governance/S2-S3-emission-contract.md. The scanning tool must sit in an exempt directory or it matches its own patterns, and the emission contract is exempt because documenting a filename template is not leakage. governance/S3/ is deliberately not exempt: an unsubstituted placeholder in a frozen spec is a real defect.",
-  "_tabletop_notes": "Adopted onto plugin 2.9.1 on 2026-11-08 (R1, I-261); the build predates the template. Vectors are pinned JSON in vectors/ and re-derived inside the vitest suite (each vector's test recomputes from the implementation and compares to the pin), so rederive_command selects a vector's tests by name; porting them to tools/rederive.py's rederive_invoke form is R1's seal-session work. source_glob covers the engine, presentation and patterns packages; the BOTY content pack (packs/boty) and sealed_globs, typecheck_command, isolation_test_command and code_gates are set by the R1 build session."
+  "_tabletop_notes": "Adopted onto plugin 2.9.1 on 2026-11-08 (R1, I-261); the build predates the template. Vectors are pinned JSON in vectors/ and re-derived inside the vitest suite (each vector's test recomputes from the implementation and compares to the pin), so rederive_command selects a vector's tests by name; porting them to tools/rederive.py's rederive_invoke form is R1's seal-session work. source_glob covers the engine, presentation and patterns packages; the BOTY content pack (packs/boty) and sealed_globs, typecheck_command, isolation_test_command and code_gates are set by the R1 build session. R1 (2026-11-08): object_standard.allow takes OS-2 for seven exact files under SR-1 (I-262: function-local lets the 2.9.1 pattern reads as module state); scaffold_exempt carries the defaults and adds two documents that quote a marker as content (I-263); rederive stays inside vitest (the seal and K7 run rederive_all; no port needed)."
 }
