@@ -22,13 +22,10 @@ import { freezeDeep, hashState } from './statetree.js';
 import { Guard } from './guard.js';
 import { IntentLog, DivergenceError } from './intentlog.js';
 import { RNGStreams } from './rng.js';
+import { HookViolation } from './hook-violation.js';
 
-export class HookViolation extends Error {
-  constructor(readonly hook: 'HK-1' | 'HK-2', detail: string) {
-    super(`${hook} violated: ${detail}`);
-    this.name = 'HookViolation';
-  }
-}
+// HookViolation lives in its own file (one class per file); re-exported so every import holds.
+export { HookViolation } from './hook-violation.js';
 
 /** Applier context: streams only — human inputs arrive in intent.args (GX-5). */
 export interface ApplyContext {
