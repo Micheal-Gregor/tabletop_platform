@@ -99,3 +99,12 @@ Phase 4 roster and Object Writing Standard), then:
   the old k7-pass tags have no verdict files; scaffold 3); emission-check (the S3 predates the emission contract's
   headings — a re-emission is an S3 revision, the owner's to rule); interface-contract (ui/interface-contract.md
   unwritten, a close step). Plus the 41 code-gates findings. Carried: 6 completion-ledger rows read as "awaiting K7".
+
+## Live gate probes at R1 (H-1) — 2026-11-08, the R1 repair session
+
+- **The lead's session** (started in this folder after the 2.9.1 install, so `.claude/settings.json`'s hooks load,
+  TE-3): its Write of `.metaframework/gate-probe` was refused; `.metaframework/gate-live.jsonl` line nonce
+  `7a3f19c2e4b8d061`, session `f7fce8bb-94b2-401c-95c1-77b5675a6788`, agent_id null, gate sha256 `04ff8826fcd5…`.
+- **A builder sub-agent:** each builder's first call is its brief's probe, verified by `brief.py verify --nonce`; the
+  first builder's line is cited in the completion ledger and below when it runs.
+- **No worktree** is used in R1: builders and the lead work in this folder.

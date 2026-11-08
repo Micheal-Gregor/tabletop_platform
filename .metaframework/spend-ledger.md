@@ -10,3 +10,4 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 
 | Stage | Session | Model | Uncached in | Cache write | Cache read | Tokens out | Weighted | USD | Output | Date |
 |---|---|---|---|---|---|---|---|---|---|---|
+| R1 lead: setup and reading | f7fce8bb | opus | 102 | 235135 | 10195597 | 31513 | 1137717 | - | R1 budget 30M weighted (owner: Approve 30M, 2026-11-08); the install half's session is not in this ledger | 2026-11-08 |
