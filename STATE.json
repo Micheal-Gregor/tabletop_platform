@@ -11,8 +11,8 @@
   "last_gate_tag": "k7-pass-r1a",
   "seal_tag": "",
   "reopened": "",
-  "next_action": "R1 build session, started fresh in this folder so the gates load (TE-3). First the live gate probe from each session shape, cited in INSTRUMENTS/C4-anchor-record.md. Then: map the 37 unclaimed source files to object-model rows; take the OS-2 scanner misread under SR-1 (7 function-local lets); fix the library's 41 code-gates findings (owner: fix, not baseline); move utilization/bench to ui/ and retire governance/Phase5_Utilization_Roster.md with the CLAUDE.md contract swap; port vectors to rederive; seal.py check, triage once, seal.py apply. Plan: docs/reentry-2026-11-08.md; rulings: RESOLUTION_RECORD, I-260, I-261",
-  "blocked_on": null,
-  "updated_at": "2026-11-08T21:13:45+00:00",
+  "next_action": "R1 build session, started fresh in this folder (TE-3): gate probe first; then the measured list in INSTRUMENTS/C4-anchor-record.md 'Pre-repair sweep' (object-model mapping, SR-1 for 7 OS-2, one class per file x7, isolation tests for 34 classes, 41 code-gates fixes, tags mapping, bench to ui/), then the final K7 and seal. Waits on: the owner's R1 budget and the S3 re-emission ruling. Plan: docs/reentry-2026-11-08.md",
+  "blocked_on": "owner: R1 re-forecast budget (about 30M) and the S3 re-emission ruling",
+  "updated_at": "2026-11-08T21:25:27+00:00",
   "updated_by": "manual"
 }

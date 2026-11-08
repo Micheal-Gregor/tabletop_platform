@@ -87,3 +87,15 @@ Phase 4 roster and Object Writing Standard), then:
   hits, all function-local `let`s: an SR-1 case), `scaffold`, the library's 41 code-gates findings, the bench's move
   to `ui/`, and the live probe from each session shape — it needs a session started after this install, since Claude
   Code reads hooks only at session start (TE-3).
+
+## Pre-repair sweep (read-only measure) — 2026-11-08, run 20261108T212337Z-seal-check-09b3, tree 3a3c47f90a5a
+
+`seal.py check` through `tools/run.py`, on the owner's "okay, carry on", before any repair. Status **fail**:
+- **pass (real):** worktree-clean; full-suite (exit 0); rederive-all (exit 0); structure-check.
+- **pass (empty — nothing to compare yet):** full-review, s3-coverage, declarations-match. The object model is not in
+  the template's format, so these find no modules; they bite once the 37 files are mapped.
+- **fail:** reviewed (no final K7, `k7-run.py --final`); isolation-tests (OS-12 undeclared: 34 classes, none with an
+  isolation test; 7 files hold two classes); phase4-checks (modules unclaimed; objects 7 OS-2, an SR-1 case; tags 36:
+  the old k7-pass tags have no verdict files; scaffold 3); emission-check (the S3 predates the emission contract's
+  headings — a re-emission is an S3 revision, the owner's to rule); interface-contract (ui/interface-contract.md
+  unwritten, a close step). Plus the 41 code-gates findings. Carried: 6 completion-ledger rows read as "awaiting K7".
