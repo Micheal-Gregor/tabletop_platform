@@ -11,8 +11,8 @@
   "last_gate_tag": "k7-pass-r1a",
   "seal_tag": "",
   "reopened": "",
-  "next_action": "R1 close (RD-33): the scorer record (H-1.7), ui/interface-contract.md, the final K7 review (python tools/run.py --kind k7 --label \"K7 final\" -- \"python tools/k7-run.py --final\"), then seal.py check through run.py, triaged once for the owner's single seal approval.",
-  "blocked_on": null,
-  "updated_at": "2026-11-09T00:59:44+00:00",
-  "updated_by": "session-start:compact"
+  "next_action": "R1 is at the seal gate: the sweep (run 20261109T012245Z-seal-check-6761) fails only on the 36 legacy k7-pass tags, accounted for in INSTRUMENTS/legacy-k7-tags.md. On the owner's word: seal.py apply, which seals, opens Phase 5 and merges into main. Nothing is pushed.",
+  "blocked_on": "owner: the single seal approval (seal.py apply --approved-by \"<owner, date>\" --accept-failures, the 36 legacy tags as known issues), or an owner-ordered fix round (owner-round-1) on the final review's twelve findings",
+  "updated_at": "2026-11-09T01:24:11+00:00",
+  "updated_by": "manual"
 }

@@ -117,3 +117,19 @@ Phase 4 roster and Object Writing Standard), then:
   - `CLAUDE_TABLETOP_Phase3.md` sha256 `9b10495ba53a391d6c0201328f3a8e728a92a9859aad48acf18f1e4dc85485f4`
   - `TABLETOP_Phase3_Specification.md` sha256 `ff4cecd2842faaacfc22c197952e81dddb7e6e97158ea9277f137e67ff773822`
 - **s3_document** is now `governance/S3/v1.3/CLAUDE_TABLETOP_Phase3.md`: briefs, K7 and the seal read the revision from this commit on.
+
+## Seal sweep at R1's close — 2026-11-09, run 20261109T012245Z-seal-check-6761, HEAD `d6c175e`
+
+`seal.py check` through `tools/run.py`, once, after the final K7 review (round 1, RETURN at drift 5). Status **fail on one
+step**, triaged once for the owner's single seal approval:
+- **pass:** worktree-clean; reviewed (the final review, round 1; the owner's approval closes it); full-review (every
+  module's final content had a full review); full-suite (exit 0, 821 tests); rederive-all (exit 0); isolation-tests
+  (exit 0, OS-12, environment cleared); structure-check; emission-check; s3-coverage (every specified module is
+  built); interface-contract (written); declarations-match (signatures, object model and contract agree).
+- **fail:** phase4-checks, and within it only `tags`: the 36 `k7-pass-*` tags placed before the K7 runner existed
+  (25 Jul to 4 Aug) match no `k7-pass-<N>` verdict file. Each is accounted for in `INSTRUMENTS/legacy-k7-tags.md`;
+  RD-11 keeps closed gates closed and tags unmoved. **Triage: known issue** (`seal.py apply --accept-failures`),
+  the owner's to accept in the one approval. modules, objects, scaffold, rosters and gates pass.
+- **carried to Phase 5:** PC-01..PC-09; the final review's twelve blocking findings (as `noticed` gaps); the nine
+  SR-1 OS-2 entries as known issues (K7's compensating check: the files hold no module-level mutable state); six
+  pre-template completion-ledger rows that still read "awaiting K7".
