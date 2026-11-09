@@ -35,6 +35,9 @@
       ],
       "packages/engine/src/rules/hookbus.ts": [
         "OS-2"
+      ],
+      "packages/engine/src/kernel/rng-stream.ts": [
+        "OS-2"
       ]
     }
   },
