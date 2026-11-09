@@ -11,7 +11,7 @@ import { RNGStreams } from '../kernel/rng.js';
 import { freezeDeep } from '../kernel/statetree.js';
 import { onTurnRule } from '../kernel/discipline.js';
 import { EFX_V1_1_1, EffectEngine, EffectRefusal } from './effects.js';
-import type { EffectDescriptor } from './effects.js';
+import type { EffectDescriptor, EfxName } from './effects.js';
 import { shuffledOrder, drawTop } from './deck.js';
 import {
   hookHk5BeforeSeatAdvance,
@@ -50,131 +50,245 @@ export class PackLoadRefusal extends Error {
  * K7-F2 defect 4) ∧ versions known → refuse, NAMING every defect.
  * A pack that validates can never commit an illegal value (NaN cash), reference a
  * nonexistent seat/deck/card, or open an undecidable window (defects 4, 5, 7 closures).
+ *
+ * One named check per section of the pack, each naming its own defects; they are gathered
+ * in the order the pack is read: id, EFX version, maxRounds, seats, then cards, then decks.
+ * Flavor is never read here — it attaches and travels, and no check looks at it.
  */
 export function hookHk4ValidatePack(pack: ContentPack): void {
-  const defects: string[] = [];
-  if (!pack.id) defects.push('missing pack id');
-  if (pack.efxVersion !== SUPPORTED_EFX_VERSION) {
-    defects.push(`unknown EFX version "${pack.efxVersion}" (supported: ${SUPPORTED_EFX_VERSION})`);
-  }
-  if (!Number.isInteger(pack.maxRounds) || pack.maxRounds < 1) {
-    defects.push(`maxRounds must be a positive integer, got ${pack.maxRounds}`);
-  }
-  if (!pack.seats || pack.seats.length < 1) defects.push('pack declares no seats');
-  if (pack.seats && pack.seats.length >= 1 && pack.seats.every((s) => s.eliminated === true)) {
-    // ext-audit-2 OBS-3: a game with no living seat is degenerate at the door.
-    defects.push('pack declares no LIVING seat (all eliminated at genesis)');
-  }
-
-  const seatIds = new Set((pack.seats ?? []).map((s) => s.id));
-  const cardIds = new Set(Object.keys(pack.cards ?? {}));
-  const deckRefs = new Set(Object.keys(pack.decks ?? {}));
-
-  const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-  const isSeat = (v: unknown): boolean => typeof v === 'string' && seatIds.has(v);
-
-  // Per-descriptor arg schema — the "schema valid" leg of HK-4 (recursive over window options).
-  const checkFx = (d: EffectDescriptor, where: string, defectsOut: string[]): void => {
-    if (d === null || typeof d !== 'object' || typeof (d as { fx?: unknown }).fx !== 'string') {
-      defectsOut.push(`${where}: effect must be an object with a string "fx", got ${JSON.stringify(d)}`); // EXT3-A sibling
-      return;
-    }
-    if (!EFX_V1_1_1.includes(d.fx as (typeof EFX_V1_1_1)[number])) {
-      defectsOut.push(`${where} carries fx ∉ EFX: "${d.fx}"`);
-      return;
-    }
-    const need = (cond: boolean, what: string): void => {
-      if (!cond) defectsOut.push(`${where} · ${d.fx}: ${what}`);
-    };
-    switch (d.fx) {
-      case 'pay':
-        need(isSeat(d['to']), `"to" must be a declared seat, got ${JSON.stringify(d['to'])}`);
-        need(finite(d['amount']), `"amount" must be a finite number, got ${JSON.stringify(d['amount'])}`);
-        need(d['from'] === undefined || isSeat(d['from']), `"from" must be a declared seat`);
-        break;
-      case 'capitalize':
-        need(isSeat(d['owner']), `"owner" must be a declared seat`);
-        need(typeof d['asset'] === 'string', `"asset" must be a string`);
-        need(finite(d['amount']), `"amount" must be a finite number`);
-        break;
-      case 'grant_favor':
-        need(isSeat(d['to']), `"to" must be a declared seat`);
-        need(finite(d['n']), `"n" must be a finite number`);
-        break;
-      case 'levy':
-        need(d['scope'] === 'table' || isSeat(d['scope']), `"scope" must be 'table' or a declared seat`);
-        need(finite(d['amount']), `"amount" must be a finite number`);
-        break;
-      case 'deck_inject':
-        need(typeof d['deck'] === 'string' && deckRefs.has(d['deck'] as string), `"deck" must reference a declared deck`);
-        need(typeof d['card'] === 'string' && cardIds.has(d['card'] as string), `"card" must reference a cataloged card (no smuggling)`);
-        need(d['policy'] === undefined || d['policy'] === 'top' || d['policy'] === 'bottom', `"policy" must be top|bottom`);
-        break;
-      case 'grant_sue_right':
-        need(isSeat(d['holder']), `"holder" must be a declared seat`);
-        need(isSeat(d['against']), `"against" must be a declared seat`);
-        need(typeof d['window'] === 'string', `"window" must be a string`);
-        break;
-      case 'open_window': {
-        need(typeof d['kind'] === 'string', `"kind" must be a string`);
-        need(isSeat(d['decider']), `"decider" must be a declared seat (an undecidable window bricks the game)`);
-        // ext-audit-2 F2-R2-5 (I-19): gating is engine-reserved — content may not set it.
-        need(d['gated'] === undefined, `"gated" is engine-reserved — every content window gates (S-8)`);
-        const options = d['options'];
-        need(Array.isArray(options), `"options" must be an array`);
-        if (Array.isArray(options)) {
-          // K7-F2 NEW-1 closure: a window MUST carry at least one option — a
-          // zero-option gated window has no path to decision (GX-8) and bricks the game.
-          need(options.length >= 1, `"options" must carry at least one option (an undecidable window bricks the game)`);
-          const auto = d['auto'] ?? 0;
-          need(
-            Number.isInteger(auto) && (auto as number) >= 0 && (auto as number) < Math.max(options.length, 1),
-            `"auto" index ${JSON.stringify(d['auto'])} out of range (${options.length} options)`
-          );
-          options.forEach((opt, i) => {
-            const o = opt as { label?: unknown; fx?: unknown };
-            if (typeof o?.label !== 'string') defectsOut.push(`${where} · open_window option ${i}: "label" must be a string`);
-            // ext-audit-2 F2-R2-3: malformed fx shapes are NAMED, never thrown raw.
-            if (o?.fx !== undefined && !Array.isArray(o.fx)) {
-              defectsOut.push(`${where} · open_window option ${i}: "fx" must be an array, got ${JSON.stringify(o.fx)}`);
-              return;
-            }
-            for (const inner of (o?.fx as EffectDescriptor[] | undefined) ?? []) {
-              // ext-audit-2 F2-R2-1 (the NEW-1 sibling): open_window inside a window
-              // option is STATICALLY DEAD under the depth-1 law — resolving it can only
-              // refuse, and if it is the sole/auto path the game bricks. Refused at load.
-              if (inner?.fx === 'open_window') {
-                defectsOut.push(
-                  `${where} · open_window option ${i}: contains open_window — statically dead under the depth-1 law (no path to decision)`
-                );
-                continue;
-              }
-              checkFx(inner, `${where} · open_window option ${i}`, defectsOut);
-            }
-          });
-        }
-        break;
-      }
-    }
-  };
-
-  for (const [cardId, card] of Object.entries(pack.cards ?? {})) {
-    // ext-audit-2 F2-R2-3: a non-array card.fx is NAMED, never a raw TypeError.
-    if (card?.fx !== undefined && !Array.isArray(card.fx)) {
-      defects.push(`card "${cardId}": "fx" must be an array, got ${JSON.stringify(card.fx)}`);
-      continue;
-    }
-    for (const d of card.fx ?? []) checkFx(d, `card "${cardId}"`, defects);
-  }
-  for (const [deckRef, deck] of Object.entries(pack.decks ?? {})) {
-    for (const cardId of deck.cards ?? []) {
-      if (!cardIds.has(cardId)) {
-        defects.push(`deck "${deckRef}" references unknown card "${cardId}"`);
-      }
-    }
-  }
-  if (defects.length > 0) throw new PackLoadRefusal(defects);
+  const gathered = [
+    ...packIdDefects(pack),
+    ...efxVersionDefects(pack),
+    ...maxRoundsDefects(pack),
+    ...seatsDefects(pack),
+  ];
+  const scope = packScope(pack);
+  gathered.push(...cardsDefects(pack, scope), ...decksDefects(pack, scope));
+  if (gathered.length > 0) throw new PackLoadRefusal(gathered);
 }
+
+/** What the pack declares — the seats, cards and decks a descriptor's arguments may name. */
+interface PackScope {
+  readonly seatIds: ReadonlySet<string>;
+  readonly cardIds: ReadonlySet<string>;
+  readonly deckRefs: ReadonlySet<string>;
+}
+
+function packScope(pack: ContentPack): PackScope {
+  return {
+    seatIds: new Set((pack.seats ?? []).map((s) => s.id)),
+    cardIds: new Set(Object.keys(pack.cards ?? {})),
+    deckRefs: new Set(Object.keys(pack.decks ?? {})),
+  };
+}
+
+/** Pack shape: the pack carries an id. */
+function packIdDefects(pack: ContentPack): string[] {
+  return pack.id ? [] : ['missing pack id'];
+}
+
+/** Versions: the pack's EFX version is the one this loader knows. */
+function efxVersionDefects(pack: ContentPack): string[] {
+  if (pack.efxVersion === SUPPORTED_EFX_VERSION) return [];
+  return [`unknown EFX version "${pack.efxVersion}" (supported: ${SUPPORTED_EFX_VERSION})`];
+}
+
+/** Pack shape: maxRounds is a positive integer. */
+function maxRoundsDefects(pack: ContentPack): string[] {
+  if (Number.isInteger(pack.maxRounds) && pack.maxRounds >= 1) return [];
+  return [`maxRounds must be a positive integer, got ${pack.maxRounds}`];
+}
+
+/** Pack shape: seats are declared, and at least one is living at genesis. */
+function seatsDefects(pack: ContentPack): string[] {
+  if (!pack.seats || pack.seats.length < 1) return ['pack declares no seats'];
+  // ext-audit-2 OBS-3: a game with no living seat is degenerate at the door.
+  if (pack.seats.every((s) => s.eliminated === true)) {
+    return ['pack declares no LIVING seat (all eliminated at genesis)'];
+  }
+  return [];
+}
+
+/** Cards: every card's fx list passes the descriptor checks. */
+function cardsDefects(pack: ContentPack, scope: PackScope): string[] {
+  return Object.entries(pack.cards ?? {}).flatMap(([cardId, card]) => cardDefects(cardId, card, scope));
+}
+
+function cardDefects(cardId: string, card: CardDef, scope: PackScope): string[] {
+  // ext-audit-2 F2-R2-3: a non-array card.fx is NAMED, never a raw TypeError.
+  if (card?.fx !== undefined && !Array.isArray(card.fx)) {
+    return [`card "${cardId}": "fx" must be an array, got ${JSON.stringify(card.fx)}`];
+  }
+  return fxListDefects(card.fx ?? [], `card "${cardId}"`, scope);
+}
+
+/** Decks: every card a deck lists is in the catalog. */
+function decksDefects(pack: ContentPack, scope: PackScope): string[] {
+  return Object.entries(pack.decks ?? {}).flatMap(([deckRef, deck]) =>
+    Array.from(deck.cards ?? [])
+      .filter((cardId) => !scope.cardIds.has(cardId))
+      .map((cardId) => `deck "${deckRef}" references unknown card "${cardId}"`)
+  );
+}
+
+/** Each descriptor in a list, in order, through the one descriptor check. */
+function fxListDefects(list: readonly EffectDescriptor[], where: string, scope: PackScope): string[] {
+  return Array.from(list, (d) => fxDefects(d, where, scope)).flat();
+}
+
+/**
+ * One effect descriptor — the "schema valid" leg of HK-4 (recursive over window options):
+ * an object with a string "fx" (EXT3-A sibling), the fx within EFX, then that fx's own
+ * argument checks from the table below.
+ */
+function fxDefects(d: EffectDescriptor, where: string, scope: PackScope): string[] {
+  if (d === null || typeof d !== 'object' || typeof (d as { fx?: unknown }).fx !== 'string') {
+    return [`${where}: effect must be an object with a string "fx", got ${JSON.stringify(d)}`];
+  }
+  if (!EFX_V1_1_1.includes(d.fx as EfxName)) return [`${where} carries fx ∉ EFX: "${d.fx}"`];
+  return FX_CHECKS[d.fx as EfxName](d, where, scope);
+}
+
+/** Whether each condition held; the sentence of each one that did not, in order. */
+function unmet(needs: readonly (readonly [boolean, string])[]): string[] {
+  return needs.filter(([met]) => !met).map(([, what]) => what);
+}
+
+function finite(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+function isSeat(scope: PackScope, v: unknown): boolean {
+  return typeof v === 'string' && scope.seatIds.has(v);
+}
+
+/** A descriptor's own argument checks: the sentence of each argument that fails. */
+type FxArgCheck = (d: EffectDescriptor, scope: PackScope) => string[];
+
+/** A descriptor's whole check: its argument defects, each led by where it sits and which fx it is. */
+type FxCheck = (d: EffectDescriptor, where: string, scope: PackScope) => string[];
+
+function led(args: FxArgCheck): FxCheck {
+  return (d, where, scope) => args(d, scope).map((what) => `${where} · ${d.fx}: ${what}`);
+}
+
+function payArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  return unmet([
+    [isSeat(scope, d['to']), `"to" must be a declared seat, got ${JSON.stringify(d['to'])}`],
+    [finite(d['amount']), `"amount" must be a finite number, got ${JSON.stringify(d['amount'])}`],
+    [d['from'] === undefined || isSeat(scope, d['from']), `"from" must be a declared seat`],
+  ]);
+}
+
+function capitalizeArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  return unmet([
+    [isSeat(scope, d['owner']), `"owner" must be a declared seat`],
+    [typeof d['asset'] === 'string', `"asset" must be a string`],
+    [finite(d['amount']), `"amount" must be a finite number`],
+  ]);
+}
+
+function grantFavorArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  return unmet([
+    [isSeat(scope, d['to']), `"to" must be a declared seat`],
+    [finite(d['n']), `"n" must be a finite number`],
+  ]);
+}
+
+function levyArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  return unmet([
+    [d['scope'] === 'table' || isSeat(scope, d['scope']), `"scope" must be 'table' or a declared seat`],
+    [finite(d['amount']), `"amount" must be a finite number`],
+  ]);
+}
+
+function deckInjectArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  return unmet([
+    [typeof d['deck'] === 'string' && scope.deckRefs.has(d['deck'] as string), `"deck" must reference a declared deck`],
+    [
+      typeof d['card'] === 'string' && scope.cardIds.has(d['card'] as string),
+      `"card" must reference a cataloged card (no smuggling)`,
+    ],
+    [d['policy'] === undefined || d['policy'] === 'top' || d['policy'] === 'bottom', `"policy" must be top|bottom`],
+  ]);
+}
+
+function grantSueRightArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  return unmet([
+    [isSeat(scope, d['holder']), `"holder" must be a declared seat`],
+    [isSeat(scope, d['against']), `"against" must be a declared seat`],
+    [typeof d['window'] === 'string', `"window" must be a string`],
+  ]);
+}
+
+/** open_window: its own arguments, then (in order) each option's label, fx shape and inner fx. */
+function openWindowCheck(d: EffectDescriptor, where: string, scope: PackScope): string[] {
+  return [...led(openWindowArgs)(d, where, scope), ...optionsDefects(d, where, scope)];
+}
+
+function openWindowArgs(d: EffectDescriptor, scope: PackScope): string[] {
+  const options = d['options'];
+  const head = unmet([
+    [typeof d['kind'] === 'string', `"kind" must be a string`],
+    [isSeat(scope, d['decider']), `"decider" must be a declared seat (an undecidable window bricks the game)`],
+    // ext-audit-2 F2-R2-5 (I-19): gating is engine-reserved — content may not set it.
+    [d['gated'] === undefined, `"gated" is engine-reserved — every content window gates (S-8)`],
+    [Array.isArray(options), `"options" must be an array`],
+  ]);
+  return Array.isArray(options) ? [...head, ...optionCountDefects(d, options)] : head;
+}
+
+function optionCountDefects(d: EffectDescriptor, options: readonly JsonValue[]): string[] {
+  // K7-F2 NEW-1 closure: a window MUST carry at least one option — a
+  // zero-option gated window has no path to decision (GX-8) and bricks the game.
+  const auto = d['auto'] ?? 0;
+  return unmet([
+    [options.length >= 1, `"options" must carry at least one option (an undecidable window bricks the game)`],
+    [
+      Number.isInteger(auto) && (auto as number) >= 0 && (auto as number) < Math.max(options.length, 1),
+      `"auto" index ${JSON.stringify(d['auto'])} out of range (${options.length} options)`,
+    ],
+  ]);
+}
+
+function optionsDefects(d: EffectDescriptor, where: string, scope: PackScope): string[] {
+  const options = d['options'];
+  if (!Array.isArray(options)) return [];
+  return options.flatMap((opt, i) => optionDefects(opt, `${where} · open_window option ${i}`, scope));
+}
+
+/** One window option: a string label, and its fx (when present) an array of valid descriptors. */
+function optionDefects(opt: JsonValue, at: string, scope: PackScope): string[] {
+  const o = opt as { label?: unknown; fx?: unknown };
+  const label = typeof o?.label !== 'string' ? [`${at}: "label" must be a string`] : [];
+  // ext-audit-2 F2-R2-3: malformed fx shapes are NAMED, never thrown raw.
+  if (o?.fx !== undefined && !Array.isArray(o.fx)) {
+    return [...label, `${at}: "fx" must be an array, got ${JSON.stringify(o.fx)}`];
+  }
+  const inner = (o?.fx as EffectDescriptor[] | undefined) ?? [];
+  return [...label, ...Array.from(inner, (d) => innerFxDefects(d, at, scope)).flat()];
+}
+
+function innerFxDefects(inner: EffectDescriptor, at: string, scope: PackScope): string[] {
+  // ext-audit-2 F2-R2-1 (the NEW-1 sibling): open_window inside a window
+  // option is STATICALLY DEAD under the depth-1 law — resolving it can only
+  // refuse, and if it is the sole/auto path the game bricks. Refused at load.
+  if (inner?.fx === 'open_window') {
+    return [`${at}: contains open_window — statically dead under the depth-1 law (no path to decision)`];
+  }
+  return fxDefects(inner, at, scope);
+}
+
+/** Per-descriptor argument checks: one row per fx in EFX v1.1.1 (the type holds the table to the closure). */
+const FX_CHECKS: Readonly<Record<EfxName, FxCheck>> = Object.freeze({
+  pay: led(payArgs),
+  capitalize: led(capitalizeArgs),
+  grant_favor: led(grantFavorArgs),
+  levy: led(levyArgs),
+  deck_inject: led(deckInjectArgs),
+  grant_sue_right: led(grantSueRightArgs),
+  open_window: openWindowCheck,
+});
 
 /** I-2/I-8: genesis = deterministic f(pack, seats, seed); decks shuffled on named streams. */
 export function packGenesis(rawPack: ContentPack): Genesis {
@@ -225,20 +339,31 @@ function activeSeatId(state: State): string {
  * never registers a single intent — and SEALS the pack at the door (K7-F2 defect 8:
  * post-validation mutation of the caller's pack object must be inert — the F1 D-2
  * aliasing law, applied to content).
+ *
+ * The five intents are registered one step each, in this order: deck:draw, turn:advance,
+ * turn:pass, window:resolve, window:auto.
  */
 export function wirePack(core: EngineCore, rawPack: ContentPack): void {
   // K7-F4 NEW-2 note applied here too: clone FIRST, validate the CLONE (getter-proof).
   const pack = freezeDeep(structuredClone(rawPack) as unknown as JsonObject) as unknown as ContentPack;
   hookHk4ValidatePack(pack);
 
-  const onTurn = onTurnRule; // shared discipline (K7-F4 D10)
+  registerDeckDraw(core, pack);
+  registerTurnAdvance(core);
+  registerTurnPass(core);
+  registerWindowResolve(core);
+  registerWindowAuto(core);
+}
 
-  // deck:draw — draw own top card; its fx apply through EffectEngine (S-3; I-11).
+// The five steps below use the shared turn discipline (K7-F4 D10): onTurnRule.
+
+// deck:draw — draw own top card; its fx apply through EffectEngine (S-3; I-11).
+function registerDeckDraw(core: EngineCore, pack: ContentPack): void {
   core.registerIntent(
     'deck:draw',
     {
       args: (_s, i) => (typeof i.args['deck'] === 'string' ? true : 'deck ref required'),
-      rules: [onTurn],
+      rules: [onTurnRule],
     },
     (state, intent) => {
       const { next, card } = drawTop(state, intent.args['deck'] as string);
@@ -252,22 +377,26 @@ export function wirePack(core: EngineCore, rawPack: ContentPack): void {
       return EffectEngine.applyAll(next, def.fx, { windowDepth: 0 });
     }
   );
+}
 
-  // turn:advance — phase step (I-9 advisory ordering at F2).
+// turn:advance — phase step (I-9 advisory ordering at F2).
+function registerTurnAdvance(core: EngineCore): void {
   core.registerIntent(
     'turn:advance',
-    { args: () => true, rules: [onTurn] },
+    { args: () => true, rules: [onTurnRule] },
     (state) => advancePhase(state)
   );
+}
 
-  // turn:pass — BOTH-CHECK: Guard rule refuses over open gated windows (R-6) AND HK-5
-  // guards the applier path (defense in depth; divergence-injectable).
+// turn:pass — BOTH-CHECK: Guard rule refuses over open gated windows (R-6) AND HK-5
+// guards the applier path (defense in depth; divergence-injectable).
+function registerTurnPass(core: EngineCore): void {
   core.registerIntent(
     'turn:pass',
     {
       args: () => true,
       rules: [
-        onTurn,
+        onTurnRule,
         (state) =>
           openGatedWindows(state).length === 0
             ? true
@@ -284,8 +413,10 @@ export function wirePack(core: EngineCore, rawPack: ContentPack): void {
       return passSeat(state);
     }
   );
+}
 
-  // window:resolve — decider takes the decision (logged by submission).
+// window:resolve — decider takes the decision (logged by submission).
+function registerWindowResolve(core: EngineCore): void {
   core.registerIntent(
     'window:resolve',
     {
@@ -298,9 +429,11 @@ export function wirePack(core: EngineCore, rawPack: ContentPack): void {
     (state, intent) =>
       resolveWindow(state, intent.args['window'] as string, intent.args['option'] as number, intent.seat)
   );
+}
 
-  // window:auto — auto-policy takes the decision for an ELIMINATED decider; the intent
-  // itself is the log entry (GX-8/R-7: decided AND logged, never skipped).
+// window:auto — auto-policy takes the decision for an ELIMINATED decider; the intent
+// itself is the log entry (GX-8/R-7: decided AND logged, never skipped).
+function registerWindowAuto(core: EngineCore): void {
   core.registerIntent(
     'window:auto',
     {
