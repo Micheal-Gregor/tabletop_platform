@@ -90,3 +90,4 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | phase2:contract+emission G-1 (R3) | f43ecb99 | opus | 8 | 16398 | 1290496 | 16731 | 180984 | - | a5 payload owners; emit_phase2.py -> CLAUDE_TABLETOP_G1_Phase2.md; emission-check conforms | 2026-11-08 |
 | phase2:final-package adversarial pass (TE-6) G-1 (R3) | f43ecb99 agent-a6878e3e | opus | 56 | 255232 | 4986592 | 74745 | 942151 | - | 18 findings: 0 blocking, 10 major, 8 minor | 2026-11-08 |
 | phase2:TE-6 fixes + final package G-1 (R3) | f43ecb99 | opus | 26 | 70834 | 4271369 | 51479 | 612657 | - | 18 findings re-checked and applied (te6_fixes.py); OBJ-49 added, RE-09; emission conforms; S2-G1-final-package.md assembled | 2026-11-08 |
+| phase2:close G-1 (R3) | f43ecb99 | opus | 16 | 14427 | 3289634 | 10708 | 246892 | - | owner approved S2 live; AE-c20 ruled; commit b7d496d; STATE next action R4; hand-over note | 2026-11-08 |
