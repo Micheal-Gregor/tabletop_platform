@@ -5,18 +5,15 @@
  */
 import type { State } from '@tabletop/engine';
 import { freezeDeep } from '@tabletop/engine';
+import { UnboxRefusal } from './unbox-refusal.js';
+
+// UnboxRefusal lives in its own file (one class per file); re-exported so every import holds.
+export { UnboxRefusal } from './unbox-refusal.js';
 
 export class ProjectionBreach extends Error {
   constructor(detail: string) {
     super(`Projection breach [GX-35/R-19]: ${detail}`);
     this.name = 'ProjectionBreach';
-  }
-}
-
-export class UnboxRefusal extends Error {
-  constructor(detail: string) {
-    super(`Unbox refused [GX-35]: ${detail}`);
-    this.name = 'UnboxRefusal';
   }
 }
 
@@ -70,47 +67,133 @@ export function hookHk10BeforeRenderRead(view: unknown): asserts view is SeatVie
   }
 }
 
+type RawDecks = Record<string, { draw: readonly string[]; discard: readonly string[] }>;
+type RawWindow = { id: string; kind: string; decider: string; status: string; options: readonly { label: string }[] };
+type RawVenture = { id: string; status: string; portions: readonly unknown[] };
+type RawPools = Record<string, readonly unknown[] | undefined> | undefined;
+type SeatRow = SeatView['seats'][number];
+type HandOwner = { hand?: readonly { id: string }[] } | undefined;
+
+/** The viewer must be a seat of the state; anything else is no projection at all. */
+function checkSeatKnown(seats: SeatView['seats'], seat: string): void {
+  if (!seats.some((s) => s.id === seat)) throw new ProjectionBreach(`unknown seat "${seat}"`);
+}
+
+function rawDecks(state: State): RawDecks {
+  return (state['decks'] as RawDecks) ?? {};
+}
+
+/** Decks as COUNTS for every seat: the draw count and the discard's top; contents REDACTED. */
+function deckCounts(decksRaw: RawDecks): SeatView['decks'] {
+  const decks: Record<string, { drawCount: number; discardTop: string | null }> = {};
+  for (const [ref, d] of Object.entries(decksRaw)) {
+    decks[ref] = { drawCount: d.draw.length, discardTop: d.discard[0] ?? null };
+  }
+  return decks;
+}
+
+/** Window options are ABSENT unless the viewer is the decider (I-47). */
+function optionsFor(w: RawWindow, seat: string): readonly string[] | null {
+  return w.decider === seat ? w.options.map((o) => o.label) : null;
+}
+
+function windowViews(state: State, seat: string): SeatView['windows'] {
+  const windows = (state['windows'] as readonly RawWindow[]) ?? [];
+  return windows.map((w) => ({ id: w.id, kind: w.kind, decider: w.decider, status: w.status, options: optionsFor(w, seat) }));
+}
+
+function turnView(state: State): SeatView['turn'] {
+  const turn = state['turn'] as SeatView['turn'];
+  return { round: turn.round, seatIdx: turn.seatIdx, phase: turn.phase, status: turn.status };
+}
+
+/** A seat's hand as its owner holds it: [] when the seat is absent or holds none. */
+function handOf(owner: HandOwner): readonly { id: string }[] {
+  return owner?.hand ?? [];
+}
+
+/** Every seat's public row; a hidden hand COUNTS publicly (C-1d, I-171). */
+function seatViews(seats: SeatView['seats']): SeatView['seats'] {
+  return seats.map((s: SeatRow) => ({
+    id: s.id, cash: s.cash, favor: s.favor, assets: s.assets, sueRights: s.sueRights, eliminated: s.eliminated,
+    handCount: handOf(s as unknown as HandOwner).length,
+  }));
+}
+
+/** The VIEWER'S hand — ids only (C-1d, I-171); other hands project as counts. */
+function ownHandOf(seats: SeatView['seats'], seat: string): readonly string[] {
+  return handOf(seats.find((s) => s.id === seat) as unknown as HandOwner).map((c) => c.id);
+}
+
+function ventureViews(state: State): SeatView['ventures'] {
+  const ventures = (state['ventures'] as readonly RawVenture[]) ?? [];
+  return ventures.map((v) => ({ id: v.id, status: v.status, portions: v.portions.length }));
+}
+
+function rawPools(state: State): RawPools {
+  return state['pools'] as RawPools;
+}
+
+function pileSize(pools: RawPools, name: string): number {
+  return pools?.[name]?.length ?? 0;
+}
+
+/** A16 (I-137): pools as COUNTS — the piles are face down; `?? 0` tolerates pool-less v1 states. */
+function poolCounts(state: State): SeatView['pools'] {
+  const pools = rawPools(state);
+  return {
+    tradespeople: pileSize(pools, 'tradespeople'),
+    equipment: pileSize(pools, 'equipment'),
+    bbb: pileSize(pools, 'bbb'),
+    networking: pileSize(pools, 'networking'),
+  };
+}
+
+function pileIds(pile: readonly unknown[] | undefined): string[] {
+  return (pile ?? []).map((e) => String((e as { id?: unknown })?.id ?? e));
+}
+
+/** I-252: THE STATE'S pool order (top→bottom), never a reconstruction. */
+function poolOrders(state: State): SeatView['poolOrders'] {
+  const pools = rawPools(state);
+  return {
+    tradespeople: pileIds(pools?.['tradespeople']),
+    equipment: pileIds(pools?.['equipment']),
+    bbb: pileIds(pools?.['bbb']),
+    networking: pileIds(pools?.['networking']),
+  };
+}
+
+/** The brand is the view's own `__seatView` mark; the deep freeze severs every alias to the state. */
+function sealView(view: SeatView): SeatView {
+  return freezeDeep(structuredClone(view) as never) as unknown as SeatView;
+}
+
 /** THE projection: derive, redact, brand, freeze. The sole S-6 read. */
 export function project(state: State, seat: string): SeatView {
   const seats = state['seats'] as SeatView['seats'];
-  if (!seats.some((s) => s.id === seat)) throw new ProjectionBreach(`unknown seat "${seat}"`);
-  const turn = state['turn'] as SeatView['turn'];
-  const decksRaw = (state['decks'] as Record<string, { draw: readonly string[]; discard: readonly string[] }>) ?? {};
-  const decks: Record<string, { drawCount: number; discardTop: string | null }> = {};
-  for (const [ref, d] of Object.entries(decksRaw)) {
-    decks[ref] = { drawCount: d.draw.length, discardTop: d.discard[0] ?? null }; // contents REDACTED
-  }
-  const windows = ((state['windows'] as readonly { id: string; kind: string; decider: string; status: string; options: readonly { label: string }[] }[]) ?? []).map(
-    (w) => ({
-      id: w.id, kind: w.kind, decider: w.decider, status: w.status,
-      options: w.decider === seat ? w.options.map((o) => o.label) : null, // decider-only (I-47)
-    })
-  );
+  checkSeatKnown(seats, seat);
+  const decksRaw = rawDecks(state);
+  const decks = deckCounts(decksRaw);
+  const windows = windowViews(state, seat);
   const view: SeatView = {
     __seatView: true,
     seat,
-    turn: { round: turn.round, seatIdx: turn.seatIdx, phase: turn.phase, status: turn.status },
-    seats: seats.map((s) => ({ id: s.id, cash: s.cash, favor: s.favor, assets: s.assets, sueRights: s.sueRights, eliminated: s.eliminated, handCount: ((s as unknown as { hand?: readonly unknown[] }).hand ?? []).length })),
+    turn: turnView(state),
+    seats: seatViews(seats),
     decks,
     windows,
-    ventures: ((state['ventures'] as readonly { id: string; status: string; portions: readonly unknown[] }[]) ?? []).map((v) => ({ id: v.id, status: v.status, portions: v.portions.length })),
+    ventures: ventureViews(state),
     debts: (state['debts'] as SeatView['debts']) ?? [],
     receivables: (state['receivables'] as SeatView['receivables']) ?? [],
     results: state['results'] ?? null,
     ownDiscard: decksRaw[seat]?.discard ?? [],
-    ownHand: (((seats.find((s) => s.id === seat) as unknown as { hand?: readonly { id: string }[] })?.hand) ?? []).map((c) => c.id), // C-1d (I-171)
+    ownHand: ownHandOf(seats, seat), // C-1d (I-171)
     crew: (state['crew'] as SeatView['crew']) ?? [], // Q-3 (I-93): public crew, additive
-    pools: (() => { // A16 (I-137): counts only — face-down piles
-      const p = state['pools'] as { tradespeople?: readonly unknown[]; equipment?: readonly unknown[]; bbb?: readonly unknown[]; networking?: readonly unknown[] } | undefined;
-      return { tradespeople: p?.tradespeople?.length ?? 0, equipment: p?.equipment?.length ?? 0, bbb: p?.bbb?.length ?? 0, networking: p?.networking?.length ?? 0 };
-    })(),
-    poolOrders: (() => { // I-252: THE STATE'S order, never a reconstruction
-      const p = state['pools'] as Record<string, readonly unknown[] | undefined> | undefined;
-      const ids = (a?: readonly unknown[]): string[] => (a ?? []).map((e) => String((e as { id?: unknown })?.id ?? e));
-      return { tradespeople: ids(p?.['tradespeople']), equipment: ids(p?.['equipment']), bbb: ids(p?.['bbb']), networking: ids(p?.['networking']) };
-    })(),
+    pools: poolCounts(state),
+    poolOrders: poolOrders(state),
   };
-  return freezeDeep(structuredClone(view) as never) as unknown as SeatView;
+  return sealView(view);
 }
 
 /** MP6 — validated reveal: only the seat's OWN refs unbox. */
