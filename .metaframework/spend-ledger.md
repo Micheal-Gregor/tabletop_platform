@@ -75,3 +75,12 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | R1 lead: K7 final, seal check | f7fce8bb | opus | 38 | 22289 | 16468647 | 12776 | 931928 | - | - | 2026-11-08 |
 | R1 lead: seal approval recorded | f7fce8bb | opus | 20 | 22372 | 8922907 | 5674 | 519279 | - | - | 2026-11-08 |
 | R1 lead: seal applied | f7fce8bb | opus | 14 | 12204 | 6343497 | 2562 | 354407 | - | - | 2026-11-08 |
+| phase1:intake G-1 (R2) | e44ecb20 | opus | 74 | 236525 | 7078688 | 69691 | 1175513 | - | step-1-intake.md: declarations, inputs by hash, AE-c13..c28, CF-1..9 | 2026-11-08 |
+| phase1:intake web-fetch (R2) | e44ecb20 agent-ad303c2a | haiku | 8 | 23758 | 22730 | 7240 | 68178 | - | Rapier determinism and loading docs; video oEmbed | 2026-11-08 |
+| phase1:theoretical-design+base-case-reduction G-1 (R2) | e44ecb20 | opus | 8 | 37886 | 1165082 | 41385 | 340959 | - | step-2 (GX-40..52, theorem D) and step-3 (P-1..11, GBC-65..85); one row: both written before a row was taken | 2026-11-08 |
+| phase1:minimal-worked-example G-1 (R2) | e44ecb20 | opus | 12 | 36645 | 2005959 | 30956 | 328380 | - | step-4 PASS WITH LATENT ASSUMPTIONS (LA-1..7); mwe/mwe_g1.py + mwe-results.json | 2026-11-08 |
+| phase1:consistency-gate G-1 (R2) | e44ecb20 | opus | 12 | 19696 | 2200274 | 25025 | 274543 | - | step-5: I-1..8, AE protocol c13..c29, owner's 8 rulings live | 2026-11-08 |
+| phase1:logic-stress-test G-1 (R2) | e44ecb20 | opus | 4 | 14263 | 768247 | 16205 | 147967 | - | step-6: S1 pass+strengthening, S2 fail (time base), S3 fail (population); stress/stress_g1.py | 2026-11-08 |
+| phase1:implementation-specification G-1 (R2) | e44ecb20 | opus | 4 | 26643 | 798958 | 17172 | 179098 | - | step-7: X1..X10, SX-01..22, RX-1..8, SC-x1..6, EL-1..11, XP/XR, XV-01..10, XH-01..10, XPC-01..08, ODG-g5..g11 | 2026-11-08 |
+| phase1:final-package adversarial pass (TE-6) G-1 (R2) | e44ecb20 agent-ac2e69c4 | opus | 80 | 214308 | 7446197 | 69930 | 989925 | - | 15 findings: 1 blocking, 8 major, 6 minor | 2026-11-08 |
+| phase1:final-package G-1 (R2) | e44ecb20 | opus | 56 | 116864 | 12741366 | 91660 | 1329152 | - | 15 adversarial findings applied on the owner's directions; CLAUDE_TABLETOP_G1.md; S1-G1-final-package.md assembled | 2026-11-08 |

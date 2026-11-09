@@ -1,0 +1,298 @@
+{
+  "seed": "sigma-7",
+  "stream": "rand:spinner-1",
+  "preset": {
+    "I": {
+      "value": 0.002,
+      "unit": "kg m^2",
+      "kappa": "assumed",
+      "source": "ui/gaps.md G-1 worked example"
+    },
+    "tau": {
+      "value": 0.004,
+      "unit": "N m",
+      "kappa": "assumed",
+      "source": "ui/gaps.md G-1 worked example"
+    },
+    "b": {
+      "value": 0.0,
+      "unit": "N m s",
+      "kappa": "assumed",
+      "source": "ui/gaps.md G-1 worked example (no drag)"
+    },
+    "sectors": {
+      "value": 8,
+      "unit": "equal",
+      "kappa": "assumed",
+      "source": "ui/gaps.md G-1 worked example"
+    },
+    "epsilon": {
+      "value": 0.05,
+      "unit": "1",
+      "kappa": "assumed",
+      "source": "ui/gaps.md G-1 worked example"
+    },
+    "omega_unit": {
+      "value": 1000,
+      "unit": "mrad/s per rad/s",
+      "kappa": "assumed",
+      "source": "MWE (AE-c20 open)"
+    },
+    "dt": {
+      "value": 0.004166666666666667,
+      "unit": "s",
+      "kappa": "assumed",
+      "source": "MWE (pin, AE-c16 open)"
+    }
+  },
+  "sealed_draws": [
+    0.557480385992676,
+    0.5018962631002069,
+    0.6204553130082786
+  ],
+  "gap_example": {
+    "omega12": {
+      "Theta": 36.0,
+      "T": 6.0,
+      "rest": 4.584073464102069,
+      "sector": 5
+    },
+    "omega12.3": {
+      "Theta": 37.8225,
+      "rest": 0.12338815692248062,
+      "sector": 0
+    },
+    "skill_index_at_12": 0.13089969389957473
+  },
+  "live": {
+    "A0": {
+      "x": 0,
+      "intent_refusal": "RULE_REFUSED no flick",
+      "draw": null,
+      "logged": false
+    },
+    "A1": {
+      "x": 3000,
+      "u": 0.557480385992676,
+      "omega0": 3.0,
+      "omega_eff": 3.0836220578989018,
+      "s0": 0.0,
+      "Theta": 2.3771812489901643,
+      "T": 1.5418110289494509,
+      "theta_rest": 2.3771812489901643,
+      "O": "REFUSE(under-one-turn)",
+      "energy_books": 0.0,
+      "H_standin": "5885fe8f335cac3afaf9f9fa5274a69f4c3e15931d6b2408b94682f4ab11d004"
+    },
+    "A2_reading_Ra": {
+      "x": 12000,
+      "u": 0.5018962631002069,
+      "omega0": 12.0,
+      "omega_eff": 12.301137757860126,
+      "s0": 2.3771812489901643,
+      "Theta": 37.82949753446301,
+      "T": 6.150568878930063,
+      "theta_rest": 40.20667878345317,
+      "O": "VALUE(sector 3)",
+      "energy_books": 0.0,
+      "H_standin": "a3ccf8d9a92f485df04faa5aa943ec912df453ca953cbc3155918fb94cb2adb5"
+    },
+    "A2_reading_Rb": {
+      "x": 12000,
+      "u": 0.5018962631002069,
+      "omega0": 12.0,
+      "omega_eff": 12.301137757860126,
+      "s0": 0.0,
+      "Theta": 37.82949753446301,
+      "T": 6.150568878930063,
+      "theta_rest": 37.82949753446301,
+      "O": "VALUE(sector 0)",
+      "energy_books": 0.0,
+      "H_standin": "9783ef3ace9b3c1222bf82ac703f2b73991d4ba0e94a2cef5bffa3108b55670d"
+    }
+  },
+  "replay": {
+    "refusal_logged": {
+      "A2_H_equal": true,
+      "A2_O": "VALUE(sector 3)"
+    },
+    "refusal_not_logged": {
+      "A2_H_equal": false,
+      "live": {
+        "O": "VALUE(sector 0)",
+        "rest": 0.1303856913854915,
+        "omega_eff": 12.301137757860126,
+        "u": 0.5018962631002069
+      },
+      "replay": {
+        "O": "VALUE(sector 0)",
+        "rest": 0.33578814076511065,
+        "omega_eff": 12.334488231595607,
+        "u": 0.557480385992676
+      }
+    },
+    "tampered_x12001": {
+      "H_equal": false
+    }
+  },
+  "integrator_order": {
+    "Theta_closed": 37.82949753446301,
+    "Theta_semi_implicit": 37.80387221084043,
+    "omega_dt_over_2": 0.02562737032887526,
+    "difference": -0.02562532362257741
+  },
+  "jitter_claim": {
+    "one_sided": {
+      "p": [
+        0.212095,
+        0.20994,
+        0.11143,
+        0.0,
+        0.0,
+        0.03561,
+        0.21661,
+        0.214315
+      ],
+      "reachable": 6,
+      "chi2_N10000": 5647.569676,
+      "span_rad": 3.690000000000012
+    },
+    "symmetric": {
+      "p": [
+        0.10605,
+        0.177315,
+        0.169,
+        0.111975,
+        0.110715,
+        0.109485,
+        0.108305,
+        0.107155
+      ],
+      "reachable": 8,
+      "chi2_N10000": 499.48446800000016,
+      "span_rad": 7.200000000000024
+    },
+    "coverage_floor_rad": {
+      "one_sided": 61.299368850532545,
+      "symmetric": 31.41592653589793
+    },
+    "coverage_floor_exact_rad": {
+      "one_sided": 53.63694774421597,
+      "symmetric": 27.48893571891069
+    },
+    "chi2_critical_df7": {
+      "0.05": 14.067,
+      "0.001": 24.322
+    }
+  },
+  "hand_claim": {
+    "population": "omega0 ~ U[8,16] rad/s, kappa=assumed",
+    "N": 10000,
+    "refused": 0,
+    "counts": [
+      1306,
+      1240,
+      1209,
+      1164,
+      1125,
+      1282,
+      1319,
+      1355
+    ],
+    "chi2": 35.7984
+  },
+  "hand_claim_chain": {
+    "population": "omega0 ~ U[8,16] rad/s, kappa=assumed; s0 = last rest",
+    "N": 10000,
+    "counts": [
+      1252,
+      1223,
+      1271,
+      1297,
+      1280,
+      1263,
+      1182,
+      1232
+    ],
+    "chi2": 7.52
+  },
+  "die_reader": {
+    "identity": {
+      "face": 1,
+      "dot": 1.0,
+      "O": "VALUE(1)"
+    },
+    "tilted_20deg_about_z": {
+      "face": 1,
+      "dot": 0.9396926207859084,
+      "O": "REFUSE(cocked)"
+    },
+    "no_tumble": {
+      "faces_up_during_motion": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "distinct": 1,
+      "T_f": 3,
+      "O": "REFUSE(no-tumble)"
+    },
+    "tumbled": {
+      "faces_up_during_motion": [
+        1,
+        2,
+        6,
+        5,
+        1
+      ],
+      "distinct": 4,
+      "T_f": 3,
+      "passes_G4": true
+    }
+  },
+  "oracle_xv01": {
+    "8.0": {
+      "Theta": 16.0,
+      "T": 4.0,
+      "u": 0.5
+    },
+    "12.0": {
+      "Theta": 36.0,
+      "T": 6.0,
+      "u": 0.5
+    },
+    "16.0": {
+      "Theta": 64.0,
+      "T": 8.0,
+      "u": 0.5
+    }
+  },
+  "chain_vacuity": {
+    "counts": [
+      1252,
+      1251,
+      1247,
+      1252,
+      1249,
+      1249,
+      1254,
+      1246
+    ],
+    "chi2": 0.0416
+  },
+  "rerun_final_rules": {
+    "x_min_mrad_s": 5278,
+    "A0": "x = 0: intent refusal, no draw",
+    "A1": "x = 3000 < x_min: intent refusal (re-spin), no draw, not logged, nothing moves",
+    "A2": {
+      "u": 0.557480385992676,
+      "draw_index": 1,
+      "omega_eff": 12.068976463191213,
+      "s0": 0.0,
+      "Theta": 36.41504821726587,
+      "rest": 4.999121681367939,
+      "O": "VALUE(sector 6)"
+    }
+  }
+}

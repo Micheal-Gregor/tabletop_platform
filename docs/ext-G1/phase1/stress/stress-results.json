@@ -1,0 +1,64 @@
+{
+  "preset": {
+    "I": 0.002,
+    "tau": 0.004,
+    "sectors": 8,
+    "epsilon": 0.05,
+    "jitter": "symmetric"
+  },
+  "scenario_1": {
+    "one_turn_floor_omega0": 5.277112157117895,
+    "probe": {
+      "omega0": 5.3,
+      "Theta0": 7.0225,
+      "Theta_min": 6.337806249999998,
+      "Theta_max": 7.742306250000001,
+      "A": 4.5716
+    },
+    "floor_for_bound": {
+      "2.0": {
+        "omega0": 8.177112157117897,
+        "Theta0_rad": 16.716290807521325,
+        "turns": 2.66048031217863
+      },
+      "1.5": {
+        "omega0": 13.077112157117895,
+        "Theta0_rad": 42.75271559246016,
+        "turns": 6.804306017141984
+      },
+      "1.25": {
+        "omega0": 20.077112157117895,
+        "Theta0_rad": 100.7726081423728,
+        "turns": 16.038458714121212
+      }
+    },
+    "coverage_floor_symmetric_rad": 31.41592653589793,
+    "coverage_floor_symmetric_exact_rad": 27.48893571891069,
+    "post_draw_hole": {
+      "floor_rad": 42.75,
+      "probes": {
+        "12.514": {
+          "acceptance": 0.05035,
+          "A_given_acceptance": 8.0
+        },
+        "12.758": {
+          "acceptance": 0.2502,
+          "A_given_acceptance": 2.997601918465228
+        }
+      }
+    }
+  },
+  "scenario_2": {
+    "time_scale": 8.0,
+    "a_true": 2.0,
+    "a_read": 0.03125,
+    "Theta_true": 36.0,
+    "Theta_read": 36.0,
+    "T_true": 6.0,
+    "T_read": 48.0,
+    "real_flick_12rad_s_with_a_read": {
+      "Theta_rad": 2304.0,
+      "T_s": 384.0
+    }
+  }
+}
