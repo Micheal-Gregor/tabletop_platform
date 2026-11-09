@@ -11,13 +11,10 @@ import type { GameRow, Genesis, Intent, JsonObject, PackRef, Refusal, Seat } fro
 import { EngineCore, rebuild } from '../kernel/core.js';
 import type { SubmitResult } from '../kernel/core.js';
 import { freezeDeep } from '../kernel/statetree.js';
+import { TransportRefusal } from './transport-refusal.js';
 
-export class TransportRefusal extends Error {
-  constructor(readonly rule: string, detail: string) {
-    super(`Transport refused [${rule}]: ${detail}`);
-    this.name = 'TransportRefusal';
-  }
-}
+// TransportRefusal lives in its own file (one class per file); re-exported so every import holds.
+export { TransportRefusal } from './transport-refusal.js';
 
 /** Each appended move, in order, with its index and the post-move state hash. */
 export type MoveListener = (move: Intent, index: number, stateHash: string) => void;
