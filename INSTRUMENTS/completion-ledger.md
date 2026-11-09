@@ -573,3 +573,9 @@ Each step closed on the gates (the hard gate, the commit checks, `brief.py verif
 | MOD-30 | code-gates: checkRegion, extendLayout (3); OS-12 isolation test, LayoutRefusal | `739411f2731178eb` | `fb51a13` | exit 0 |
 | MOD-31 | code-gates: emit G2 (1); OS-12 isolation test, EmissionRefusal | `3359f0976e9edc55` | `dc53b5d` | exit 0 |
 | MOD-33 | one class per file: UnboxRefusal to unbox-refusal.ts; code-gates: project G2+G3 (2); OS-12 isolation tests, ProjectionBreach, UnboxRefusal | `16bb845270cd3750` | `dd31fa9` | exit 0 |
+| MOD-04 | one class per file: RNGStream to rng-stream.ts with its seeding functions (SR-1 I-267, owner-ruled); OS-12 isolation tests, RNGStreams, RNGStream | `a835391f1da13ac6` | `a81adf4` | exit 0 |
+
+**R1 repairs complete (2026-11-09):** all 41 code-gates findings fixed (code-gates passes on the three packages); one
+class per file throughout (seven splits); an OS-12 isolation test for each of the 34 classes, passing under
+`isolation_test_command` with the environment cleared; `seal.py declarations` and `phase4-checks.py` modules,
+objects, scaffold and gates pass. Full suite 821/821. Next: the close (RD-33).
