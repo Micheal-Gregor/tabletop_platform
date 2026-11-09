@@ -84,3 +84,4 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | phase1:implementation-specification G-1 (R2) | e44ecb20 | opus | 4 | 26643 | 798958 | 17172 | 179098 | - | step-7: X1..X10, SX-01..22, RX-1..8, SC-x1..6, EL-1..11, XP/XR, XV-01..10, XH-01..10, XPC-01..08, ODG-g5..g11 | 2026-11-08 |
 | phase1:final-package adversarial pass (TE-6) G-1 (R2) | e44ecb20 agent-ac2e69c4 | opus | 80 | 214308 | 7446197 | 69930 | 989925 | - | 15 findings: 1 blocking, 8 major, 6 minor | 2026-11-08 |
 | phase1:final-package G-1 (R2) | e44ecb20 | opus | 56 | 116864 | 12741366 | 91660 | 1329152 | - | 15 adversarial findings applied on the owner's directions; CLAUDE_TABLETOP_G1.md; S1-G1-final-package.md assembled | 2026-11-08 |
+| phase1:close G-1 (R2) | e44ecb20 | opus | 16 | 11074 | 4339090 | 6844 | 273338 | - | commit 10dea4a; STATE next action R3 | 2026-11-08 |
