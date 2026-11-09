@@ -49,14 +49,26 @@ export interface LayoutOverlay {
 
 const UNIT = 100;
 
-function checkRegion(layout: string, r: Region): void {
+function checkRegionNamed(layout: string, r: Region): void {
   if (!r.id || !r.role) throw new LayoutRefusal(layout, `region needs id and role, got "${r.id}"/"${r.role}"`);
+}
+
+function checkRegionFinite(layout: string, r: Region): void {
   for (const [k, val] of Object.entries({ x: r.x, y: r.y, w: r.w, h: r.h })) {
     if (typeof val !== 'number' || !Number.isFinite(val)) throw new LayoutRefusal(layout, `region "${r.id}" ${k} not finite`);
   }
+}
+
+function checkRegionInsideUnit(layout: string, r: Region): void {
   if (r.x < 0 || r.y < 0 || r.w <= 0 || r.h <= 0 || r.x + r.w > UNIT || r.y + r.h > UNIT) {
     throw new LayoutRefusal(layout, `region "${r.id}" escapes the unit space (0..${UNIT})`);
   }
+}
+
+function checkRegion(layout: string, r: Region): void {
+  checkRegionNamed(layout, r);
+  checkRegionFinite(layout, r);
+  checkRegionInsideUnit(layout, r);
 }
 
 export function validateLayout(def: LayoutDef): void {
@@ -74,35 +86,65 @@ export function validateLayout(def: LayoutDef): void {
   if ((def.shape?.length ?? 3) < 3) throw new LayoutRefusal(def.id, 'a shape needs at least three points');
 }
 
-/** THE extension door: child = parent + declared overlay; every shadowing on the record. */
-export function extendLayout(parent: LayoutDef, overlay: LayoutOverlay): LayoutDef {
-  validateLayout(parent);
-  const ids = new Set(parent.regions.map((r) => r.id));
+function checkOverrides(parent: LayoutDef, ids: ReadonlySet<string>, overlay: LayoutOverlay): void {
   for (const r of overlay.override ?? []) {
     if (!ids.has(r.id)) throw new LayoutRefusal(overlay.id, `override of undeclared region "${r.id}" — the parent "${parent.id}" never declared it`);
   }
+}
+
+function checkAdds(ids: ReadonlySet<string>, overlay: LayoutOverlay): void {
   for (const r of overlay.add ?? []) {
     if (ids.has(r.id)) throw new LayoutRefusal(overlay.id, `added region "${r.id}" collides with the parent's — override it instead`);
   }
+}
+
+function checkSuppressions(ids: ReadonlySet<string>, overlay: LayoutOverlay): void {
   for (const id of overlay.suppress ?? []) {
     if (!ids.has(id)) throw new LayoutRefusal(overlay.id, `suppress of unknown region "${id}"`);
   }
+}
+
+/** The overlay may touch only what the parent declared: overrides, adds, then suppressions. */
+function checkOverlay(parent: LayoutDef, overlay: LayoutOverlay): void {
+  const ids = new Set(parent.regions.map((r) => r.id));
+  checkOverrides(parent, ids, overlay);
+  checkAdds(ids, overlay);
+  checkSuppressions(ids, overlay);
+}
+
+function childShape(parent: LayoutDef, overlay: LayoutOverlay): { readonly shape?: LayoutDef['shape'] } {
+  const shape = overlay.shape ? overlay.shape : parent.shape;
+  return shape ? { shape } : {};
+}
+
+function childRegions(parent: LayoutDef, overlay: LayoutOverlay): Region[] {
   const overridden = new Map((overlay.override ?? []).map((r) => [r.id, r]));
   const suppressed = new Set(overlay.suppress ?? []);
+  return [
+    ...parent.regions.filter((r) => !suppressed.has(r.id)).map((r) => overridden.get(r.id) ?? r),
+    ...(overlay.add ?? []),
+  ];
+}
+
+function declaredShadowing(overlay: LayoutOverlay): LayoutDef['shadowed'] {
+  return {
+    overridden: [...new Set((overlay.override ?? []).map((r) => r.id))],
+    added: (overlay.add ?? []).map((r) => r.id),
+    suppressed: [...new Set(overlay.suppress ?? [])],
+  };
+}
+
+/** THE extension door: child = parent + declared overlay; every shadowing on the record. */
+export function extendLayout(parent: LayoutDef, overlay: LayoutOverlay): LayoutDef {
+  validateLayout(parent);
+  checkOverlay(parent, overlay);
   const child: LayoutDef = {
     id: overlay.id,
     kind: parent.kind,
-    ...(overlay.shape ? { shape: overlay.shape } : parent.shape ? { shape: parent.shape } : {}),
-    regions: [
-      ...parent.regions.filter((r) => !suppressed.has(r.id)).map((r) => overridden.get(r.id) ?? r),
-      ...(overlay.add ?? []),
-    ],
+    ...childShape(parent, overlay),
+    regions: childRegions(parent, overlay),
     lineage: [...parent.lineage, parent.id],
-    shadowed: {
-      overridden: [...overridden.keys()],
-      added: (overlay.add ?? []).map((r) => r.id),
-      suppressed: [...suppressed],
-    },
+    shadowed: declaredShadowing(overlay),
   };
   validateLayout(child);
   return Object.freeze(child);
