@@ -3,16 +3,16 @@
   "concept": "TABLETOP",
   "phase": 5,
   "branch": "main",
-  "head": "c5a5e527b70513dd9ce4496ad13f74b507ff8404",
-  "tree": "6f3a1ab9407909b55f44cc70c7af793a4c1446a4",
-  "dirty": false,
+  "head": "82d545890f4c42b6cd953987e0a821b893596322",
+  "tree": "abbac244b43a2ab0107fe657d8f5f9ec88aa33ba",
+  "dirty": true,
   "current_module": null,
   "k7_round": 1,
   "last_gate_tag": "seal-1",
   "seal_tag": "seal-1",
   "reopened": "",
-  "next_action": "Phase 5 \u2014 Simulate: propose candidate features from ui/surface-map.md",
-  "blocked_on": "owner: the single seal approval (seal.py apply --approved-by \"<owner, date>\" --accept-failures, the 36 legacy tags as known issues), or an owner-ordered fix round (owner-round-1) on the final review's twelve findings",
-  "updated_at": "2026-11-09T02:07:19+00:00",
-  "updated_by": "seal:seal-1"
+  "next_action": "R2 (docs/reentry-2026-11-08.md section 5): once the owner marks gap G-1 ready in ui/gaps.md, the extension run's Phase 1 takes G-1 (physics decides the die and the spinner, I-260) in its own session, budget 8M",
+  "blocked_on": "owner: mark gap G-1 ready in ui/gaps.md (physics decides a Randomizer's outcome)",
+  "updated_at": "2026-11-09T02:20:02+00:00",
+  "updated_by": "manual"
 }

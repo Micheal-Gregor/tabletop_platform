@@ -2,6 +2,11 @@
 
 The engine build instruction is archived at `governance/archive/CLAUDE-seal-1.md`. Read it only to find operation names.
 
+**Tabletop's plan (owner-ruled 2026-11-08, I-260).** Physics decides the die and the spinner, through an extension run
+on gap G-1 (`ui/gaps.md`). The 3D programme is stopped, not sealed: `governance/3D-ROADMAP.md` is a record, never
+resumed. A resuming session reads `docs/reentry-2026-11-08.md` (the rulings, runs R2 to R7, their budgets) and
+STATE.json's next action.
+
 ## Phase 5 contract — surface the sealed library to end users
 
 The engine library is built, reviewed, and sealed. This repo is in Phase 5. The

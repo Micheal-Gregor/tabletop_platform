@@ -25,8 +25,39 @@ run, batched with related entries.
 | K7-1-10 | (from the final review) | MOD-09 CC-4: REF-24's frozen test must present a genuine forbidden input: an effect-owned mutation (cash, favor, assets, sueRights, windows, deck inject) applied outside effects.ts, which the check refuses. Use a detector that resolves where those writes occur, not an export-name scan; the name scan may stay as a supplement. Writes the owner admitted (I-137/I-170 asset moves) must be named in the detector's allowance by register row, not slip past it silently. | K7 round 1, final review before seal-1 | INSTRUMENTS/k7-verdict-1.json | noticed |
 | K7-1-11 | (from the final review) | MOD-34 CC-1: SEAM-44 must be built: the seeded result HOOK-11 compares against must come from the projected SeatView (MOD-33), not from a caller-supplied string. Failing test: a flourish whose claimed seeded value is absent from or differs from the view's seeded result is refused or flagged, and V-9 re-derives its die from engine state through project(). | K7 round 1, final review before seal-1 | INSTRUMENTS/k7-verdict-1.json | noticed |
 | K7-1-12 | (from the final review) | MOD-30 CC-2: The booklet must render the RulesetView in full: vocabularies with members, and each contribution's bearer, trigger, condition, effects, slot writes and declared slots. Failing test: for a registry with a conditioned, slot-writing contribution, every field of renderRuleset(registry) appears in renderBooklet's output. | K7 round 1, final review before seal-1 | INSTRUMENTS/k7-verdict-1.json | noticed |
+| G-1 | Throw a die or flick a spinner, and the result is the move (the Physics Bench; "play it" on BOTY's table) | Decide a Randomizer's outcome (the Die's face; the Spinner's sector and resting angle) by physical simulation of the seat's own logged throw or flick; record that input so (seed, seats, log) replays the same outcome on any machine; refuse, never repair, a throw that does not settle cleanly. The owner's ruling, 2026-11-08 (I-260, reversing I-82(e)): physics decides, for the die and the spinner | No walk yet: the owner's ruling (I-260) and `docs/reentry-2026-11-08.md` §2 step 5 and §3. It blocks a chosen job, the Physics Bench (§4) | `ui/interface-contract.md`: the only randomness is `RNGStream.next` / `nextInt`, deterministic per (gameSeed, name, call count), and no seat intent is a throw or a spin. `kinds.ts:138,141`: Die {face} and Spinner {sector}, role Randomizer; `roles.ts:22` binds Randomizer to RNGStreams (M4). `effects.ts:19`: EFX v1.1.1 is closed (pay, capitalize, grant_favor, levy, deck_inject, grant_sue_right, open_window), and none sets a Randomizer. BOTY's `eco-demand-roll` (`cards-q1.ts:62`) says "roll for it" with `fx: []`. Compositions tried: (a) `nextInt` for the face, physics drawn afterwards: the seed decides and the physics is theater, the shape I-260 reversed (the bench's replay plus offset, I-109); (b) simulate in the view and submit the result: engine logic in the view, and nothing records the throw, so the log cannot replay it | shaped |
 
 ## Shaped detail
 
 (For each `shaped` or `ready` entry: inputs, outputs, rules, and a worked example taken from the
 simulation. Describe the need, not a class design — Phase 1 derives the component.)
+
+### G-1 · physics decides a Randomizer's outcome
+
+**Inputs.** A die throw: position, velocity and spin from the gesture, rounded to integers in the intent. A spinner
+flick: ω0 (tangential speed ÷ grab radius) and the start angle, as integers. The seed supplies only a jitter u, so the
+input in effect is ω0·(1 + ε·u); ε is the owner's, per component (with ε > 0 no player can aim).
+
+**Outputs.** The settled outcome (the Die's face; the Spinner's sector and resting angle), written as the kind's state;
+the trajectory the view plays; and the settled world's snapshot hash, which is the replay check.
+
+**Rules.**
+- The simulation of the logged input decides. The seed never decides alone, and nothing steers the result (the bench's
+  offset retires).
+- Replay is exact: (seed, seats, log) rebuilds the same outcome and hash on any machine. The physics engine's version is
+  pinned and recorded with the ruleset; the time step is fixed; each roll gets a fresh world; starting values come from
+  deterministic operations only.
+- Refusal, never repair: no throw, less than one turn, a die cocked against a wall, or one not settled within a stated
+  number of steps gives "re-roll" or "re-spin". A spinner with no friction is refused at admission (it must stop).
+- Fairness is measured, not assumed: 10,000 simulated throws per preset, chi-square against the faces or the sector
+  widths. Each parameter says where it came from: measured, published or assumed.
+- What the view shows equals the decided outcome (HOOK-11; truth wins).
+- Left to Phase 1: how a physics engine that loads asynchronously meets the engine's synchronous submit, and whether a
+  refused roll is logged.
+
+**Worked example** (hand-computed from the closed form in the re-entry doc §3, not from a simulation; Phase 1
+re-derives it). A spinner wheel: I = 0.002 kg·m², bearing friction τ = 0.004 N·m, no drag, 8 equal sectors, start
+angle 0. A flick of ω0 = 12 rad/s turns Θ = Iω0²/2τ = 36.0 rad (5.73 turns) in T = Iω0/τ = 6.0 s and rests at
+4.584 rad: sector 5, counting from 0. With ε = 0.05 and u = 0.5 the input in effect is 12.3 rad/s: Θ = 37.82 rad,
+resting at 0.123 rad, sector 0. The 2.5% jitter moves the result by more than two sectors, while aiming at one sector
+needs ω0 within 0.13 rad/s (about 1.1%), so the jitter, not the hand, decides the sector.
