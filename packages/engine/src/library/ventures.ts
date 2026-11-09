@@ -34,66 +34,117 @@ export function ventures(state: State): readonly VentureRow[] {
   return (state['ventures'] as readonly VentureRow[]) ?? [];
 }
 
-/** Spawn (GX-26). If a portion needs routing (no party), a gated routing window opens (GX-27). */
-export function spawnVenture(state: State, spec: VentureSpec): JsonObject {
+function checkVentureId(state: State, spec: VentureSpec): void {
   if (!spec.id || ventures(state).some((v) => v.id === spec.id)) {
     throw new VentureRefusal(spec.id || '<unnamed>', 'GX-26', 'missing or duplicate venture id');
   }
+}
+
+function checkPortionsPresent(spec: VentureSpec): void {
   if (!Array.isArray(spec.portions) || spec.portions.length < 1) {
     throw new VentureRefusal(spec.id, 'GX-26', 'a venture carries at least one portion');
   }
+}
+
+function checkPortionWork(spec: VentureSpec): void {
   for (const p of spec.portions) {
     if (!Number.isInteger(p.work) || p.work < 1) throw new VentureRefusal(spec.id, 'GX-26', 'portion work must be a positive integer');
   }
-  // K7-F5 D2 (DF5-2): the spawn door refuses brick values — a payoff to nobody or a
-  // non-finite amount would make the Reckoning unreachable (GX-30) or the state unhashable.
+}
+
+function checkDeadline(spec: VentureSpec): void {
   if (!Number.isInteger(spec.deadline) || spec.deadline < 1) {
     throw new VentureRefusal(spec.id, 'GX-26', 'deadline must be a positive integer round');
   }
-  const seatIds = new Set(((state['seats'] as readonly { id: string }[]) ?? []).map((s) => s.id));
-  for (const pay of spec.payoffs ?? []) {
-    if (typeof pay.amount !== 'number' || !Number.isFinite(pay.amount) || pay.amount <= 0) {
-      throw new VentureRefusal(spec.id, 'GX-26/I-5′', `payoff amount must be finite and positive, got ${String(pay.amount)}`);
-    }
-    if (!seatIds.has(pay.to)) {
-      throw new VentureRefusal(spec.id, 'GX-26', `payoff to unknown seat "${pay.to}"`);
-    }
+}
+
+function seatIdsOf(state: State): ReadonlySet<string> {
+  return new Set(((state['seats'] as readonly { id: string }[]) ?? []).map((s) => s.id));
+}
+
+function checkPayoff(spec: VentureSpec, pay: VentureSpec['payoffs'][number], seatIds: ReadonlySet<string>): void {
+  if (typeof pay.amount !== 'number' || !Number.isFinite(pay.amount) || pay.amount <= 0) {
+    throw new VentureRefusal(spec.id, 'GX-26/I-5′', `payoff amount must be finite and positive, got ${String(pay.amount)}`);
   }
+  if (!seatIds.has(pay.to)) {
+    throw new VentureRefusal(spec.id, 'GX-26', `payoff to unknown seat "${pay.to}"`);
+  }
+}
+
+function checkPayoffs(spec: VentureSpec, seatIds: ReadonlySet<string>): void {
+  for (const pay of spec.payoffs ?? []) checkPayoff(spec, pay, seatIds);
+}
+
+function checkPortionParties(spec: VentureSpec, seatIds: ReadonlySet<string>): void {
   for (const p of spec.portions) {
     if (p.party !== undefined && !seatIds.has(p.party)) {
       throw new VentureRefusal(spec.id, 'GX-26', `portion party unknown seat "${p.party}"`);
     }
   }
-  // K7-F5 r2 NEW-1: the stored row is CONSTRUCTED from validated named fields only —
-  // never a spread of the caller's object (an unknown field would ride into state and
-  // break hashability). The wire door also refuses unknown keys; this is the structural leg.
-  const row: VentureRow = {
+}
+
+/**
+ * The spawn door, one named check per rule, in the order the refusals have always fired.
+ * K7-F5 D2 (DF5-2): the door refuses brick values — a payoff to nobody or a
+ * non-finite amount would make the Reckoning unreachable (GX-30) or the state unhashable.
+ */
+function validateSpawn(state: State, spec: VentureSpec): void {
+  checkVentureId(state, spec);
+  checkPortionsPresent(spec);
+  checkPortionWork(spec);
+  checkDeadline(spec);
+  const seatIds = seatIdsOf(state);
+  checkPayoffs(spec, seatIds);
+  checkPortionParties(spec, seatIds);
+}
+
+function constructPortion(p: PortionSpec): PortionSpec & { done: boolean } {
+  return {
+    ...(p.party !== undefined ? { party: p.party } : {}),
+    task: p.task,
+    work: p.work,
+    done: false,
+  };
+}
+
+/**
+ * K7-F5 r2 NEW-1: the stored row is CONSTRUCTED from validated named fields only —
+ * never a spread of the caller's object (an unknown field would ride into state and
+ * break hashability). The wire door also refuses unknown keys; this is the structural leg.
+ */
+function constructVentureRow(spec: VentureSpec): VentureRow {
+  return {
     id: spec.id,
     initiator: spec.initiator,
     deadline: spec.deadline,
     payoffs: spec.payoffs.map((pay) => ({ to: pay.to, amount: pay.amount })),
     status: 'open',
-    portions: spec.portions.map((p) => ({
-      ...(p.party !== undefined ? { party: p.party } : {}),
-      task: p.task,
-      work: p.work,
-      done: false,
-    })),
+    portions: spec.portions.map(constructPortion),
   };
-  let next: JsonObject = { ...state, ventures: [...ventures(state), row] } as JsonObject;
-  if (spec.portions.some((p) => p.party === undefined)) {
-    // GX-27: windowed routing — the gated IWN blocks advance; effectuation = venture:route (I-36).
-    next = EffectEngine.apply(
-      next,
-      {
-        fx: 'open_window', kind: 'routing', decider: spec.initiator,
-        options: [{ label: `route ${spec.id}`, fx: [] }, { label: 'decline', fx: [] }],
-        auto: 0,
-      },
-      { windowDepth: 0 }
-    );
-  }
-  return next;
+}
+
+function needsRouting(spec: VentureSpec): boolean {
+  return spec.portions.some((p) => p.party === undefined);
+}
+
+/** GX-27: windowed routing — the gated IWN blocks advance; effectuation = venture:route (I-36). */
+function openRoutingWindow(state: JsonObject, spec: VentureSpec): JsonObject {
+  return EffectEngine.apply(
+    state,
+    {
+      fx: 'open_window', kind: 'routing', decider: spec.initiator,
+      options: [{ label: `route ${spec.id}`, fx: [] }, { label: 'decline', fx: [] }],
+      auto: 0,
+    },
+    { windowDepth: 0 }
+  );
+}
+
+/** Spawn (GX-26). If a portion needs routing (no party), a gated routing window opens (GX-27). */
+export function spawnVenture(state: State, spec: VentureSpec): JsonObject {
+  validateSpawn(state, spec);
+  const next = { ...state, ventures: [...ventures(state), constructVentureRow(spec)] } as JsonObject;
+  return needsRouting(spec) ? openRoutingWindow(next, spec) : next;
 }
 
 /** Routing effectuation (I-36): decision arrives as ARGUMENTS on the logged intent. */
