@@ -3,8 +3,8 @@
   "concept": "TABLETOP",
   "phase": 4,
   "branch": "main",
-  "head": "662de450cac8a73d27cec5e7ac41cd0ba7ef2a0e",
-  "tree": "036c9632c23d7a5f6e776d578ffe64a5f812962f",
+  "head": "36744bb9f498832c9fd00500fd9434607623f858",
+  "tree": "2e1ac8bcac0a49349f2a8a7cb5c242cff2557d60",
   "dirty": false,
   "current_module": null,
   "k7_round": 0,
@@ -13,6 +13,6 @@
   "reopened": "",
   "next_action": "R1 close (RD-33): the scorer record (H-1.7), ui/interface-contract.md, the final K7 review (python tools/run.py --kind k7 --label \"K7 final\" -- \"python tools/k7-run.py --final\"), then seal.py check through run.py, triaged once for the owner's single seal approval.",
   "blocked_on": null,
-  "updated_at": "2026-11-09T00:51:37+00:00",
-  "updated_by": "precompact:auto"
+  "updated_at": "2026-11-09T00:59:44+00:00",
+  "updated_by": "session-start:compact"
 }

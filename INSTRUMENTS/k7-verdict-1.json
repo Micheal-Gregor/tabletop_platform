@@ -1,0 +1,1020 @@
+{
+  "schema_version": "1.0",
+  "concept": "tabletop_platform",
+  "round": 1,
+  "reviewed": {
+    "tree_sha": "2e1ac8bcac0a49349f2a8a7cb5c242cff2557d60",
+    "commit_sha": "36744bb9f498832c9fd00500fd9434607623f858",
+    "s3_anchor_tag": "s3-anchor-v1.3",
+    "modules": [
+      "MOD-01",
+      "MOD-02",
+      "MOD-03",
+      "MOD-04",
+      "MOD-05",
+      "MOD-06",
+      "MOD-07",
+      "MOD-08",
+      "MOD-09",
+      "MOD-10",
+      "MOD-11",
+      "MOD-12",
+      "MOD-13",
+      "MOD-14",
+      "MOD-15",
+      "MOD-16",
+      "MOD-17",
+      "MOD-18",
+      "MOD-19",
+      "MOD-20",
+      "MOD-21",
+      "MOD-22",
+      "MOD-23",
+      "MOD-24",
+      "MOD-25",
+      "MOD-26",
+      "MOD-27",
+      "MOD-28",
+      "MOD-29",
+      "MOD-30",
+      "MOD-31",
+      "MOD-32",
+      "MOD-33",
+      "MOD-34",
+      "MOD-35"
+    ],
+    "scope": [
+      {
+        "module": "MOD-01",
+        "mode": "full",
+        "manifest": "bd5391712477fb8088a9fd02bdb03380a1688c065570745c0ebdd156f920f022",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-02",
+          "MOD-03",
+          "MOD-05",
+          "MOD-06",
+          "MOD-07",
+          "MOD-08",
+          "MOD-09",
+          "MOD-10",
+          "MOD-12",
+          "MOD-13",
+          "MOD-15",
+          "MOD-16",
+          "MOD-17",
+          "MOD-18",
+          "MOD-22",
+          "MOD-23",
+          "MOD-24",
+          "MOD-25",
+          "MOD-26",
+          "MOD-27",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-02",
+        "mode": "full",
+        "manifest": "e72ad0884ea919cffc178cb0c78e39cca31d8661b241e16beacbb2ff243a3d96",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-03",
+          "MOD-04"
+        ],
+        "importers": [
+          "MOD-08",
+          "MOD-12",
+          "MOD-16",
+          "MOD-22",
+          "MOD-27",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-03",
+        "mode": "full",
+        "manifest": "268b9024bd5f671cd1690d0d66447d7cdfa0ba8e8caae227fd429e2915268d93",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01"
+        ],
+        "importers": [
+          "MOD-02",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-04",
+        "mode": "full",
+        "manifest": "33209aa77bfa57b5b135a964f95a0160fd957b2e7093cf77cae5bb4dfa475624",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-02",
+          "MOD-06",
+          "MOD-08",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-05",
+        "mode": "full",
+        "manifest": "f27df704b14ba65e55720fef6ad495960c035289aba004db64ceaa99d1e85327",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01"
+        ],
+        "importers": [
+          "MOD-08",
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-06",
+        "mode": "full",
+        "manifest": "da63eca4b054fa6cd172d25fe3584b33e5cf4c9ce33f740145c57ad45c029071",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-04"
+        ],
+        "importers": [
+          "MOD-08",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-07",
+        "mode": "full",
+        "manifest": "0c6dbc1c9cb9c542d5c923f81f6e4a2475fb2a881d27ae5629bd440668275631",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-09"
+        ],
+        "importers": [
+          "MOD-08",
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-08",
+        "mode": "full",
+        "manifest": "cfeb58a0cca8dc74173094f27cbf26776e9b06a2bdec03c69eae3a33fd82233e",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-04",
+          "MOD-05",
+          "MOD-06",
+          "MOD-07",
+          "MOD-09"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-09",
+        "mode": "full",
+        "manifest": "b2ab1c48ad0db530096a567e9e638d6e8973750c916815c1ad6979fbce98de9d",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01"
+        ],
+        "importers": [
+          "MOD-07",
+          "MOD-08",
+          "MOD-15",
+          "MOD-16",
+          "MOD-17",
+          "MOD-19",
+          "MOD-21",
+          "MOD-22",
+          "MOD-24",
+          "MOD-25",
+          "MOD-26",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-10",
+        "mode": "full",
+        "manifest": "d9e759e37779bced6b0564def9cb67a90e8ddd3d01fb3409557c263ea0f89e1e",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-11",
+          "MOD-12"
+        ],
+        "importers": [
+          "MOD-14",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-11",
+        "mode": "full",
+        "manifest": "047a04a7c7f6f985f24db3e08471fb47e62d0920da22b3b690cbd4e32cca28a6",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-10",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-12",
+        "mode": "full",
+        "manifest": "2e356f2160efd1e86b0211fd0af9cab21f66b6368453de03ed6fb77bf9286f55",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-13"
+        ],
+        "importers": [
+          "MOD-10",
+          "MOD-13",
+          "MOD-15",
+          "MOD-17",
+          "MOD-21",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-13",
+        "mode": "full",
+        "manifest": "f660091fff15a90903cad8e59ef94bd0415607bdac73a416290581e0241bc63e",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-12"
+        ],
+        "importers": [
+          "MOD-12",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-14",
+        "mode": "full",
+        "manifest": "77b9a6304ad6dce950f518bc9ec2fada7284db47f69fe3cb6cee1bcff5656356",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-10"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-15",
+        "mode": "full",
+        "manifest": "f46eb0033a5e5cb23f9544450dae3f6114757eb44226cbfeae3b0e91874565c4",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-09",
+          "MOD-12",
+          "MOD-17",
+          "MOD-18",
+          "MOD-21"
+        ],
+        "importers": [
+          "MOD-16",
+          "MOD-20",
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-16",
+        "mode": "full",
+        "manifest": "ab89b6cf875119f638fd33dd189702927c2703dba7963b2c00c75bebc7fa0f38",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-09",
+          "MOD-15"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-17",
+        "mode": "full",
+        "manifest": "b0a8aa58994b0867ab0e74a04ab930b569113a13571ba530c6653bd72ebebcfe",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-09",
+          "MOD-12",
+          "MOD-21"
+        ],
+        "importers": [
+          "MOD-15",
+          "MOD-18",
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-18",
+        "mode": "full",
+        "manifest": "c8e24ed4130b65d2e7d53b105fc2881948d543bb88c7b057bea02abefa9331df",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-17"
+        ],
+        "importers": [
+          "MOD-15",
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-19",
+        "mode": "full",
+        "manifest": "b64c617eb7f29638973b5b95d15dbdccefe8fd4ec7666df6ca7165ba99166789",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-09",
+          "MOD-21"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-20",
+        "mode": "full",
+        "manifest": "fea749e345464aabe8b647b8e90c01e1df323a934acc49ac6ca0dec0f711fdc3",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-15",
+          "MOD-21"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-21",
+        "mode": "full",
+        "manifest": "ba150d4a13951f84d9c31b1ace30fc812ce9eff5902c51dc525d9b508d52413b",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-09",
+          "MOD-12"
+        ],
+        "importers": [
+          "MOD-15",
+          "MOD-17",
+          "MOD-19",
+          "MOD-20",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-22",
+        "mode": "full",
+        "manifest": "89222a0360fab0cd39f2ed36f6df16f12440cacd503ff5e46d6cfb84feb12d36",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-05",
+          "MOD-07",
+          "MOD-09",
+          "MOD-15",
+          "MOD-17",
+          "MOD-18",
+          "MOD-23",
+          "MOD-24",
+          "MOD-25",
+          "MOD-26"
+        ],
+        "importers": [
+          "MOD-23",
+          "MOD-26",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-23",
+        "mode": "full",
+        "manifest": "36efa9d8f13b9da7930b6f518011ea068dfef3880960e1cf6ddab153d442e025",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-22"
+        ],
+        "importers": [
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-24",
+        "mode": "full",
+        "manifest": "121b3f82f52a16b29463acf8b7bf63b304314e8786ab821ae7be2b7fefaf62a9",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-09"
+        ],
+        "importers": [
+          "MOD-22",
+          "MOD-25",
+          "MOD-26",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-25",
+        "mode": "full",
+        "manifest": "1700e9bfea86c9b27f3dab26a568c854386cc121a90ab7342d27a510ffec0588",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-09",
+          "MOD-24"
+        ],
+        "importers": [
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-26",
+        "mode": "full",
+        "manifest": "72e376658a8ba2cbf1061c4e0fc13c9c048960fbf42297e4a59818ea37738f33",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-09",
+          "MOD-22",
+          "MOD-24"
+        ],
+        "importers": [
+          "MOD-22",
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-27",
+        "mode": "full",
+        "manifest": "c48210f805d75a97a9ebb62914d52537c0e9bd8342935015e21a612bb79be2f0",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-01",
+          "MOD-02"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-28",
+        "mode": "full",
+        "manifest": "ff923d91a749f479874f5ce25a0e085f69f6cd9daad57a9e409eb66a21033cfc",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": []
+      },
+      {
+        "module": "MOD-29",
+        "mode": "full",
+        "manifest": "e11f5e203789f25fa2ec0cc9d5f569d37c34e2b40e7d2d0bb67000041b694a64",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [
+          "tools/check-tiers.mjs: ..."
+        ],
+        "deps": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-03",
+          "MOD-04",
+          "MOD-05",
+          "MOD-06",
+          "MOD-07",
+          "MOD-08",
+          "MOD-09",
+          "MOD-10",
+          "MOD-11",
+          "MOD-12",
+          "MOD-13",
+          "MOD-14",
+          "MOD-15",
+          "MOD-16",
+          "MOD-17",
+          "MOD-18",
+          "MOD-19",
+          "MOD-20",
+          "MOD-21",
+          "MOD-22",
+          "MOD-23",
+          "MOD-24",
+          "MOD-25",
+          "MOD-26",
+          "MOD-27",
+          "MOD-30",
+          "MOD-31",
+          "MOD-32",
+          "MOD-33",
+          "MOD-34",
+          "MOD-35"
+        ],
+        "importers": []
+      },
+      {
+        "module": "MOD-30",
+        "mode": "full",
+        "manifest": "9e7ba27c3abfd60e2a7e5a0660aeb1093be998965d5fc9289d54ecba89483d59",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-32",
+          "MOD-33"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-31",
+        "mode": "full",
+        "manifest": "e07a6d770bfd853eec56df16c40860450294cb874a31cf97035c65f54325b269",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-32",
+        "mode": "full",
+        "manifest": "1d2b62c76c3be3284ccc2d90f0bf88a12e8943ded9c8d269cce6135547b48316",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-29",
+          "MOD-30"
+        ]
+      },
+      {
+        "module": "MOD-33",
+        "mode": "full",
+        "manifest": "3c1bd58d58b049a753055eb9aba41c84b93bb1d165225bc4abae835c6dd6b834",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-29",
+          "MOD-30",
+          "MOD-35"
+        ]
+      },
+      {
+        "module": "MOD-34",
+        "mode": "full",
+        "manifest": "7765359f129d72f6b14decba8bf1545ab81c2af1c594e6590671f9b753e2d0ee",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [],
+        "importers": [
+          "MOD-29"
+        ]
+      },
+      {
+        "module": "MOD-35",
+        "mode": "full",
+        "manifest": "3733ed7a76a2bec7b539371c2835e0863b242332892dbdaf8d1f4c7a0088926a",
+        "base": null,
+        "base_round": null,
+        "credit_round": null,
+        "unresolved": [],
+        "deps": [
+          "MOD-33"
+        ],
+        "importers": [
+          "MOD-29"
+        ]
+      }
+    ],
+    "kind": "final",
+    "facets": [
+      {
+        "facet": "all",
+        "modules": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-03",
+          "MOD-04",
+          "MOD-05",
+          "MOD-06",
+          "MOD-07",
+          "MOD-08",
+          "MOD-09",
+          "MOD-10",
+          "MOD-11",
+          "MOD-12",
+          "MOD-13",
+          "MOD-14",
+          "MOD-15",
+          "MOD-16",
+          "MOD-17",
+          "MOD-18",
+          "MOD-19",
+          "MOD-20",
+          "MOD-21",
+          "MOD-22",
+          "MOD-23",
+          "MOD-24",
+          "MOD-25",
+          "MOD-26",
+          "MOD-27",
+          "MOD-28",
+          "MOD-29",
+          "MOD-30",
+          "MOD-31",
+          "MOD-32",
+          "MOD-33",
+          "MOD-34",
+          "MOD-35"
+        ],
+        "verdict": "RETURN"
+      },
+      {
+        "facet": "seams",
+        "modules": [
+          "MOD-01",
+          "MOD-02",
+          "MOD-03",
+          "MOD-04",
+          "MOD-05",
+          "MOD-06",
+          "MOD-07",
+          "MOD-08",
+          "MOD-09",
+          "MOD-10",
+          "MOD-11",
+          "MOD-12",
+          "MOD-13",
+          "MOD-14",
+          "MOD-15",
+          "MOD-16",
+          "MOD-17",
+          "MOD-18",
+          "MOD-19",
+          "MOD-20",
+          "MOD-21",
+          "MOD-22",
+          "MOD-23",
+          "MOD-24",
+          "MOD-25",
+          "MOD-26",
+          "MOD-27",
+          "MOD-28",
+          "MOD-29",
+          "MOD-30",
+          "MOD-31",
+          "MOD-32",
+          "MOD-33",
+          "MOD-34",
+          "MOD-35"
+        ],
+        "verdict": "RETURN"
+      }
+    ]
+  },
+  "reviewer": {
+    "agent": "k7-reviewer",
+    "invocation": "subprocess",
+    "builder_transcript_seen": false,
+    "started_at": "2026-11-09T00:58:21+00:00",
+    "completed_at": "2026-11-09T01:21:10+00:00"
+  },
+  "preflight": {
+    "structure_check": {
+      "status": "pass",
+      "violations": []
+    },
+    "worktree_clean_before": true,
+    "worktree_clean_after": true
+  },
+  "progress": null,
+  "checks": {
+    "CC-1": {
+      "status": "fail",
+      "mechanical": false,
+      "rationale": "all: pass, All 50 TypeScript source files under packages/*/src plus tools/check-tiers.mjs have a row in INSTRUMENTS/object-model-and-parameters.md (lines 17-67), each tracing to an S3 \u00a72 module MOD-01..MOD-35. Seven files split off at R1 for one-class-per-file are filed under their parent module and say so: hook-violation.ts, divergence-error.ts, rng-stream.ts, effect-refusal.ts, kind-refusal.ts, transport-refusal.ts, unbox-refusal.ts. They are absent from S3 \u00a72's File cells, but \u00a72 lets a module's file cell carry its shared types. No orphan file. Every S3 \u00a72 module has a destination. | seams: fail, I compared the S3 \u00a74 seam list with both ends of each seam. Every file traces to an object-model row, and I found no orphan code. One seam is not built at either end. SEAM-44 (MOD-34 \u2192 MOD-33, 'the seeded result an animation must show'; \u00a74 says Source depends on Target) is not realised: packages/presentation/src/theater.ts imports nothing (lines 1-77, no projector import), and beginFlourish(flourishId, seededResult, ...) at theater.ts:49 takes the 'truth' as any string the caller supplies. The SeatView (projector.ts:20-61) has no field for a seeded or random result, so nothing can come from the projection. The V-9 scene shows the gap: packages/presentation/tests/f6-scene.test.ts:26 makes the 'seeded' die value from a fresh `new RNGStreams('sigma-7')` outside any engine state, and then feeds the same value in as both 'seeded' and 'displayed' (line 28). HOOK-11's comparison therefore has no route back to engine truth. The other seams I traced both ends of and found realised: SEAM-01/02/03 (core.ts), SEAM-04/05 (lockstep.ts \u2192 rebuild/submit), SEAM-06/07/19 (turn:end weave plus the HK-5 rule leg), SEAM-09/11 (wirePack validates a clone before registering, packloader.ts:346-356), SEAM-12 (registry.fire \u2192 EffectEngine.applyAll, registry.ts:132), SEAM-13/15/16/17/18 (ventures, ledger, timedfx, closing \u2192 EffectEngine/post), SEAM-26/27/28 (hookbus pump via rules:pump), SEAM-33/34 (renderRuleset), SEAM-39/41/45 (project \u2192 hookHk10 in renderTable and displayClock)."
+    },
+    "CC-2": {
+      "status": "fail",
+      "mechanical": false,
+      "rationale": "all: fail, (1) REF-05 / RC-D / SEAM-15 are not honored on the library cost path. levyCost (packages/engine/src/library/wire.ts:221-224) levies the crew:hire and outfit:buy cost straight through EffectEngine.apply even when the Ledger is loaded. It never calls post(). The register limits RC-D to library-mediated moves (drift-ledger.md:133), and I-137's own words are 'the ledger's levy'. Probe in .k7/wt (packages/engine/tests/k7-probe.test.ts, removed by reset): minimal genesis, Ledger loaded, tradesperson cost 3, equipment cost 4. Result: crew:hire then outfit:buy both accepted, seat A cash -7, derivedBalances(A)=0, 0 ledger entries, nothing thrown. This is an unbalanced resource move with the Ledger loaded, and the post did not throw. It is latent only because the BOTY costs are 0 (packs/boty/src/pack.ts:151-161). (2) REF-11 / EX-2 leg (b): roles.ts:30 looks up BINDINGS[role as RoleName] by bare index. Prototype keys resolve. Probe: AdmissibilityGate.decide({name:'Ghost', stateShape:{}, roles:['constructor'], relationsGrantable:[]}) returned {admissible:true}, and usableBinding('toString') returned {} instead of refusing. The repo's own precedent elsewhere is Object.hasOwn (emitter.ts:46, theater.ts:50, registry.ts:65). (3) SEAM-43, 'the booklet renders the RulesetView in full': renderBooklet (packages/presentation/src/render.ts:36-41) casts the RulesetViewModel through 'as unknown as' and renders only each contribution's id and trigger. It drops the vocabularies, bearer, condition, effects, slotWrites and slots that rulesetview.ts:23-37 exposes for total exposure. The only test (f6-presentation.test.ts:148-149) asserts that the id appears. Carried rules that do hold, from reading the code paths: refusal-not-repair at the Guard (core.ts:137-146, guard.ts:50-69); record-after-success (core.ts:158-161); deep-frozen exposure (statetree.ts:11-19); EFX closure and halt-not-skip (effects.ts:48-55, 201-219); depth-1 windows (effects.ts:176-179, packloader.ts:272-279); the both-check before advance (packloader.ts:393-416, wire.ts:312-343); writer discipline and packRef-mismatch-refused-whole (lockstep.ts:52-69, 103-112); projection redaction and branding (projector.ts:96-197); token completeness (skin.ts:39-48). The applier exception paths are not silent: an applier throw leaves state untouched and nothing logged, and replay converts it to DivergenceError (core.ts:182-189). | seams: fail, Three carried rules are broken at seams. Each is reproduced against the running code.\n\n(1) RC-D / I-137 / GBC-63 at SEAM-14/15 (MOD-22, packages/engine/src/library/wire.ts:221-224, levyCost). crew:hire and outfit:buy always levy through EffectEngine directly, even when the Ledger is loaded. I-137 (drift-ledger.md:229) registered 'COST > 0 \u2192 the ledger's levy via EffectEngine (... the wire.ts settlement precedent)'. That precedent, chargeOverhead and settleDebt at wire.ts:162-176, posts through the Ledger when it is loaded. I-46 scopes RC-D to library-mediated moves, and hire and buy are library-mediated. Probe in .k7/wt (packages/engine/tests/k7probe-ledger-seam.test.ts): the MINIMAL genesis (Ledger loaded) plus an equipment pool card costing 4, then outfit:buy through the real wire. Output: 'CASH -4 DERIVED 0 ENTRIES 0', assertion failed (`python tools/k7-scratch.py select \"K7PROBE\"`, exit 1). BOTY's current pool costs are all 0 (I-140), so the defect is dormant in the shipped pack but live in the engine.\n\n(2) Row integrity, SUP-1 / AX-4 / the kernel's own GX-3/GX-4 aliasing law, at SEAM-04/05 (MOD-02, packages/engine/src/kernel/core.ts:66-76 and 125-127). EngineCore keeps the caller's packRef and seats by reference, and toRow() hands them back live. The Guard's seat authority, guard.ts:55, reads the same array. Probe (packs/boty/tests/k7probe-row-alias.test.ts): LockstepController.host(ref, seats, ...), then seats.pop() and ref.hash='mutated'. ctl.row() now reports hash 'mutated' and 5 of the 6 seats, and resume against the real BOTY6_REF would refuse the session as a divergence. A lobby that edits its own seats array after hosting is a plausible form for a builder to write. The intent leg was sealed at the door (core.ts:133); the packRef and seats legs of the same row were not.\n\n(3) 'The booklet renders the RulesetView in full; total exposure' at SEAM-43 (MOD-30, packages/presentation/src/render.ts:36-41). renderBooklet emits only each contribution's id and trigger. It drops vocabularies, bearer, condition, effects, slotWrites and slots, all of which renderRuleset carries for total exposure (rulesetview.ts:24-37, K7-F4 D11). completion-ledger.md:336 claims 'booklet total exposure', which is not true. The covering assertion, f6-presentation.test.ts:148-149, is only toContain('house-rule').\n\nHALT considered and not taken. The S5 boundary ('Do not apply an effect anywhere but EffectEngine') is stated as law, but the S3 classifies breaches as refusal-test defects (REF-24 'refused'; REF-10 'any path found is a defect') and nowhere declares them a HALT. The direct asset writes in outfit.ts (buyEquipment :175-179, detachGear :163-165) were admitted by the owner's ruling recorded in I-137 and I-170. They are therefore not an unregistered breach.\n\nError paths I checked and found sound: rebuild wraps any applier throw as DivergenceError (core.ts:182-192); listener throws are contained (lockstep.ts:124-135); wirePack refuses before it registers anything."
+    },
+    "CC-3": {
+      "status": "fail",
+      "mechanical": false,
+      "rationale": "all: fail, Unregistered repair behavior in rendering: renderComponent (render.ts:25) and renderTable (render.ts:56) fall back to a synthesized '[token]' frame when the bound skin lacks the token (e.g. a BoundSkin bound to KIND_CONTRACTS.Surface then used to render a Die or the table's card.back). The missing token is silently repaired instead of refused. That contradicts HOOK-12/REF-21 and the spine's refusal-not-repair, and no Interpretation Register row covers it. forceRoundWrap (play/turn.ts:94-102) is production code whose only purpose is to give a test a forbidden input ('exists so R-8 has a genuine forbidden input'). The frozen R-8 test depends on it (r8-turnwrap.test.ts:5,43). DF2-17 records it only as demoted off the barrel, not as an admitted mechanism. I-137 is owner-ruled and registered: outfit:buy writes seat.assets {ref,value} directly (outfit.ts:175-180), and sellEquipment/attachGear/detachGear (outfit.ts:119-168) do the same. That is the same typed mutation as EFX 'capitalize', made outside the EffectEngine. The owner's ruling covers the shape, so it is not counted as an invention here, but it conflicts with REF-24 as worded and needs reconciling on the record (see CC-4). ODG-e1 stays open (roles.ts:25, 37-44; clock.ts:28-40). The EFX docket is untouched (effects.ts:19-27). | seams: pass, The seam-level mechanisms I traced all have register rows: I-46 (content EFX ledger-transparent; RC-D scoped to library-mediated moves); I-47 (headless SVG realisation; the SeatView brand is a frozen marker field); I-137/I-152/I-157/I-170/I-171 (pool doors, free first hire, bottom-returns, gear, hand play); I-36/I-38 (the routing decision is carried out by the logged venture:route intent, and the window only gates); I-37 (the weave supersedes turn:pass on the record, wire.ts:359-377). levyCost's departure from I-137 is a breach of a registered interpretation, so it is counted under CC-2 rather than as an unregistered invention. One mechanism the tests depend on is not a product mechanism: the DISCHARGE=1 branch in packages/engine/tests/vectors.test.ts:21-24 and 172-174 lets a test run overwrite the pinned golden files. It is never set in the declared commands. It is noted as code-quality drift under CC-7."
+    },
+    "CC-4": {
+      "status": "fail",
+      "mechanical": false,
+      "rationale": "all: fail, python tools/k7-scratch.py suite exited 0 | seams: fail, `python tools/k7-scratch.py suite` (npx vitest run) exited 0: 77 files and 821 tests passed. test-intake-log.md records no frozen set, so all 24 \u00a75 rows are frozen. Each row's Test name resolves to a real case (grep over **/*.test.ts: R-1 r1-refusal.test.ts:13 \u2026 R-24 r3-r24-effects.test.ts:42; all 24 found).\n\nREF-24 fails the genuine-forbidden-input requirement. Its frozen test, 'R-24 \u00b7 sole applier' (r3-r24-effects.test.ts:42-58), never attempts an effect application that bypasses the EffectEngine. It checks that no export name matches /^fx[A-Z]/ and that EFX_V1_1_1 is frozen. That is a name scan over the barrel, which is a load-bearing string detector. A library module that writes an EFX-owned mutation itself, such as `{...s, cash: s.cash - x}` or the capitalize-shaped `{ref, value}` asset append, passes it untouched. The CC-2 ledger probe shows that this whole class of bypass at SEAM-13..17 is caught only incidentally, by golden hashes, and not at all where no vector covers the path. The guard element 'any effect application bypassing the EffectEngine \u2192 refused' is therefore not covered. The other 23 rows present genuine forbidden inputs, for example GBC-42's three packRef legs, R-6 through the weave, and GBC-30's unknown hook."
+    },
+    "CC-5": {
+      "status": "fail",
+      "mechanical": true,
+      "evidence": {
+        "command": "python tools/k7-scratch.py rederive",
+        "exit_code": 0
+      }
+    },
+    "CC-6": {
+      "status": "fail",
+      "mechanical": false,
+      "rationale": "all: fail, python tools/k7-scratch.py select \"R-24\" exited 0 | seams: pass, Mutation experiments in .k7/wt only, with `python tools/k7-scratch.py reset` after each one. `status` was clean before the final rederive.\n\n(a) SEAM-18: in closing.ts:32, `ledgerLoaded(next)` was replaced with `false`, so the reckoning skips the Ledger. The suite exited 1, and 'V-1 \u00b7 the MINIMAL micro-game' and 'GBC-40 \u00b7 the MINIMAL game' failed.\n\n(b) HOOK-09 (MR1 side): `hookHk9BeforeRuleDispatch(hookName);` was deleted from registry.ts:121. Together with (c) SEAM-04 SUP-1, where lockstep.ts:64's hash leg was set to `if (false)`, the suite exited 1. Four tests failed: 'GBC-30 \u00b7 HK-9 full + R-17 (MR1 side) > dispatch on an unknown hook \u2192 halt', 'RuleRegistry isolation \u2026 unknown hook halts', 'GBC-42 \u00b7 resume: packRef mismatch refuses WHOLE', and 'LockstepController isolation \u2026 packRef that differs is refused whole'. With the same mutation, the declared single-test command `python tools/k7-scratch.py select \"GBC-42\"` exited 1.\n\n(d) Divergence injection on the real orchestrated path: the CC-2 probes (the Ledger-loaded outfit:buy, and post-host mutation of seats and packRef) are divergences that no existing hook catches. They are reported as CC-2 defects, not hook-wiring defects, because no S3 hook guards those legs.\n\nTrace citations naming resolutions: core.ts:97-111 supersedeIntent requires a named ground; wire.ts:362 cites I-37, which is live in the register. I found no false resolution citation."
+    },
+    "CC-7": {
+      "status": "fail",
+      "mechanical": false,
+      "rationale": "all: fail, Four-dimension form; the drift ledger carries no D1-D6 scoring. Object-model fidelity 8: every file traced, R1 splits registered. Axiom coverage 5: demonstrated invariant gaps on REF-05/RC-D (the Ledger bypass), REF-11 (prototype-key roles) and SEAM-43 (the partial booklet). Base-case support 7: base cases exist and run, but the frozen R-8 case exercises a test-support function on a forged state, not the real pass path. Extensibility 6: the HOOK-06 checker does not guard platform<library, so future engine code can reach into library/ silently. Code-quality drift: the R-6 gated-window rule is copy-pasted in packloader.ts:400-408 and wire.ts:335-338 (the G8 fix is one shared function). TimedFx refusals are untyped Error with one message for two different defects (timedfx.ts:24-27). renderBooklet's 'as unknown as' cast hides the dropped fields. The R-24 test is a name scan (r3-r24-effects.test.ts:43-51). PS = MIN = 5. Worst dimension: axiom coverage. | seams: fail, Four dimensions; the score is the minimum. Object-model fidelity 6: SEAM-44 is not realised, and the booklet's exposure is partial. Axiom coverage 5 (worst): a demonstrated RC-D gap on library levies with the Ledger loaded, and S-2 row legs that alias caller objects, against AX-4/SUP-1. Base-case support 6: GBC-63's 'posts to the ledger' leg is never exercised at cost > 0 with the Ledger loaded, and REF-24 rests on a name scan. Extensibility 7: one vocabulary, sealed doors, registry-only dispatch. Code-quality drift: the DISCHARGE=1 overwrite path in vectors.test.ts; a redundant `as unknown as` cast in renderBooklet (render.ts:37) over a type that already declares contributions; an unreachable `[${faceToken}]` fallback in renderComponent (render.ts:25) behind a bind that is complete by construction. Minimum 5: RETURN."
+    }
+  },
+  "drift_score": {
+    "value": 5,
+    "basis": [
+      {
+        "check_id": "CC-2",
+        "finding": "[all] WORST DIMENSION, axiom coverage (score 5): REF-05/RC-D are breached on the library cost path. levyCost (library/wire.ts:221-224) bypasses the Ledger when it is loaded. Probe: cash -7 vs derivedBalances 0, 0 entries, no throw.",
+        "deduction": 3
+      },
+      {
+        "check_id": "CC-2",
+        "finding": "[all] Axiom coverage: REF-11/EX-2 leg (b). roles.ts:30 lets a prototype-key role ('constructor') be admitted, and usableBinding('toString') returns {}.",
+        "deduction": 1
+      },
+      {
+        "check_id": "CC-2",
+        "finding": "[all] Axiom coverage: SEAM-43 total exposure. renderBooklet (render.ts:36-41) renders id and trigger only, behind an 'as unknown as' cast.",
+        "deduction": 1
+      },
+      {
+        "check_id": "CC-6",
+        "finding": "[all] Extensibility (score 6): the HOOK-06 checker (tools/check-tiers.mjs:11-15) has no platform<library rule. An injected kernel import of '../library/ledger.js' passes 'the clean tree passes'.",
+        "deduction": 3
+      },
+      {
+        "check_id": "CC-4",
+        "finding": "[all] Extensibility: the frozen REF-24 test is a load-bearing name scan over exports. A real direct-cash bypass leaves all 821 tests green.",
+        "deduction": 1
+      },
+      {
+        "check_id": "CC-6",
+        "finding": "[all] Base-case support (score 7): the frozen R-8 test survives deletion of the real-path HK-3 call at turn.ts:78. Only the non-frozen D2 test kills it. R-8 drives the test-support function forceRoundWrap.",
+        "deduction": 3
+      },
+      {
+        "check_id": "CC-5",
+        "finding": "[all] Object-model fidelity (score 8): vectors/V-1..V-9.json carry no impl_sha provenance. The values themselves re-derive.",
+        "deduction": 1
+      },
+      {
+        "check_id": "CC-3",
+        "finding": "[all] Object-model fidelity: the render-path token fallback '?? [token]' (render.ts:25,56) silently repairs a missing token, and no register row covers it.",
+        "deduction": 1
+      },
+      {
+        "check_id": "CC-2",
+        "finding": "[seams] WORST DIMENSION, axiom coverage = 5. With the Ledger loaded, crew:hire and outfit:buy at cost > 0 move cash with no ledger entry (probe: cash -4, derived 0, entries 0). This breaks RC-D as I-46 scopes it, and the I-137 'ledger's levy' design (wire.ts:221-224).",
+        "deduction": 4
+      },
+      {
+        "check_id": "CC-2",
+        "finding": "[seams] The S-2 row's packRef and seats alias the caller's objects (core.ts:66-76, 125-127). Mutating them after host rewrites the row and the Guard's seat authority, breaking SUP-1/AX-4 row integrity.",
+        "deduction": 3
+      },
+      {
+        "check_id": "CC-1",
+        "finding": "[seams] Object-model fidelity = 6. SEAM-44 is not built: theater.ts has no dependency on SeatProjector, the SeatView carries no seeded result, and V-9's 'seeded' value is made outside engine state.",
+        "deduction": 3
+      },
+      {
+        "check_id": "CC-4",
+        "finding": "[seams] Base-case support = 6. REF-24's frozen test is a /^fx[A-Z]/ export-name scan with no genuine bypass input, a load-bearing string detector over the S5 seam.",
+        "deduction": 3
+      },
+      {
+        "check_id": "CC-2",
+        "finding": "[seams] renderBooklet renders id and trigger only, so SEAM-43's 'RulesetView in full' does not hold, and the completion ledger's 'booklet total exposure' claim is untrue.",
+        "deduction": 2
+      },
+      {
+        "check_id": "CC-7",
+        "finding": "[seams] Code-quality drift: the DISCHARGE=1 golden-overwrite path in vectors.test.ts, the redundant cast at render.ts:37, the unreachable fallback at render.ts:25.",
+        "deduction": 1
+      }
+    ]
+  },
+  "verdict": "RETURN",
+  "blocking": [
+    {
+      "check_id": "CC-4",
+      "module": "MOD-09",
+      "required_change": "REF-24's frozen test must be able to fail on a genuine bypass. Today 'R-24 \u00b7 sole applier' (r3-r24-effects.test.ts:43-51) only checks that no export name matches /^fx[A-Z]/. Mutation in .k7/wt: levyCost (library/wire.ts:223) rewritten as a direct seat.cash write. R-24 and all 821 tests stayed green; restored by reset. The property that must hold: no module other than play/effects.ts produces an EFX-typed mutation of seats' cash, favor, assets or sueRights, of decks' draw order, or of windows. It needs a detector that resolves writes to those fields in every engine source file (not a name scan), or an on-path test that fails when a module-native move does not go through EffectEngine.apply. The owner must also reconcile I-137's direct seat.assets writes (outfit.ts:119-180, a capitalize-shaped mutation outside the EffectEngine) with REF-24, on the record."
+    },
+    {
+      "check_id": "CC-2",
+      "module": "MOD-22",
+      "required_change": "With the Ledger loaded, every library-mediated cost (crew:hire and outfit:buy, through levyCost at library/wire.ts:221-224) must move as a balanced Ledger post, so that cash \u2261 derivedBalances (RC-D, drift-ledger.md:133) and an unbalanced move throws (REF-05). The test that must fail on the current tree: Ledger loaded, a second hire at nonzero cost, then assert seat cash equals derivedBalances and a ledger entry exists. On the current tree this gives cash -7 against derived 0."
+    },
+    {
+      "check_id": "CC-6",
+      "module": "MOD-29",
+      "required_change": "HOOK-06's condition 'platform < library' is not enforced. tools/check-tiers.mjs:11-15 treats packages/engine as one tier, so an injected packages/engine/src/kernel/k7probe.ts importing '../library/ledger.js' still passed 'the clean tree passes' (restored by reset). The checker must decide, by resolved path containment, that no file under the platform directories (kernel, play, ontology, rules, transport) imports from packages/engine/src/library. REF-04's suite needs a case that injects exactly that import and must fail."
+    },
+    {
+      "check_id": "CC-2",
+      "module": "MOD-30",
+      "required_change": "SEAM-43 requires the booklet to render the RulesetView in full. renderBooklet (render.ts:36-41) must render every vocabulary (name, version, members) and every contribution field the view model exposes (bearer, trigger, condition, effects, slotWrites, slots), with no type-erasing cast. The test that must fail on the current tree: render a registry with one contribution whose condition, effects and declared slots are non-trivial, then assert each field and each vocabulary member appears."
+    },
+    {
+      "check_id": "CC-2",
+      "module": "MOD-11",
+      "required_change": "REF-11 / EX-2 leg (b): role binding must be own-key membership in the closed role set. roles.ts:30 currently admits 'constructor' and returns an empty binding for 'toString'. The test that must fail on the current tree: admission of a kind whose roles include a prototype key ('constructor', 'toString', '__proto__') is refused naming the role, and usableBinding on such a key throws RoleRefusal."
+    },
+    {
+      "check_id": "CC-6",
+      "module": "MOD-05",
+      "required_change": "The frozen REF-08 test 'R-8 \u00b7 wrap-once' must fail when the real-path HK-3 call in passSeat (play/turn.ts:78) is deleted. Mutation in .k7/wt: that call removed. select \"R-8\" stayed green (4/4); only the non-frozen 'D2 \u00b7 HK-3 on the REAL passSeat path' failed; restored by reset. R-8's forbidden case must drive the orchestrated pass path, not the test-support function forceRoundWrap (turn.ts:94-102). That function's place in production code needs a register row or must leave src."
+    },
+    {
+      "check_id": "CC-5",
+      "module": "MOD-02",
+      "required_change": "Every pinned vector (vectors/V-1..V-9.json, owned by MOD-02, MOD-03, MOD-09, MOD-13, MOD-14, MOD-15, MOD-28, MOD-34) lacks impl_sha provenance, so the records cannot show they were computed rather than hand-written. The values themselves re-derive: the suite is green, and V-3 rows 0 and 5 matched an independent hand derivation (own canonical JSON and FNV-1a-64: 462977f6437ccb23, bd4dc98942785f47). Provenance must be recorded and checked by a declared re-derive command."
+    },
+    {
+      "check_id": "CC-2",
+      "module": "MOD-22",
+      "required_change": "With the Ledger loaded, every library-mediated cash move must post a balanced Ledger entry. The crew:hire and outfit:buy cost levy must follow the settlement precedent I-137 names, so that cash \u2261 derivedBalances after a nonzero-cost hire or buy. Failing test that must exist and pass: under a loaded Ledger with a nonzero-cost pool card, outfit:buy and a second crew:hire each leave the seat's cash equal to derivedBalances and append exactly one balanced entry."
+    },
+    {
+      "check_id": "CC-2",
+      "module": "MOD-02",
+      "required_change": "The S-2 row's packRef and seats must be fixed at EngineCore construction and immune to mutation of the objects the caller passed in or received from toRow(). The Guard's seat authority must not move with them. Failing test: host a LockstepController (or EngineCore) with a mutable seats array and packRef, mutate both afterwards (and mutate a returned row), and assert row() and the Guard's seat verdicts are unchanged."
+    },
+    {
+      "check_id": "CC-4",
+      "module": "MOD-09",
+      "required_change": "REF-24's frozen test must present a genuine forbidden input: an effect-owned mutation (cash, favor, assets, sueRights, windows, deck inject) applied outside effects.ts, which the check refuses. Use a detector that resolves where those writes occur, not an export-name scan; the name scan may stay as a supplement. Writes the owner admitted (I-137/I-170 asset moves) must be named in the detector's allowance by register row, not slip past it silently."
+    },
+    {
+      "check_id": "CC-1",
+      "module": "MOD-34",
+      "required_change": "SEAM-44 must be built: the seeded result HOOK-11 compares against must come from the projected SeatView (MOD-33), not from a caller-supplied string. Failing test: a flourish whose claimed seeded value is absent from or differs from the view's seeded result is refused or flagged, and V-9 re-derives its die from engine state through project()."
+    },
+    {
+      "check_id": "CC-2",
+      "module": "MOD-30",
+      "required_change": "The booklet must render the RulesetView in full: vocabularies with members, and each contribution's bearer, trigger, condition, effects, slot writes and declared slots. Failing test: for a registry with a conditioned, slot-writing contribution, every field of renderRuleset(registry) appears in renderBooklet's output."
+    }
+  ],
+  "next_action": "Route the seven blocking items to builders through tools/brief.py, and take the I-137 versus REF-24 reconciliation to the owner before the MOD-09 item is closed. Route the five blocking items to builders through tools/brief.py, then re-run K7 on MOD-02, MOD-09, MOD-22, MOD-30 and MOD-34 and their seams.",
+  "proposed_tests": [
+    {
+      "module": "MOD-32",
+      "guard_element": "bind refusal naming the missing tokens (REF-21)",
+      "test": "A separate frozen case for REF-21, apart from REF-22: bind a skin missing two of a contract's tokens and assert the refusal names both, in contract order, and that a skin with an extra unrelated token still binds.",
+      "why": "REF-21 and REF-22 share one test ('R-21: missing tokens refuse, NAMED; R-22: a raw value in a contract refuses', f6-presentation.test.ts:74), so a regression in one masks the other's failure location."
+    },
+    {
+      "module": "MOD-27",
+      "guard_element": "divergence (packRef mismatch included) refused whole (REF-09 via SEAM-04)",
+      "test": "Resume with a row whose packRef matches but whose moves contain a tampered middle move; assert DivergenceError and that no LockstepController is returned and no listener is ever invoked.",
+      "why": "It confirms that 'refused whole' holds at the transport door for mid-replay divergence, not only for the packRef legs (lockstep.ts:58-67)."
+    },
+    {
+      "module": "MOD-33",
+      "guard_element": "REF-19 refused (projection breach)",
+      "test": "A spread-derived view, {...project(state, seat), decks: state.decks}, handed to renderTable is refused or shows no unredacted content.",
+      "why": "The brand is an enumerable marker field (I-47), so spreading copies it. A builder extending a view with a raw field is a plausible way past HOOK-10."
+    },
+    {
+      "module": "MOD-27",
+      "guard_element": "REF-09 divergence (packRef mismatch included) refused whole",
+      "test": "Resume a row whose seats list differs from the hosted session's seats (same packRef) and assert divergence is refused whole, or that the rebuilt hash is compared against the live hash.",
+      "why": "Resume checks only packRef's three legs. A row with altered seats replays without any check that it matches the live session."
+    }
+  ]
+}
