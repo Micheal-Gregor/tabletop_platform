@@ -74,3 +74,4 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | k7:round-1 final | 44220f9f, c8bae6ca | opus | 326 | 468288 | 25349076 | 85767 | 2633191 | - | - | 2026-11-08 |
 | R1 lead: K7 final, seal check | f7fce8bb | opus | 38 | 22289 | 16468647 | 12776 | 931928 | - | - | 2026-11-08 |
 | R1 lead: seal approval recorded | f7fce8bb | opus | 20 | 22372 | 8922907 | 5674 | 519279 | - | - | 2026-11-08 |
+| R1 lead: seal applied | f7fce8bb | opus | 14 | 12204 | 6343497 | 2562 | 354407 | - | - | 2026-11-08 |
