@@ -3,16 +3,16 @@
   "concept": "TABLETOP",
   "phase": 4,
   "branch": "main",
-  "head": "36744bb9f498832c9fd00500fd9434607623f858",
-  "tree": "2e1ac8bcac0a49349f2a8a7cb5c242cff2557d60",
+  "head": "a39c034cb79bfe1a79c641c59feba7f18ead711b",
+  "tree": "9da3dd2136d754927dff7c50ad5bc7b4b8c627c3",
   "dirty": false,
   "current_module": null,
-  "k7_round": 0,
+  "k7_round": 1,
   "last_gate_tag": "k7-pass-r1a",
   "seal_tag": "",
   "reopened": "",
   "next_action": "R1 is at the seal gate: the sweep (run 20261109T012245Z-seal-check-6761) fails only on the 36 legacy k7-pass tags, accounted for in INSTRUMENTS/legacy-k7-tags.md. On the owner's word: seal.py apply, which seals, opens Phase 5 and merges into main. Nothing is pushed.",
   "blocked_on": "owner: the single seal approval (seal.py apply --approved-by \"<owner, date>\" --accept-failures, the 36 legacy tags as known issues), or an owner-ordered fix round (owner-round-1) on the final review's twelve findings",
-  "updated_at": "2026-11-09T01:24:11+00:00",
-  "updated_by": "manual"
+  "updated_at": "2026-11-09T01:55:21+00:00",
+  "updated_by": "session-start:resume"
 }
