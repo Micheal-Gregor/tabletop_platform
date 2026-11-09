@@ -41,28 +41,51 @@ const VERBS: Readonly<Record<string, VerbFactory>> = Object.freeze({
   'reckon': (seat) => ({ type: 'closing:reckon', seat, args: {} }),
 });
 
-/** Emit — R-23's door: the output is validated to be an INTENT and only an intent. */
-export function emit(verb: string, seat: string, args: Readonly<Record<string, unknown>> = {}): EmittedIntent {
+/** The verb's factory — the map is closed, so a verb outside it refuses. */
+function checkVerbKnown(verb: string): VerbFactory {
   const factory = Object.hasOwn(VERBS, verb) ? VERBS[verb] : undefined;
   if (!factory) throw new EmissionRefusal(`unknown verb "${verb}" — the map is closed`);
+  return factory;
+}
+
+function checkSeatGiven(seat: string): void {
   if (typeof seat !== 'string' || seat.length === 0) throw new EmissionRefusal('seat required');
-  const out = factory(seat, args) as unknown;
-  // R-23: presentation emitting anything but an intent → refused (shape-checked at the door)
-  if (
-    typeof out !== 'object' || out === null ||
-    typeof (out as EmittedIntent).type !== 'string' ||
-    typeof (out as EmittedIntent).seat !== 'string' ||
-    typeof (out as EmittedIntent).args !== 'object' || (out as EmittedIntent).args === null
-  ) {
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function hasIntentShape(out: Record<string, unknown>): boolean {
+  return typeof out['type'] === 'string' && typeof out['seat'] === 'string' && isRecord(out['args']);
+}
+
+/** R-23: presentation emitting anything but an intent → refused (shape-checked at the door). */
+function checkIsIntent(verb: string, out: unknown): EmittedIntent {
+  if (!isRecord(out) || !hasIntentShape(out)) {
     throw new EmissionRefusal(`verb "${verb}" produced a non-intent — presentation emits intents, nothing else`);
   }
-  // K7-F6 D1 (DF6-1): the door is DEEP — the emission must be PURE DATA at every depth.
-  // A nested function, thenable, symbol, or any non-cloneable smuggled through args must
-  // refuse HERE, typed, never detonate untyped at the seam. The clone also severs
-  // aliasing: the caller's args object can never tamper the emitted intent post-hoc.
+  return out as unknown as EmittedIntent;
+}
+
+/**
+ * K7-F6 D1 (DF6-1): the door is DEEP — the emission must be PURE DATA at every depth.
+ * A nested function, thenable, symbol, or any non-cloneable smuggled through args must
+ * refuse HERE, typed, never detonate untyped at the seam. The clone also severs
+ * aliasing: the caller's args object can never tamper the emitted intent post-hoc.
+ */
+function cloneAsData(verb: string, intent: EmittedIntent): EmittedIntent {
   try {
-    return structuredClone(out) as EmittedIntent;
+    return structuredClone(intent);
   } catch {
     throw new EmissionRefusal(`verb "${verb}" produced a non-data emission (function/thenable/uncloneable inside) — presentation emits pure-data intents, nothing else`);
   }
+}
+
+/** Emit — R-23's door: the output is validated to be an INTENT and only an intent. */
+export function emit(verb: string, seat: string, args: Readonly<Record<string, unknown>> = {}): EmittedIntent {
+  const factory = checkVerbKnown(verb);
+  checkSeatGiven(seat);
+  const intent = checkIsIntent(verb, factory(seat, args) as unknown);
+  return cloneAsData(verb, intent);
 }
