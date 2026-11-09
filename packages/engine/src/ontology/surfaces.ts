@@ -24,31 +24,45 @@ function surfaces(state: State): Readonly<Record<string, SurfaceRow>> {
   return (state['surfaces'] as Record<string, SurfaceRow>) ?? {};
 }
 
+/** One topology's position check: whether a position is valid, and the refusal wording when it is not. */
+interface PositionCheck {
+  readonly holds: (position: JsonObject) => boolean;
+  readonly refusal: string;
+}
+
+/** The five topologies' position checks, one entry each (GBC-23). The five are closed. */
+const POSITION_CHECKS: Readonly<Record<Topology, PositionCheck>> = Object.freeze({
+  grid: {
+    holds: (position) => Number.isInteger(position['x']) && Number.isInteger(position['y']),
+    refusal: 'grid positions are integer {x, y}',
+  },
+  hex: {
+    holds: (position) => Number.isInteger(position['q']) && Number.isInteger(position['r']),
+    refusal: 'hex positions are integer {q, r}',
+  },
+  track: {
+    holds: (position) => Number.isInteger(position['index']) && (position['index'] as number) >= 0,
+    refusal: 'track positions are non-negative integer {index}',
+  },
+  slots: {
+    holds: (position) => typeof position['slot'] === 'string',
+    refusal: 'slot positions are string {slot}',
+  },
+  freeform: {
+    holds: (position) =>
+      typeof position['x'] === 'number' && typeof position['y'] === 'number' &&
+      Number.isFinite(position['x']) && Number.isFinite(position['y']),
+    refusal: 'freeform positions are finite numeric {x, y}',
+  },
+});
+
 /** Topology-aware position validity (GBC-23). */
 export function positionValid(topology: string, position: JsonObject): true | string {
-  switch (topology as Topology) {
-    case 'grid':
-      return Number.isInteger(position['x']) && Number.isInteger(position['y'])
-        ? true
-        : 'grid positions are integer {x, y}';
-    case 'hex':
-      return Number.isInteger(position['q']) && Number.isInteger(position['r'])
-        ? true
-        : 'hex positions are integer {q, r}';
-    case 'track':
-      return Number.isInteger(position['index']) && (position['index'] as number) >= 0
-        ? true
-        : 'track positions are non-negative integer {index}';
-    case 'slots':
-      return typeof position['slot'] === 'string' ? true : 'slot positions are string {slot}';
-    case 'freeform':
-      return typeof position['x'] === 'number' && typeof position['y'] === 'number' &&
-        Number.isFinite(position['x']) && Number.isFinite(position['y'])
-        ? true
-        : 'freeform positions are finite numeric {x, y}';
-    default:
-      return `unknown topology "${topology}" — the five are closed`;
+  if (!TOPOLOGIES.includes(topology as Topology)) {
+    return `unknown topology "${topology}" — the five are closed`;
   }
+  const check = POSITION_CHECKS[topology as Topology];
+  return check.holds(position) ? true : check.refusal;
 }
 
 export function addSurface(state: State, id: string, topology: string): JsonObject {
@@ -122,26 +136,42 @@ export function composeSurface(state: State, newSurfaceId: string, componentIds:
  * (emitting on-dissolve for each) before removing the Surface. One coupled act.
  */
 export function retireComposedSurface(state: State, surfaceId: string): JsonObject {
-  const all = surfaces(state);
-  const surf = all[surfaceId];
+  const surf = surfaces(state)[surfaceId];
   if (!surf || !surf.composedOf) {
     throw new SurfaceRefusal(surfaceId, 'GX-17', 'not a composed surface');
   }
-  const composed = new Set(surf.composedOf);
+  return withoutSurface(dissolveWithSurface(state, surfaceId, surf.composedOf), surfaceId);
+}
+
+/** A formed Composition relation joining two components of the composed set. */
+function isCompositionWithin(r: RelationRow, composed: ReadonlySet<string>): boolean {
+  return r.status === 'formed' && r.type === 'Composition' && composed.has(r.from) && composed.has(r.to);
+}
+
+/**
+ * A formed Placement ONTO the retired surface (K7-F3 P12 closure): retirement also dissolves
+ * Placements onto it — no component strands on a surface that no longer exists (locations
+ * cleared by the Placement-dissolve rule).
+ */
+function isPlacementOnto(r: RelationRow, surfaceId: string): boolean {
+  return r.status === 'formed' && r.type === 'Placement' && r.to === surfaceId;
+}
+
+/** Dissolve, in relation order, every Composition of the composed set and every Placement onto the surface. */
+function dissolveWithSurface(state: State, surfaceId: string, composedOf: readonly string[]): JsonObject {
+  const composed = new Set(composedOf);
   let next: JsonObject = state as JsonObject;
   for (const r of (state['relations'] as readonly RelationRow[]) ?? []) {
-    if (r.status === 'formed' && r.type === 'Composition' && composed.has(r.from) && composed.has(r.to)) {
-      next = dissolveRelation(next, r.id);
-    }
-    // K7-F3 P12 closure: retirement also dissolves Placements ONTO the retired surface —
-    // no component strands on a surface that no longer exists (locations cleared by the
-    // Placement-dissolve rule).
-    if (r.status === 'formed' && r.type === 'Placement' && r.to === surfaceId) {
+    if (isCompositionWithin(r, composed) || isPlacementOnto(r, surfaceId)) {
       next = dissolveRelation(next, r.id);
     }
   }
-  const allNow = surfaces(next);
+  return next;
+}
+
+/** The state with the one surface removed and every other surface kept. */
+function withoutSurface(state: JsonObject, surfaceId: string): JsonObject {
   const rest: Record<string, SurfaceRow> = {};
-  for (const [id, s] of Object.entries(allNow)) if (id !== surfaceId) rest[id] = s;
-  return { ...next, surfaces: rest } as JsonObject;
+  for (const [id, s] of Object.entries(surfaces(state))) if (id !== surfaceId) rest[id] = s;
+  return { ...state, surfaces: rest } as JsonObject;
 }
