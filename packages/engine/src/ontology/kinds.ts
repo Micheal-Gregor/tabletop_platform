@@ -6,6 +6,7 @@
  */
 
 import type { JsonObject } from '../kernel/types.js';
+import { KindRefusal } from './kind-refusal.js';
 import { RELATION_TYPES } from './relations.js';
 import { bindingFor, RoleRefusal } from './roles.js';
 
@@ -17,12 +18,8 @@ export interface KindDef extends JsonObject {
   readonly relationsGrantable: readonly string[];
 }
 
-export class KindRefusal extends Error {
-  constructor(readonly kind: string, readonly rule: string, detail: string) {
-    super(`Kind refused [${rule}] "${kind}": ${detail}`);
-    this.name = 'KindRefusal';
-  }
-}
+// KindRefusal lives in its own file (one class per file); re-exported so every import holds.
+export { KindRefusal } from './kind-refusal.js';
 
 /**
  * K7-F3 defect 1+2 closure: THE EX-2 predicate lives HERE and gates EVERY door into the

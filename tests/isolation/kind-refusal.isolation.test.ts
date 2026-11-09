@@ -1,9 +1,9 @@
 import { describe, it } from 'vitest';
-import { KindRefusal } from '../../packages/engine/src/ontology/kinds.js';
+import { KindRefusal } from '../../packages/engine/src/ontology/kind-refusal.js';
 import { REFUSAL_CHECKS, type RefusalSpec } from './refusal-checks.js';
 
-// OS-12 isolation test for KindRefusal (MOD-10, packages/engine/src/ontology/kinds.ts today; it
-// moves to kind-refusal.ts when the split lands). Declared inputs: kind, rule, detail. Public
+// OS-12 isolation test for KindRefusal (MOD-10, packages/engine/src/ontology/kind-refusal.ts).
+// Declared inputs: kind, rule, detail. Public
 // members read: kind, rule, name, message, stack. The shared refusal checks vary each input in
 // turn and read every member. No environment, clock, globals or network is touched.
 
