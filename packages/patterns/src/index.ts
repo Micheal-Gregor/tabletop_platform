@@ -48,19 +48,27 @@ export interface VntFragment {
   readonly payoffs: readonly { readonly to: string; readonly amount: number }[];
 }
 
-function vnt(preset: string, p: VntParams, portions: VntFragment['portions'], payoffs: VntFragment['payoffs']): VntFragment {
+function checkVntParams(preset: string, p: VntParams): void {
   if (!nonEmpty(p.id)) throw new PatternRefusal(preset, 'id must be a non-empty string');
   if (!nonEmpty(p.initiator)) throw new PatternRefusal(preset, 'initiator must be a non-empty string');
   if (!posInt(p.deadline)) throw new PatternRefusal(preset, `deadline must be a positive integer, got ${String(p.deadline)}`);
+}
+
+function checkPortion(preset: string, portion: VntFragment['portions'][number]): void {
+  if (!nonEmpty(portion.task)) throw new PatternRefusal(preset, 'portion.task must be a non-empty string');
+  if (!posInt(portion.work)) throw new PatternRefusal(preset, `portion.work must be a positive integer, got ${String(portion.work)}`);
+}
+
+function checkPayoff(preset: string, pay: VntFragment['payoffs'][number]): void {
+  if (!nonEmpty(pay.to)) throw new PatternRefusal(preset, 'payoff.to must be a non-empty string');
+  if (!finitePos(pay.amount)) throw new PatternRefusal(preset, `payoff.amount must be finite positive, got ${String(pay.amount)}`);
+}
+
+function vnt(preset: string, p: VntParams, portions: VntFragment['portions'], payoffs: VntFragment['payoffs']): VntFragment {
+  checkVntParams(preset, p);
   if (portions.length < 1) throw new PatternRefusal(preset, 'at least one portion');
-  for (const portion of portions) {
-    if (!nonEmpty(portion.task)) throw new PatternRefusal(preset, 'portion.task must be a non-empty string');
-    if (!posInt(portion.work)) throw new PatternRefusal(preset, `portion.work must be a positive integer, got ${String(portion.work)}`);
-  }
-  for (const pay of payoffs) {
-    if (!nonEmpty(pay.to)) throw new PatternRefusal(preset, 'payoff.to must be a non-empty string');
-    if (!finitePos(pay.amount)) throw new PatternRefusal(preset, `payoff.amount must be finite positive, got ${String(pay.amount)}`);
-  }
+  for (const portion of portions) checkPortion(preset, portion);
+  for (const pay of payoffs) checkPayoff(preset, pay);
   return { id: p.id, initiator: p.initiator, portions, deadline: p.deadline, payoffs };
 }
 
@@ -154,22 +162,36 @@ export interface WindowFragment {
 
 const EFX_NAMES: readonly string[] = EFX_V1_1_1 as readonly string[]; // the sealed name list
 
+function checkWindowKind(kind: IwnKind): void {
+  if (!IWN_KINDS.includes(kind)) throw new PatternRefusal('iwn', `unknown window kind "${String(kind)}" — the nine are ${IWN_KINDS.join('/')}`);
+}
+
+function checkOptionFx(kind: IwnKind, eff: { readonly fx: string }): void {
+  if (!EFX_NAMES.includes(eff.fx)) throw new PatternRefusal(`iwn:${kind}`, `option fx "${String(eff.fx)}" ∉ EFX v1.1.1 — presets never extend the vocabulary`);
+  if (eff.fx === 'open_window') throw new PatternRefusal(`iwn:${kind}`, 'nested open_window is statically dead (depth-1 law)');
+}
+
+function checkWindowOptions(kind: IwnKind, options: WindowFragment['options']): void {
+  if (options.length < 1) throw new PatternRefusal(`iwn:${kind}`, 'at least one option (undecidable window)');
+  for (const o of options) {
+    for (const eff of o.fx) checkOptionFx(kind, eff);
+  }
+}
+
+function checkWindowAuto(kind: IwnKind, auto: number, optionCount: number): void {
+  if (!Number.isInteger(auto) || auto < 0 || auto >= optionCount) throw new PatternRefusal(`iwn:${kind}`, `auto ${String(auto)} out of range`);
+}
+
 export function buildWindow(
   kind: IwnKind,
   p: { readonly decider: string; readonly options?: readonly { readonly label: string; readonly fx: readonly { readonly fx: string }[] }[]; readonly auto?: number }
 ): WindowFragment {
-  if (!IWN_KINDS.includes(kind)) throw new PatternRefusal('iwn', `unknown window kind "${String(kind)}" — the nine are ${IWN_KINDS.join('/')}`);
+  checkWindowKind(kind);
   if (!nonEmpty(p.decider)) throw new PatternRefusal(`iwn:${kind}`, 'decider required');
   const options = p.options ?? [{ label: 'accept', fx: [] }, { label: 'decline', fx: [] }];
-  if (options.length < 1) throw new PatternRefusal(`iwn:${kind}`, 'at least one option (undecidable window)');
-  for (const o of options) {
-    for (const eff of o.fx) {
-      if (!EFX_NAMES.includes(eff.fx)) throw new PatternRefusal(`iwn:${kind}`, `option fx "${String(eff.fx)}" ∉ EFX v1.1.1 — presets never extend the vocabulary`);
-      if (eff.fx === 'open_window') throw new PatternRefusal(`iwn:${kind}`, 'nested open_window is statically dead (depth-1 law)');
-    }
-  }
+  checkWindowOptions(kind, options);
   const auto = p.auto ?? 0;
-  if (!Number.isInteger(auto) || auto < 0 || auto >= options.length) throw new PatternRefusal(`iwn:${kind}`, `auto ${String(auto)} out of range`);
+  checkWindowAuto(kind, auto, options.length);
   return { fx: 'open_window', kind, decider: p.decider, options, auto };
 }
 
