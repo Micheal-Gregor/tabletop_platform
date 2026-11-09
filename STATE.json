@@ -11,8 +11,8 @@
   "last_gate_tag": "k7-pass-r1a",
   "seal_tag": "",
   "reopened": "",
-  "next_action": "R1 resumes when the owner adopts plugin 2.9.2 (port it as a set per its README entry, install-gates.py, phase4-checks.py gates): then the 15 held modules in S3 \u00a710 order (MOD-02, 03, 04, 08, 09, 13, 17, 24, 27, 28, 30, 31, 33, plus MOD-10's KindRefusal split and MOD-22's ventures.ts fixes): 7 one-class-per-file splits, 26 code-gates fixes, their isolation tests, the effects.ts:48 comment; then the close: refresh ui/interface-contract.md, k7-run.py --final through run.py, seal.py check.",
-  "blocked_on": null,
-  "updated_at": "2026-11-08T23:47:09+00:00",
+  "next_action": "R1: MOD-04 on the owner's ruling (RNGStream to rng-stream.ts, RNGStreams and RNGStream isolation tests); then the close: ui/interface-contract.md, the final K7 review (k7-run.py --final through run.py), seal.py check. All 41 code-gates findings are fixed; objects, scaffold and modules pass but for MOD-04's planned file.",
+  "blocked_on": "owner: MOD-04's one-class-per-file split needs a second SR-1 OS-2 entry on rng-stream.ts (the seeding functions' function-local lets move with RNGStream); SR-1 leaves the same finding on the same module twice to the owner (asked 2026-11-08)",
+  "updated_at": "2026-11-09T00:40:41+00:00",
   "updated_by": "manual"
 }

@@ -559,3 +559,17 @@ Each step closed on the gates (the hard gate, the commit checks, `brief.py verif
 | MOD-35 | OS-12 isolation test, Timeline | `12178b847174fbb3` | `fe2d4ac` | exit 0 |
 | MOD-22 | code-gates in library/wire.ts: checkSpecShape, checkDebtsShape, checkTfxShape, wireLibrary (7); OS-12 isolation test, VentureRefusal (ventures.ts held for 2.9.2, I-264) | `746aaa1723b1d026` | `34470e4` | exit 0 |
 | MOD-10 | code-gates: hookHk7BeforeKindAdmission G2+G3 (2); OS-12 isolation tests, KindRegistry and KindRefusal (the split held for 2.9.2, I-264) | `57d91ad69239b9ad` | `c358b94` | exit 0 |
+| MOD-02 | one class per file: HookViolation to hook-violation.ts; OS-12 isolation tests, Guard, EngineCore, HookViolation (after 2.9.1a, I-265) | `8184b0cf13bd1839` | `375d540` | exit 0 |
+| MOD-03 | one class per file: DivergenceError to divergence-error.ts; OS-12 isolation tests, IntentLog, DivergenceError | `eff5a1389e4132fc` | `b3a49fd` | exit 0 |
+| MOD-08 | code-gates: hookHk4ValidatePack, checkFx, wirePack (7); OS-12 isolation test, PackLoadRefusal | `91cf4f820c58c502` | `5ab7a76` | exit 0 |
+| MOD-09 | one class per file: EffectRefusal to effect-refusal.ts; the effects.ts:48 scaffold phrase; OS-12 isolation tests, EffectEngine, EffectRefusal | `8d43587329777b87` | `da11cf4` | exit 0 |
+| MOD-10 | one class per file: KindRefusal to kind-refusal.ts (second step) | `c5448371653237bb` | `c5b108c` | exit 0 |
+| MOD-13 | code-gates: positionValid, retireComposedSurface (2); OS-12 isolation test, SurfaceRefusal | `76eb78649f58e394` | `fb20c2d` | exit 0 |
+| MOD-17 | code-gates: checkEffectShape, validateContribution, validateUniqueDef (5); OS-12 isolation test, ContributionRefusal | `8d121b56c5320483` | `ae0237a` | exit 0 |
+| MOD-22 | code-gates: spawnVenture G2+G3 (2) (second step) | `3f52528e8b8258a9` | `1552260` | exit 0 |
+| MOD-24 | code-gates: post G2 (1); OS-12 isolation test, LedgerRefusal | `8a7ca252a9e3caa1` | `72b56f5` | exit 0 |
+| MOD-27 | one class per file: TransportRefusal to transport-refusal.ts; OS-12 isolation tests, LockstepController, TransportRefusal | `d6d6a43d17c54cc0` | `af2e0bc` | exit 0 |
+| MOD-28 | code-gates: vnt, buildWindow (3); OS-12 isolation test, PatternRefusal | `7832e30c3571ff10` | `d96fa35` | exit 0 |
+| MOD-30 | code-gates: checkRegion, extendLayout (3); OS-12 isolation test, LayoutRefusal | `739411f2731178eb` | `fb51a13` | exit 0 |
+| MOD-31 | code-gates: emit G2 (1); OS-12 isolation test, EmissionRefusal | `3359f0976e9edc55` | `dc53b5d` | exit 0 |
+| MOD-33 | one class per file: UnboxRefusal to unbox-refusal.ts; code-gates: project G2+G3 (2); OS-12 isolation tests, ProjectionBreach, UnboxRefusal | `16bb845270cd3750` | `dd31fa9` | exit 0 |

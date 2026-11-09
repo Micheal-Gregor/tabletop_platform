@@ -62,7 +62,8 @@
     "SETUP.md",
     "HARNESS.md",
     "governance/S3/README.md",
-    "docs/reentry-2026-11-08.md"
+    "docs/reentry-2026-11-08.md",
+    "INSTRUMENTS/drift-ledger.md"
   ],
   "scaffold_markers": null,
   "_scaffold_notes": "null on either key uses the built-in set — the defaults live in tools/phase4-checks.py so there is one place to change them. Setting an array here REPLACES the default rather than adding to it, so if you override scaffold_exempt, carry over .metaframework/, tools/, and governance/S2-S3-emission-contract.md. The scanning tool must sit in an exempt directory or it matches its own patterns, and the emission contract is exempt because documenting a filename template is not leakage. governance/S3/ is deliberately not exempt: an unsubstituted placeholder in a frozen spec is a real defect.",

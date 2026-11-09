@@ -19,7 +19,8 @@ through `project` and changes it only by submitting an intent (S-6).*
 | AdmissibilityGate | MOD-14 | `packages/engine/src/ontology/admission.ts` | registry |
 | RuleRegistry | MOD-15 | `packages/engine/src/rules/registry.ts` | nothing |
 | ExtensionContract | MOD-19 | `packages/engine/src/rules/extension.ts` | nothing |
-| LockstepController | MOD-27 | `packages/engine/src/transport/lockstep.ts` | core, seats |
+| LockstepController | MOD-27 | `packages/engine/src/transport/lockstep.ts` | core, seats (private; built by `host` or `resume`) |
+| TransportRefusal, HookViolation, DivergenceError, EffectRefusal, KindRefusal, UnboxRefusal | MOD-27, 02, 03, 09, 10, 33 | each in its own file since R1 (one class per file) | as the object model declares |
 | Timeline | MOD-35 | `packages/presentation/src/clock.ts` | nothing |
 | SeatView (data) | MOD-33 | `packages/presentation/src/projector.ts` | built only by `project` |
 
@@ -60,6 +61,8 @@ through `project` and changes it only by submitting an intent (S-6).*
 | ExtensionContract.propose | vocabulary, member, obligations | the opened ContractCycle | EffectRefusal GX-23/S-7 (unknown vocabulary; already a member; missing obligations) | records a cycle | deterministic | |
 | ExtensionContract.approve | cycleId, ownerNote | the approved ContractCycle | EffectRefusal GX-23 (no such cycle; no owner note) | records the approval; never mutates a sealed vocabulary | deterministic | |
 | ExtensionContract.record | none | every cycle | none | none | deterministic | |
+| LockstepController.host | packRef, seats, seed, genesis, wire | a controller hosting a new EngineCore, its intents wired | none | builds the engine; wire registers its intents | deterministic over (packRef, seed, seats) | |
+| LockstepController.resume | row, loadedPackRef, genesis, wire | a controller rebuilt from the row (self-heal) | TransportRefusal GX-31/SUP-1 (packRef id, version or hash mismatch: divergence refused whole, REF-09) | rebuilds the engine from the row | deterministic over the row | |
 | LockstepController.join | clientId, seat | nothing | TransportRefusal GX-32 (unknown seat; seat held by a present client) | presence | deterministic | |
 | LockstepController.leave | clientId | nothing | none | presence | deterministic | |
 | LockstepController.takeover | clientId, seat | nothing | TransportRefusal GX-32 (the holder is still present) | presence | deterministic | |

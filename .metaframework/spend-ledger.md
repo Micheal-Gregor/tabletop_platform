@@ -39,3 +39,32 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | module:MOD-22 lead | f7fce8bb | opus | 24 | 24225 | 6545422 | 20323 | 477360 | - | - | 2026-11-08 |
 | module:MOD-10 build | f7fce8bb agent-adcc3b07 | sonnet | 30 | 62457 | 774371 | 16992 | 240498 | - | - | 2026-11-08 |
 | R1 lead: rulings, MOD-22, MOD-10 | f7fce8bb | opus | 8 | 14713 | 2472436 | 9021 | 198161 | - | - | 2026-11-08 |
+| module:MOD-02 build | f7fce8bb agent-a38937cc | sonnet | 36 | 75941 | 1074089 | 21497 | 309856 | - | - | 2026-11-08 |
+| module:MOD-02 lead | f7fce8bb | opus | 40 | 32432 | 10834201 | 19750 | 705364 | - | - | 2026-11-08 |
+| module:MOD-03 build | f7fce8bb agent-a6684b26 | sonnet | 24 | 48309 | 529040 | 8241 | 154519 | - | - | 2026-11-08 |
+| module:MOD-03 lead | f7fce8bb | opus | 6 | 9466 | 1985943 | 8030 | 158385 | - | - | 2026-11-08 |
+| module:MOD-08 build | f7fce8bb agent-aea0fbe8 | sonnet | 44 | 92689 | 1549261 | 40840 | 475031 | - | - | 2026-11-08 |
+| module:MOD-08 lead | f7fce8bb | opus | 12 | 18248 | 4049573 | 13372 | 305847 | - | - | 2026-11-08 |
+| module:MOD-09 build | f7fce8bb agent-a0cb276d | sonnet | 36 | 56620 | 916738 | 10097 | 212970 | - | - | 2026-11-08 |
+| module:MOD-09 lead | f7fce8bb | opus | 6 | 12407 | 2074587 | 9117 | 174134 | - | - | 2026-11-08 |
+| module:MOD-10 split build | f7fce8bb agent-a5a6e2fd | sonnet | 18 | 37521 | 335358 | 3994 | 100425 | - | - | 2026-11-08 |
+| module:MOD-10 split lead | f7fce8bb | opus | 6 | 11953 | 2110464 | 8714 | 173005 | - | - | 2026-11-08 |
+| module:MOD-13 build | f7fce8bb agent-a80b4a92 | sonnet | 26 | 47782 | 579239 | 9648 | 165917 | - | - | 2026-11-08 |
+| module:MOD-13 lead | f7fce8bb | opus | 6 | 11474 | 2145614 | 8090 | 170685 | - | - | 2026-11-08 |
+| module:MOD-17 build | f7fce8bb agent-a388fd48 | sonnet | 44 | 73255 | 1390482 | 23451 | 347916 | - | - | 2026-11-08 |
+| module:MOD-17 lead | f7fce8bb | opus | 6 | 11151 | 2180357 | 8349 | 173071 | - | - | 2026-11-08 |
+| module:MOD-22 second build | f7fce8bb agent-a1dcb318 | sonnet | 20 | 41736 | 400650 | 8079 | 132650 | - | - | 2026-11-08 |
+| module:MOD-22 second lead | f7fce8bb | opus | 6 | 14282 | 2214719 | 8745 | 183031 | - | - | 2026-11-08 |
+| module:MOD-24 build | f7fce8bb agent-a63ef042 | sonnet | 24 | 47886 | 519678 | 8367 | 153684 | - | - | 2026-11-08 |
+| module:MOD-24 lead | f7fce8bb | opus | 6 | 9475 | 2252571 | 8187 | 172520 | - | - | 2026-11-08 |
+| module:MOD-27 build | f7fce8bb agent-a65f9951 | sonnet | 40 | 85215 | 1271232 | 25316 | 360262 | - | - | 2026-11-08 |
+| module:MOD-27 lead | f7fce8bb | opus | 6 | 11762 | 2285231 | 8397 | 179777 | - | - | 2026-11-08 |
+| module:MOD-28 build | f7fce8bb agent-a68b53ba | sonnet | 22 | 57245 | 536047 | 9938 | 174873 | - | - | 2026-11-08 |
+| module:MOD-28 lead | f7fce8bb | opus | 6 | 13594 | 2320396 | 8813 | 187279 | - | - | 2026-11-08 |
+| module:MOD-30 build | f7fce8bb agent-ac8951a0 | sonnet | 20 | 49254 | 444512 | 8973 | 150904 | - | - | 2026-11-08 |
+| module:MOD-30 lead | f7fce8bb | opus | 6 | 12204 | 2358010 | 8752 | 186074 | - | - | 2026-11-08 |
+| module:MOD-31 build | f7fce8bb agent-adf19e2d | sonnet | 24 | 43649 | 509363 | 6661 | 138827 | - | - | 2026-11-08 |
+| module:MOD-31 lead | f7fce8bb | opus | 6 | 9728 | 2393636 | 7995 | 179119 | - | - | 2026-11-08 |
+| module:MOD-33 build | f7fce8bb agent-a103ebf3 | sonnet | 32 | 58620 | 797860 | 13792 | 222053 | - | - | 2026-11-08 |
+| module:MOD-33 lead | f7fce8bb | opus | 14 | 13606 | 5694772 | 10310 | 363515 | - | - | 2026-11-08 |
+| R1 lead: 15 held modules | f7fce8bb | opus | 2 | 2667 | 818544 | 2678 | 59653 | - | - | 2026-11-08 |
