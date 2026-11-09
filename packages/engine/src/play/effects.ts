@@ -13,6 +13,7 @@
  */
 
 import type { JsonObject, JsonValue, State } from '../kernel/types.js';
+import { EffectRefusal } from './effect-refusal.js';
 
 /** EFX v1.1.1 — sealed. Generativity bound (seam S-3 · CLAUDE.md §9 "do not let content define behavior"): content parameterizes EFX members and preset spaces — never defines behavior. */
 export const EFX_V1_1_1 = Object.freeze([
@@ -31,12 +32,8 @@ export interface EffectDescriptor extends JsonObject {
   readonly fx: string; // validated ∈ EFX at HK-9; typed loosely so content can be REFUSED, not miscompiled
 }
 
-export class EffectRefusal extends Error {
-  constructor(readonly descriptor: string, readonly rule: string, detail: string) {
-    super(`Effect refused [${rule}] descriptor "${descriptor}": ${detail}`);
-    this.name = 'EffectRefusal';
-  }
-}
+// EffectRefusal lives in its own file (one class per file); re-exported so every import holds.
+export { EffectRefusal } from './effect-refusal.js';
 
 /** Apply-context: window depth (I-13) travels with every application. */
 export interface EffectContext {
@@ -45,7 +42,7 @@ export interface EffectContext {
 
 /**
  * HK-9 (M9 side) — before rule dispatch / effect application: descriptor must be a
- * member of the sealed vocabulary. THE refusal point for R-3: delete this call and an
+ * member of the sealed vocabulary. THE refusal point for R-3: remove this call and an
  * unknown descriptor silently no-ops — the named halt-not-skip test fails (falsifiable).
  */
 export function hookHk9BeforeEffectApply(d: EffectDescriptor): void {
