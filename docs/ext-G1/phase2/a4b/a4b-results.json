@@ -1,0 +1,118 @@
+{
+ "live": [
+  {
+   "x": 0,
+   "guard": "RULE_REFUSED: no flick",
+   "drawn": false,
+   "logged": false
+  },
+  {
+   "x": 3000,
+   "guard": "RULE_REFUSED: re-spin",
+   "drawn": false,
+   "logged": false
+  },
+  {
+   "x": 12000,
+   "guard": "LEGAL",
+   "drawn": true,
+   "logged": true,
+   "k": 1,
+   "u": 0.557480385992676,
+   "factor": 1.0057480385992676,
+   "w_eff": 12.068976463191213,
+   "s0": 0.0,
+   "theta": 36.41504821726587,
+   "rest": 4.999121681367939,
+   "outcome": "VALUE(6)",
+   "sector": 6,
+   "energy_books": 0.0,
+   "H": "df84e47a7d97a000"
+  },
+  {
+   "x": 12000,
+   "guard": "LEGAL",
+   "drawn": true,
+   "logged": true,
+   "k": 2,
+   "u": 0.5018962631002069,
+   "factor": 1.0001896263100207,
+   "w_eff": 12.00227551572025,
+   "s0": 4.999121681367939,
+   "theta": 36.013654388814444,
+   "rest": 3.3136642271048657,
+   "outcome": "VALUE(4)",
+   "sector": 4,
+   "energy_books": 0.0,
+   "H": "27ee2f13db7dc8d3"
+  }
+ ],
+ "draws": 2,
+ "log": [
+  12000,
+  12000
+ ],
+ "final_sector": 4,
+ "replay_equal": [
+  true,
+  true
+ ],
+ "tamper_equal": [
+  true,
+  false
+ ],
+ "floor": {
+  "x_min_mrad_s": 6000,
+  "theta_at_x_min_low_jitter": 8.122499999999999,
+  "clears_one_turn": true
+ },
+ "die": {
+  "throw": {
+   "p_mm": [
+    0,
+    50,
+    0
+   ],
+   "v_mm_s": [
+    800,
+    0,
+    -200
+   ],
+   "w_mrad_s": [
+    0,
+    0,
+    15000
+   ]
+  },
+  "u": 0.557480385992676,
+  "effective": {
+   "p_m": [
+    0.0,
+    0.05,
+    0.0
+   ],
+   "v_m_s": [
+    0.8045984308794142,
+    0.0,
+    -0.20114960771985355
+   ],
+   "w_rad_s": [
+    0.0,
+    0.0,
+    15.086220578989014
+   ]
+  },
+  "reader": [
+   {
+    "rest": "identity",
+    "dot": 1.0,
+    "outcome": "VALUE(1)"
+   },
+   {
+    "rest": "20 deg about z",
+    "dot": 0.9396926207859084,
+    "outcome": "REFUSE(cocked)"
+   }
+  ]
+ }
+}
