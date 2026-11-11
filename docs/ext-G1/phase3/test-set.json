@@ -1,0 +1,32 @@
+{
+  "about": "tools/test-set.py's config for the G-1 extension S3 (Amendment S-1, TS-5), written by the R4 lead and put to the owner with the deliverables.",
+  "s1_case": {
+    "pattern": "\\bX[RP]-[0-9]{2}\\b",
+    "suite_groups": []
+  },
+  "shared_guards": [
+    {
+      "name": "replay check (G-7, XH-07)",
+      "outcomes": [
+        "DIVERGENCE"
+      ],
+      "owners": [
+        "MOD-43"
+      ],
+      "wiring_row": true,
+      "why": "ReplayCheck owns the comparison in full (XR-21); PhysicsHost.replay throws the sealed DivergenceError on its verdict (S5 §4)"
+    },
+    {
+      "name": "turn discipline (the sealed onTurnRule)",
+      "outcomes": [
+        "RULE_REFUSED.OUT_OF_TURN"
+      ],
+      "owners": [
+        "MOD-02"
+      ],
+      "wiring_row": true,
+      "why": "the sealed MOD-02 owns onTurnRule and REF-01 tests it in full; RollGuard keeps one wiring row (XR-11)"
+    }
+  ],
+  "misfiled_positives": []
+}
