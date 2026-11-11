@@ -98,3 +98,4 @@ named `kind:id detail` (`module:MOD-03 build`) is one unit of that kind for TE-8
 | phase3:final adversarial pass (TE-6) G-1 (R4) | a3b5846d agent-a0bdeb52 | sonnet | 158 | 480513 | 23352175 | 193986 | 3905947 | - | te6-adversarial-pass.md: 20 findings (0 blocker, 13 major, 7 minor) | 2026-11-10 |
 | phase3:K6 + TE-6 fixes (round 3) G-1 (R4) | a3b5846d | opus | 36 | 529678 | 8435462 | 50358 | 1732955 | - | S5 §7 round 3; S3 re-emitted (59 seams, 47 REF, 14 VEC, 12 HOOK, 8 PC); emission-check conforms; test-set exit 0; K6 PASS round 3; docx built | 2026-11-11 |
 | phase3:human gate G-1 (R4) | a3b5846d | opus | 4 | 6284 | 1133843 | 4529 | 91909 | - | owner: Approve and commit; HookViolation HK-1 reading; raise to 12.3M for the close | 2026-11-11 |
+| phase3:close G-1 (R4) | a3b5846d | opus | 8 | 7865 | 2297944 | 3312 | 147195 | - | commit 3ee8343; STATE next action R5; hand-over note | 2026-11-11 |
